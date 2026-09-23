@@ -26,6 +26,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+            TemiRobot // temporary instance call
         }
     }
 }
