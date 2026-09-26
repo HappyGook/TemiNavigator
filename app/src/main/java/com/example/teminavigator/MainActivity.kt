@@ -4,14 +4,34 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.example.teminavigator.ui.screens.HomeScreen
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
+
+// Screen types
+sealed class Screen {
+    object HomeScreen : Screen()
+    class NavigationScreen(val destination: String) : Screen()
+    object WaitingScreen : Screen()
+    object SettingsScreen : Screen()
+
+}
+
+@Composable
+fun TemiApp(){
+    var currentScreen by remember { mutableStateOf<Screen>(Screen.HomeScreen) } // change state for testing
+
+    when(currentScreen){
+        is Screen.HomeScreen -> HomeScreen()
+        is Screen.SettingsScreen -> print("TODO")
+        is Screen.WaitingScreen -> print("TODO")
+        is Screen.NavigationScreen -> print("TODO")
+    }
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,30 +39,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             TemiNavigatorTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                TemiApp()
                 }
             }
-            TemiRobot // temporary instance call
         }
     }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    TemiNavigatorTheme {
-        Greeting("Android")
-    }
-}

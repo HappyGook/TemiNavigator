@@ -9,5 +9,5 @@ data class Destination(
     val displayName: String,
     val aliases: List<String>, // for speech: 2.72 = "Raum 2.72", "Robotik-Raum", etc.
     val mapX: Float,
-    val mapY: Float // coordinates on internal map -- needed?
+    val mapY: Float // coordinates on internal map
 )

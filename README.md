@@ -15,7 +15,10 @@ app/
     ├── temi/
     │   └── TemiRobot.kt
     │
-    ├── navigation/ -- ?
+    ├── domain/ 
+    │   ├── NavigationState.kt
+    │   ├── RobotController.kt
+    │   ├── RobotEvent.kt
     │   └── Destination.kt
     │
     └── viewmodel/
