@@ -1,4 +1,4 @@
-package com.example.robui.ui.screens
+package com.example.teminavigator.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -11,7 +11,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.robui.R
+import com.example.teminavigator.R
 
 @Composable
 fun WaitingScreen() {
