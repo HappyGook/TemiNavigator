@@ -32,7 +32,7 @@ fun WaitingScreen() {
         // Element 2
         Text(
             "Hallo, schön dich zu sehen!",
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -52,23 +52,23 @@ fun WaitingScreen() {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
 
             // Button to go to navigation screen
-            WaitingScreenButton(
+            AppButton(
                 "Ort auswählen",
                 painterResource(R.drawable.ic_launcher_foreground),
-                onClick = { /* nav */ },
+                onClick = { /* todo: go to navigation screen */ },
             )
 
             // Button to go to the current destination screen
-            WaitingScreenButton(
-                "Zurück zur Route",
+            AppButton(
+                "Zurück zur Navigation",
                 painterResource(R.drawable.ic_launcher_foreground),
-                onClick = { /* nav */ }
+                onClick = { /* todo: go to navigation screen */ }
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
 
         // Element 5
-        Row(verticalAlignment = Alignment.Bottom) {
+        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = "Message icon",
@@ -87,7 +87,7 @@ fun WaitingScreen() {
 }
 
 @Composable
-fun WaitingScreenButton(
+fun AppButton(
     text: String,
     icon: Painter,
     onClick: () -> Unit,
