@@ -57,6 +57,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.teminavigator.domain.Destination
+import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 
 val mockDestinations = listOf(
@@ -132,6 +133,7 @@ fun HomeScreen(
     var selectedId by rememberSaveable{mutableStateOf<String?>(null)}
     var showConfirmationDialog by rememberSaveable {mutableStateOf(false)}
     val selected = destinations.find{it.id==selectedId}
+    val strings = LocalStrings.current
 
     Scaffold{ innerPadding ->
         Row(
@@ -173,21 +175,21 @@ fun HomeScreen(
     if(showConfirmationDialog && selected!=null){
         AlertDialog(
             onDismissRequest = { showConfirmationDialog = false },
-            title = { Text("Placeholder") }, // TODO: language pack
+            title = { Text(strings.confirmTitle(selected.displayName)) },
             confirmButton ={
                 TextButton(
                     onClick = {
                         showConfirmationDialog = false
                         onDestinationConfirmed(selected) // to ViewModel
                     }
-                ) { Text("Yes - Placeholder")} // TODO: language pack
+                ) { Text(strings.confirmYes)}
             },
             dismissButton = {
                 TextButton(
                     onClick = {
                         showConfirmationDialog = false
                     }
-                ) { Text("No - Placeholder")} // TODO: language pack
+                ) { Text(strings.confirmNo)}
             }
         )
     }
@@ -269,6 +271,7 @@ fun InteractiveMap(
     assetFileName: String = "uni_map.png" // image from assets
 ) {
     val context = LocalContext.current
+    val strings = LocalStrings.current
 
     val imageBitmap = remember {
         context.assets.open(assetFileName).use { stream ->
@@ -362,7 +365,7 @@ fun InteractiveMap(
                 onClick=onAcceptClick
                 // TODO: different color
             ) {
-                Text("Placeholder") // TODO: take text from language pack
+                Text(strings.acceptButton)
             }
         }
     }
