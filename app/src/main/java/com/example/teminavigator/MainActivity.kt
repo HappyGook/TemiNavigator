@@ -1,6 +1,7 @@
 package com.example.teminavigator
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -10,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.teminavigator.ui.screens.HomeScreen
+import com.example.teminavigator.ui.screens.mockDestinations
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 
 // Screen types
@@ -26,7 +28,8 @@ fun TemiApp(){
     var currentScreen by remember { mutableStateOf<Screen>(Screen.HomeScreen) } // change state for testing
 
     when(currentScreen){
-        is Screen.HomeScreen -> HomeScreen()
+        is Screen.HomeScreen -> HomeScreen(mockDestinations,
+            { Log.i("Info", "Destination Confirmed") }, { Log.i("Info", "Settings opened") })
         is Screen.SettingsScreen -> print("TODO")
         is Screen.WaitingScreen -> print("TODO")
         is Screen.NavigationScreen -> print("TODO")
