@@ -23,4 +23,12 @@ val germanStrings = AppStrings(
     pause =  "Pause",
     abortNavigation = "Navigation abbrechen",
     simulateArrival = "Ankunft simulieren",
+    sounds = "Töne",
+    descriptionSounds = "Hinweis- und Bestätigungstöne wiedergeben",
+    voiceOutput = "Sprachausgabe",
+    descriptionVoiceOutput = "Anweisungen und Ankunft laut ansagen",
+    voiceInput = "Spracheingabe",
+    descriptionVoiceInput = "Erlaube Spracheingabe durch Nutzer",
+    autoReturn = "Automatisch zurückkehren",
+    descriptionAutoReturn = "Nach 3 Minuten zum Startpunkt fahren",
 )

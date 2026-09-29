@@ -31,6 +31,14 @@ data class AppStrings (
     // Settings
     val settingsTitle: String,
     val languageLabel: String,
+    val sounds: String,
+    val descriptionSounds: String,
+    val voiceOutput: String,
+    val voiceInput: String,
+    val descriptionVoiceInput: String,
+    val descriptionVoiceOutput: String,
+    val autoReturn: String,
+    val descriptionAutoReturn: String,
 
     // Spoken by the robot
     val spokenArrived: (destination: String) -> String,

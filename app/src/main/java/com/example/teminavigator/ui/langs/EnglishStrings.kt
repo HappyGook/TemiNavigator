@@ -23,4 +23,12 @@ val englishStrings = AppStrings(
     pause =  "Pause",
     abortNavigation = "Abort navigation",
     simulateArrival = "Simulate arrival",
+    sounds = "Sounds",
+    descriptionSounds = "Play notification and confirmation sounds",
+    voiceOutput = "Voice Output",
+    descriptionVoiceOutput = "Instructions and arrival will be announced",
+    voiceInput = "Voice input",
+    descriptionVoiceInput = "Allow voice input from users",
+    autoReturn = "Auto return",
+    descriptionAutoReturn = "Return to Start after 3 minutes",
 )
