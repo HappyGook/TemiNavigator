@@ -4,7 +4,7 @@ package com.example.teminavigator.domain
 * To format the stuff robot reports to the app in one type
  */
 sealed interface RobotEvent {
-    data object Ready : RobotEvent
+    data class Ready(val isReady: Boolean): RobotEvent
     data class GoToStarted(val locationId: String) : RobotEvent
     data class GoToFinished(val locationId: String) : RobotEvent
     data class GoToCancelled(val locationId: String, val reason: String?) : RobotEvent

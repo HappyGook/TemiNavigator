@@ -26,12 +26,12 @@ object TemiRobot: RobotController, OnRobotReadyListener, OnGoToLocationStatusCha
 
 
     // funcs to subscribe / unsubscribe the robot to events from sdk
-    fun attach(){
+    override fun attach(){
         robot.addOnRobotReadyListener(this)
         robot.addOnGoToLocationStatusChangedListener(this)
     }
 
-    fun detach(){
+    override fun detach(){
         robot.removeOnRobotReadyListener(this)
         robot.removeOnGoToLocationStatusChangedListener(this)
     }
@@ -54,12 +54,6 @@ object TemiRobot: RobotController, OnRobotReadyListener, OnGoToLocationStatusCha
     }
 
     override fun onRobotReady(isReady: Boolean){
-        _ready.value = isReady
-        /*
-        robot.speak(TtsRequest.create("HALLLOOOOO!!!!!"))
-        Log.i("Locations", robot.locations.toString())
-        robot.goTo("home")
-        robot.setCurrentGoToSpeed(1.5f)
-         */
+        _events.tryEmit(RobotEvent.Ready(isReady))
     }
 }
