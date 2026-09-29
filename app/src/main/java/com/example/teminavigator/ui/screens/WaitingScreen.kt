@@ -11,10 +11,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.teminavigator.R
+import com.example.teminavigator.ui.langs.LocalStrings
 
 @Composable
 fun WaitingScreen() {
+    val strings = LocalStrings.current
+
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -31,17 +35,19 @@ fun WaitingScreen() {
 
         // Element 2
         Text(
-            "Hallo, schön dich zu sehen!",
+            strings.greeting,
             style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            fontSize = 48.sp
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
         // Element 3
         Text(
-            "Wo darf ich dich hinbringen?",
+            strings.locationQuery,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray
+            color = Color.Gray,
+            fontSize = 24.sp
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -53,15 +59,17 @@ fun WaitingScreen() {
 
             // Button to go to navigation screen
             AppButton(
-                "Ort auswählen",
+                strings.selectLocation,
                 painterResource(R.drawable.ic_launcher_foreground),
+                modifier = Modifier.height(60.dp).width(220.dp),
                 onClick = { /* todo: go to navigation screen */ },
             )
 
             // Button to go to the current destination screen
             AppButton(
-                "Zurück zur Navigation",
+                strings.backToNavigation,
                 painterResource(R.drawable.ic_launcher_foreground),
+                modifier = Modifier.height(60.dp).width(220.dp),
                 onClick = { /* todo: go to navigation screen */ }
             )
         }
@@ -111,4 +119,3 @@ fun WaitingScreenPreview() {
         WaitingScreen()
     }
 }
-

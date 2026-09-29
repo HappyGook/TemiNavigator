@@ -13,4 +13,9 @@ val englishStrings = AppStrings(
     languageLabel = "Language",
     spokenArrived = { name -> "We have arrived at $name." },
     spokenUnknownDestination = "Sorry, I don't know that destination.",
+    greeting = "Hello, nice to see you!",
+    locationQuery = "Where can I get you?",
+    selectLocation = "Select location",
+    backToNavigation = "Back to navigation screen",
+    speechNotice = "You can also say: \"Bring me to room 2.72\""
 )

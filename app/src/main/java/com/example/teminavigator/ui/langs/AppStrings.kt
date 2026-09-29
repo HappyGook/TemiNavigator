@@ -8,6 +8,13 @@ data class AppStrings (
     val confirmYes: String,
     val confirmNo: String,
 
+    // Waiting screen
+    val greeting: String,
+    val locationQuery: String,
+    val selectLocation: String,
+    val backToNavigation: String,
+    val speechNotice: String,
+
     // Content descriptions
     val cdMap: String,
     val cdSettings: String,
