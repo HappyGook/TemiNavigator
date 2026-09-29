@@ -17,5 +17,10 @@ val germanStrings = AppStrings(
     locationQuery =  "Wo darf ich dich hinbringen?",
     selectLocation = "Ort auswählen",
     backToNavigation = "Zurück zur Navigation",
-    speechNotice = "Du kannst auch sagen: \"Bring mich zu Raum 2.72\""
+    speechNotice = "Du kannst auch sagen: \"Bring mich zu Raum 2.72\"",
+    goingTo = "UNTERWEGS NACH",
+    minutes = "minuten",
+    pause =  "Pause",
+    abortNavigation = "Navigation abbrechen",
+    simulateArrival = "Ankunft simulieren",
 )

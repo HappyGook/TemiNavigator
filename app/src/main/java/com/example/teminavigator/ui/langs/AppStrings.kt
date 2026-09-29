@@ -15,6 +15,13 @@ data class AppStrings (
     val backToNavigation: String,
     val speechNotice: String,
 
+    // Navigation screen
+    val goingTo: String,
+    val minutes: String,
+    val pause: String,
+    val abortNavigation: String,
+    val simulateArrival: String,
+
     // Content descriptions
     val cdMap: String,
     val cdSettings: String,

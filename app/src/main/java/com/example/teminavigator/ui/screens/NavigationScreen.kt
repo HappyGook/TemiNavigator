@@ -1,14 +1,20 @@
 package com.example.teminavigator.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,74 +24,100 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.teminavigator.R
+import com.example.teminavigator.ui.langs.LocalStrings
 
 @Composable
-fun NavigationScreen() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+fun NavigationScreen(
+    //destination : Destination,
+) {
+    val strings = LocalStrings.current
+
+    Row(modifier = Modifier.fillMaxSize()) {
+
         /** Left side of the screen */
-        // Element 1
-        Text(
-            "UNTERWEGS NACH",
-            style = MaterialTheme.typography.labelMedium
-        )
-        Spacer(modifier = Modifier.height(8.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f)     // note: weight splits the row, for now, right side  gets 1/3, left 2/3
+                .fillMaxHeight()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Element 1
+            Text(strings.goingTo, style = MaterialTheme.typography.labelMedium)
+            Spacer(modifier = Modifier.height(8.dp))
 
-        // Element 2
-        Text(
-            "Ziel", /* todo: put variable for destination name here */
-            style = MaterialTheme.typography.displayMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Element 3
-        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                contentDescription = "Route icon",
-                modifier = Modifier
-                    .size(20.dp)
-                    .alignByBaseline() // shift up a bit so it sits visually centered with lowercase text height
-            )
-
+            // Element 2 - Destination String
             Text(
-                "Noch ca. 2 Minuten", /* todo: put variable for expected duration */
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                "Raum 2.17", // todo: add currently selected room parameter
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Bold
             )
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                "-",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
-            )
+            // Element 3
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                    contentDescription = "Route icon",
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    "Ca. 2" + strings.minutes,   // todo: add estimated remaining time parameter
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
 
-            Text(
-                "85 m", /* todo: put variable for remaining distance */
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                Text(
+                    " -  82 m",    // todo: add remaining distance parameter
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Element 4 - Progress bar
+            LinearProgressIndicator(
+                progress = { 0.35f }, // todo: use currentDistance / totalDistance parameter
+                modifier = Modifier.fillMaxWidth()
             )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Element 5 - Buttons
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Pause Navigation
+                AppButton(
+                    strings.pause, painterResource(
+                        R.drawable.ic_launcher_foreground
+                    ),
+                    onClick = { /* todo */ })             // todo: add pause drawable
+
+                // Abort Navigation
+                AppButton(
+                    strings.abortNavigation, painterResource(
+                        R.drawable.ic_launcher_foreground
+                    ),
+                    onClick = { /* todo */ }) // todo: add cancle drawable
+            }
+
+            // Element 6 - simulate arrival button
+            OutlinedButton(onClick = { /* todo: simulate arrival */ }) {
+                /* Inside button body */
+                Text(strings.simulateArrival)
+            }
         }
 
-        // Element 4 - Buttons
-        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            // Button to go to navigation screen
-            AppButton(
-                "Pause",
-                painterResource(R.drawable.ic_launcher_foreground),
-                onClick = { /* todo: go to navigation screen */ },
-            )
-
-            // Button to go to the current destination screen
-            AppButton(
-                "Fahrt abbrechen",
-                painterResource(R.drawable.ic_launcher_foreground),
-                onClick = { /* todo: go to navigation screen */ }
-            )
+        /** Right side - Map */
+        Box(
+            modifier = Modifier
+                .weight(2f)
+                .fillMaxHeight()
+        ) {
+            // TODO: Map goes here
         }
     }
 }
