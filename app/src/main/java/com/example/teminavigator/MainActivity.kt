@@ -1,5 +1,6 @@
 package com.example.teminavigator
 
+import android.app.Application
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -13,6 +14,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.screens.HomeScreen
@@ -54,7 +58,16 @@ fun TemiApp(
 }
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: NavigationViewModel by viewModels()
+    private val viewModel: NavigationViewModel by viewModels {
+        viewModelFactory {
+            initializer {
+                NavigationViewModel(
+                    this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as Application,
+                    TemiRobot
+                )
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
