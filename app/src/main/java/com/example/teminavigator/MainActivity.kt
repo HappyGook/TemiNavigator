@@ -41,7 +41,8 @@ sealed class Screen {
 @Composable
 fun TemiApp(
     language: AppLanguage,
-    onLanguageSelected:(AppLanguage) -> Unit
+    onLanguageSelected:(AppLanguage) -> Unit,
+    destinations: List<Destination>
 ){
     var selectedDestination by remember { mutableStateOf<Destination?>(null) }
     var currentScreen by remember {
@@ -50,10 +51,11 @@ fun TemiApp(
 
     when (val screen = currentScreen) {
         Screen.HomeScreen -> HomeScreen(
-            destinations = mockDestinations,
+            destinations = destinations,
             onDestinationConfirmed = { destination ->
                 selectedDestination = destination
                 currentScreen = Screen.NavigationScreen(destination)
+                Log.i("Info", "Destination Confirmed")
             },
             onOpenSettings = { currentScreen = Screen.SettingsScreen })
         Screen.SettingsScreen -> SettingsScreen(
@@ -94,12 +96,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             // take latest value of the language flow
             val language by viewModel.language.collectAsState()
+            val destinations by viewModel.destinations.collectAsState()
 
             CompositionLocalProvider(LocalStrings provides language.strings) {
                 TemiNavigatorTheme {
                     TemiApp(
                         language = language,
-                        onLanguageSelected = viewModel::setLanguage
+                        onLanguageSelected = viewModel::setLanguage,
+                        destinations = destinations
                     )
                 }
             }
