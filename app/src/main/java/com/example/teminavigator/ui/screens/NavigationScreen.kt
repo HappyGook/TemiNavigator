@@ -24,11 +24,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.teminavigator.R
+import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.ui.langs.LocalStrings
 
 @Composable
 fun NavigationScreen(
-    //destination : Destination,
+    destination : Destination,
     onAbort: () -> Unit,
 ) {
     val strings = LocalStrings.current
@@ -50,7 +51,7 @@ fun NavigationScreen(
 
             // Element 2 - Destination String
             Text(
-                "Raum 2.17", // todo: add currently selected room parameter
+                destination.displayName, // todo: add currently selected room parameter
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold
             )
