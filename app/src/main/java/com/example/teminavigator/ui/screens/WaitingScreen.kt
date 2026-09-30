@@ -90,7 +90,7 @@ fun WaitingScreen(
             )
             Spacer(modifier = Modifier.width(2.dp))
             Text(
-                "Du kannst auch sagen: \"Bring mich zu Raum 2.72\"",
+                strings.speechNotice,
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray
             )
