@@ -17,11 +17,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.screens.HomeScreen
 import com.example.teminavigator.ui.screens.SettingsScreen
-import com.example.teminavigator.ui.screens.mockDestinations
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
 
@@ -38,13 +38,14 @@ sealed class Screen {
 @Composable
 fun TemiApp(
     language: AppLanguage,
-    onLanguageSelected:(AppLanguage) -> Unit
+    onLanguageSelected:(AppLanguage) -> Unit,
+    destinations: List<Destination>
 ){
     var currentScreen by remember { mutableStateOf<Screen>(Screen.HomeScreen) } // change state for testing
 
     when(currentScreen){
         is Screen.HomeScreen -> HomeScreen(
-            destinations = mockDestinations,
+            destinations = destinations,
             onDestinationConfirmed = { Log.i("Info", "Destination Confirmed") },
             onOpenSettings = { currentScreen = Screen.SettingsScreen })
         is Screen.SettingsScreen -> SettingsScreen(
@@ -75,12 +76,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             // take latest value of the language flow
             val language by viewModel.language.collectAsState()
+            val destinations by viewModel.destinations.collectAsState()
 
             CompositionLocalProvider(LocalStrings provides language.strings) {
                 TemiNavigatorTheme {
                     TemiApp(
                         language = language,
-                        onLanguageSelected = viewModel::setLanguage
+                        onLanguageSelected = viewModel::setLanguage,
+                        destinations = destinations
                     )
                 }
             }

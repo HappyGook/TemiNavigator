@@ -9,5 +9,5 @@ sealed interface RobotEvent {
     data class GoToFinished(val locationId: String) : RobotEvent
     data class GoToCancelled(val locationId: String, val reason: String?) : RobotEvent
     data class SpeechRecognised(val text: String) : RobotEvent
-    data class PositionChanged(val x:Float, val y:Float, val diff: Float) : RobotEvent
+    data class PositionChanged(val x:Float, val y:Float, val yaw: Float) : RobotEvent
 }
