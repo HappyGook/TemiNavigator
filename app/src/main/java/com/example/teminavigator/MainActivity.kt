@@ -16,7 +16,9 @@ import androidx.compose.runtime.setValue
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.screens.HomeScreen
+import com.example.teminavigator.ui.screens.NavigationScreen
 import com.example.teminavigator.ui.screens.SettingsScreen
+import com.example.teminavigator.ui.screens.WaitingScreen
 import com.example.teminavigator.ui.screens.mockDestinations
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
@@ -25,7 +27,8 @@ import com.example.teminavigator.viewmodel.NavigationViewModel
 // TODO: Screen type should be controlled by viewModel ?
 sealed class Screen {
     object HomeScreen : Screen()
-    class NavigationScreen(val destination: String) : Screen()
+    //class NavigationScreen(val destination: String) : Screen()
+    object NavigationScreen : Screen()
     object WaitingScreen : Screen()
     object SettingsScreen : Screen()
 
@@ -48,8 +51,13 @@ fun TemiApp(
             onLanguageChanged = onLanguageSelected,
             onBack = {currentScreen = Screen.HomeScreen}
         )
-        is Screen.WaitingScreen -> print("TODO")
-        is Screen.NavigationScreen -> print("TODO")
+        is Screen.WaitingScreen -> WaitingScreen(
+            onSelectLocation = {currentScreen = Screen.HomeScreen},
+            onBackToNavigation = {currentScreen = Screen.NavigationScreen}
+        )
+        is Screen.NavigationScreen -> NavigationScreen(
+            onAbort = {currentScreen = Screen.HomeScreen}
+        )
     }
 }
 

@@ -1,5 +1,6 @@
 package com.example.teminavigator.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,7 +17,10 @@ import com.example.teminavigator.R
 import com.example.teminavigator.ui.langs.LocalStrings
 
 @Composable
-fun WaitingScreen() {
+fun WaitingScreen(
+    onSelectLocation: () -> Unit,
+    onBackToNavigation: () -> Unit,
+) {
     val strings = LocalStrings.current
 
     Column(
@@ -62,7 +66,7 @@ fun WaitingScreen() {
                 strings.selectLocation,
                 painterResource(R.drawable.ic_launcher_foreground),
                 modifier = Modifier.height(60.dp).width(220.dp),
-                onClick = { /* todo: go to navigation screen */ },
+                onClick = onSelectLocation,
             )
 
             // Button to go to the current destination screen
@@ -70,7 +74,7 @@ fun WaitingScreen() {
                 strings.backToNavigation,
                 painterResource(R.drawable.ic_launcher_foreground),
                 modifier = Modifier.height(60.dp).width(220.dp),
-                onClick = { /* todo: go to navigation screen */ }
+                onClick = onBackToNavigation
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -116,6 +120,7 @@ fun AppButton(
 @Composable
 fun WaitingScreenPreview() {
     MaterialTheme {
-        WaitingScreen()
+        WaitingScreen({ Log.i("Info", "Home screen opened") }, { Log.i("Info", "Navigation screen opened") })
     }
 }
+

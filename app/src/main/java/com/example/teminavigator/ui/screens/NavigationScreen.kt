@@ -29,6 +29,7 @@ import com.example.teminavigator.ui.langs.LocalStrings
 @Composable
 fun NavigationScreen(
     //destination : Destination,
+    onAbort: () -> Unit,
 ) {
     val strings = LocalStrings.current
 
@@ -99,9 +100,10 @@ fun NavigationScreen(
                 // Abort Navigation
                 AppButton(
                     strings.abortNavigation, painterResource(
-                        R.drawable.ic_launcher_foreground
+                        R.drawable.ic_launcher_foreground // todo: add cancle drawable
                     ),
-                    onClick = { /* todo */ }) // todo: add cancle drawable
+                    onClick =  onAbort
+                )
             }
 
             // Element 6 - simulate arrival button

@@ -201,15 +201,15 @@ fun LocationsList(
     selectedId: String?,
     onSelect: (Destination) -> Unit
 ){
-        LazyColumn(Modifier.padding(vertical = 5.dp)) {
-            items(locationList, key = { it.id }){location ->
-                PossibleLocation(
-                    location=location,
-                    isSelected = location.id == selectedId,
-                    onClick = onSelect
-                )
-            }
+    LazyColumn(Modifier.padding(vertical = 5.dp)) {
+        items(locationList, key = { it.id }){location ->
+            PossibleLocation(
+                location=location,
+                isSelected = location.id == selectedId,
+                onClick = onSelect
+            )
         }
+    }
 }
 
 @SuppressLint("RememberInComposition")
@@ -252,11 +252,11 @@ fun PossibleLocation(
             )
             LazyRow {
                 items(location.aliases){
-                    alias ->
+                        alias ->
                     Text(
                         text = "$alias ",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )}
+                    )}
             }
         }
     }
@@ -316,7 +316,7 @@ fun InteractiveMap(
                 )
         )
 
-            // TODO: add pins on the map
+        // TODO: add pins on the map
 
 
         Column(
