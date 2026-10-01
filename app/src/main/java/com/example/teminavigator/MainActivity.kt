@@ -13,10 +13,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.screens.HomeScreen
+import com.example.teminavigator.ui.screens.NavigationScreen
 import com.example.teminavigator.ui.screens.SettingsScreen
+import com.example.teminavigator.ui.screens.WaitingScreen
 import com.example.teminavigator.ui.screens.mockDestinations
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
@@ -25,7 +28,7 @@ import com.example.teminavigator.viewmodel.NavigationViewModel
 // TODO: Screen type should be controlled by viewModel ?
 sealed class Screen {
     object HomeScreen : Screen()
-    class NavigationScreen(val destination: String) : Screen()
+    data class NavigationScreen(val destination: Destination) : Screen()
     object WaitingScreen : Screen()
     object SettingsScreen : Screen()
 
@@ -36,20 +39,36 @@ fun TemiApp(
     language: AppLanguage,
     onLanguageSelected:(AppLanguage) -> Unit
 ){
-    var currentScreen by remember { mutableStateOf<Screen>(Screen.HomeScreen) } // change state for testing
+    var selectedDestination by remember { mutableStateOf<Destination?>(null) }
+    var currentScreen by remember {
+        mutableStateOf<Screen>(Screen.HomeScreen)
+    }
 
-    when(currentScreen){
-        is Screen.HomeScreen -> HomeScreen(
+    when (val screen = currentScreen) {
+        Screen.HomeScreen -> HomeScreen(
             destinations = mockDestinations,
-            onDestinationConfirmed = { Log.i("Info", "Destination Confirmed") },
+            onDestinationConfirmed = { destination ->
+                selectedDestination = destination
+                currentScreen = Screen.NavigationScreen(destination)
+            },
             onOpenSettings = { currentScreen = Screen.SettingsScreen })
-        is Screen.SettingsScreen -> SettingsScreen(
+        Screen.SettingsScreen -> SettingsScreen(
             currentLanguage = language,
             onLanguageChanged = onLanguageSelected,
-            onBack = {currentScreen = Screen.HomeScreen}
+            onBack = {currentScreen = Screen.HomeScreen},
         )
-        is Screen.WaitingScreen -> print("TODO")
-        is Screen.NavigationScreen -> print("TODO")
+        Screen.WaitingScreen -> WaitingScreen(
+            onSelectLocation = {currentScreen = Screen.HomeScreen},
+            onBackToNavigation = {
+                selectedDestination?.let { destination ->
+                    currentScreen = Screen.NavigationScreen(destination)
+                }
+            }
+        )
+        is Screen.NavigationScreen -> NavigationScreen(
+            destination = screen.destination,
+            onAbort = {currentScreen = Screen.HomeScreen}
+        )
     }
 }
 

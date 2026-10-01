@@ -8,6 +8,20 @@ data class AppStrings (
     val confirmYes: String,
     val confirmNo: String,
 
+    // Waiting screen
+    val greeting: String,
+    val locationQuery: String,
+    val selectLocation: String,
+    val backToNavigation: String,
+    val speechNotice: String,
+
+    // Navigation screen
+    val goingTo: String,
+    val minutes: String,
+    val pause: String,
+    val abortNavigation: String,
+    val simulateArrival: String,
+
     // Content descriptions
     val cdMap: String,
     val cdSettings: String,
@@ -17,6 +31,14 @@ data class AppStrings (
     // Settings
     val settingsTitle: String,
     val languageLabel: String,
+    val sounds: String,
+    val descriptionSounds: String,
+    val voiceOutput: String,
+    val voiceInput: String,
+    val descriptionVoiceInput: String,
+    val descriptionVoiceOutput: String,
+    val autoReturn: String,
+    val descriptionAutoReturn: String,
 
     // Spoken by the robot
     val spokenArrived: (destination: String) -> String,
