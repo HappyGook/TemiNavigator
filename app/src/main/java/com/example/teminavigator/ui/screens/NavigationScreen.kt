@@ -13,6 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Route
+import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -26,16 +31,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.teminavigator.R
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.ui.langs.LocalStrings
+import com.google.android.libraries.mapsplatform.transportation.consumer.model.Route
 
 @Composable
 fun NavigationScreen(
-    destination : Destination,
+    destination: Destination,
     onAbort: () -> Unit,
 ) {
     val strings = LocalStrings.current
@@ -63,7 +67,7 @@ fun NavigationScreen(
 
             // Element 2 - Destination String
             Text(
-                destination.displayName, // todo: add currently selected room parameter
+                destination.displayName,
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -75,8 +79,8 @@ fun NavigationScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                    contentDescription = "Route icon",
+                    imageVector = Icons.Filled.Route,
+                    contentDescription = null,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
@@ -105,16 +109,14 @@ fun NavigationScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Pause Navigation
                 AppButton(
-                    strings.pause, painterResource(
-                        R.drawable.ic_launcher_foreground
-                    ),
+                    strings.pause,
+                    Icons.Filled.Pause,
                     onClick = { /* todo */ })             // todo: add pause drawable
 
                 // Abort Navigation
                 AppButton(
-                    strings.abortNavigation, painterResource(
-                        R.drawable.ic_launcher_foreground // todo: add cancle drawable
-                    ),
+                    strings.abortNavigation,
+                    Icons.Filled.StopCircle,
                     onClick =  onAbort
                 )
             }
@@ -122,6 +124,12 @@ fun NavigationScreen(
             // Element 6 - simulate arrival button
             OutlinedButton(onClick = { /* todo: simulate arrival */ }) {
                 /* Inside button body */
+                Icon(
+                    imageVector = Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.size(8.dp))
                 Text(strings.simulateArrival)
             }
         }
