@@ -1,6 +1,7 @@
 package com.example.teminavigator.viewmodel
 import android.app.Application
 import android.content.Context
+import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.AndroidViewModel
 import com.example.teminavigator.ui.langs.AppLanguage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,14 +10,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import androidx.core.content.edit
 import androidx.lifecycle.viewModelScope
 import com.example.teminavigator.domain.Destination
+import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotController
 import com.example.teminavigator.domain.RobotEvent
 import com.example.teminavigator.domain.toDestinations
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class NavigationViewModel(
     app: Application,
@@ -45,14 +50,34 @@ class NavigationViewModel(
     var yFlow : StateFlow<Double> = _yFLow.asStateFlow()
     var yawFlow : StateFlow<Double> = _yawFlow.asStateFlow()
 
-
-    val destinations : StateFlow<List<Destination>> = readyState.map {
-        ready -> if (ready) robot.availableLocations.toDestinations() else emptyList()
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = emptyList()
+    private val _calibration = MutableStateFlow(
+        MapCalibration(
+            originPx = Offset(0f, 0f),
+            pxPerMeter = 50f,
+            anchorYaw = 0f
+        ) // load from config
     )
+
+    val destinations: StateFlow<List<Destination>> =
+        combine(readyState, _calibration) { ready, cal ->
+            if (!ready) return@combine emptyList()
+
+            val poses = withContext(Dispatchers.IO) { robot.locationPoses() }
+            robot.availableLocations.map { name ->
+                val pose = poses[name]
+                Destination(
+                    id = name,
+                    displayName = name,   // TODO: registry
+                    aliases = emptyList(), // TODO: alias registry
+                    imagePx = pose?.let { (x, y, _) ->
+                        cal.robotToImagePx(x.toFloat(), y.toFloat())
+                    },
+                    imageYawDeg = pose?.let { (_, _, yaw) ->
+                        cal.arrowRotationDeg(yaw.toFloat())
+                    },
+                )
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun setLanguage(language: AppLanguage){
         _language.value = language
