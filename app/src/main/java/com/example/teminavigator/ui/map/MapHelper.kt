@@ -1,5 +1,7 @@
 package com.example.teminavigator.ui.map
 
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -7,6 +9,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import com.example.teminavigator.ui.theme.locationBackground
 
 
 fun imageToScreen(
@@ -40,9 +43,9 @@ fun DrawScope.drawPin(tip: Offset, color: Color, radius: Float) {
         drawCircle(Color.White, radius * 0.4f, head)
     }
 
-fun DrawScope.drawRobot(center: Offset, yawDeg: Float, radius: Float) {
-        drawCircle(Color(0x552196F3), radius * 1.8f, center)   // TODO: replace with theme colors
-        drawCircle(Color(0xFF2196F3), radius, center)
+fun DrawScope.drawRobot(center: Offset, yawDeg: Float, radius: Float, pinBackground: Color, pinForeground: Color) {
+        drawCircle(pinBackground, radius * 1.8f, center)
+        drawCircle(pinForeground, radius, center)
         drawCircle(Color.White, radius, center, style = Stroke(width = radius * 0.2f))
         // arrow pointing up at 0 degrees, rotated by yaw
         rotate(degrees = yawDeg, pivot = center) {
@@ -52,6 +55,6 @@ fun DrawScope.drawRobot(center: Offset, yawDeg: Float, radius: Float) {
                 lineTo(center.x + radius * 0.7f, center.y - radius * 1.2f)
                 close()
             }
-            drawPath(arrow, Color(0xFF2196F3))
+            drawPath(arrow, pinForeground)
         }
     }

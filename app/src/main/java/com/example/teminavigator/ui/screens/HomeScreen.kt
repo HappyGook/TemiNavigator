@@ -1,7 +1,6 @@
 package com.example.teminavigator.ui.screens
 import android.annotation.SuppressLint
 import android.graphics.BitmapFactory
-import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,7 +29,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -57,9 +56,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.teminavigator.domain.Destination
@@ -68,7 +64,10 @@ import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.map.drawPin
 import com.example.teminavigator.ui.map.drawRobot
 import com.example.teminavigator.ui.map.imageToScreen
-import com.example.teminavigator.ui.theme.TemiNavigatorTheme
+import com.example.teminavigator.ui.theme.locationBackground
+import com.example.teminavigator.ui.theme.locationForeground
+import com.example.teminavigator.ui.theme.pinColor
+import com.example.teminavigator.ui.theme.selectedPinColor
 
 /*
 val mockDestinations = listOf(
@@ -157,7 +156,7 @@ fun HomeScreen(
         ) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainer,
+                color = colorScheme.surfaceContainer,
                 modifier = Modifier
                     .fillMaxWidth(0.3f)
                     .fillMaxHeight()
@@ -170,7 +169,7 @@ fun HomeScreen(
             }
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.tertiary,
+                color = colorScheme.tertiary,
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight()
@@ -243,12 +242,12 @@ fun PossibleLocation(
             .clip(RoundedCornerShape(12.dp))
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.tertiary,
+                color = colorScheme.tertiary,
                 shape = RoundedCornerShape(12.dp)
             )
             .background(
-                if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.surface
+                if (isSelected) colorScheme.primaryContainer
+                else colorScheme.surface
             )
             .hoverable(interactionSource = interactionSource)
             .clickable(
@@ -264,14 +263,14 @@ fun PossibleLocation(
                 modifier = Modifier.fillMaxWidth(),
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = colorScheme.onSurface
             )
             LazyRow {
                 items(location.aliases){
                     alias ->
                     Text(
                         text = "$alias ",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = colorScheme.onSurfaceVariant
                         )}
             }
         }
@@ -292,6 +291,10 @@ fun InteractiveMap(
 ) {
     val context = LocalContext.current
     val strings = LocalStrings.current
+    val robotPinBackground = colorScheme.locationBackground // colors to use in canvas
+    val robotPinForeground = colorScheme.locationForeground
+    val pinColor = colorScheme.pinColor
+    val selectedPinColor = colorScheme.selectedPinColor
 
     val imageBitmap = remember {
         context.assets.open(assetFileName).use { stream ->
@@ -312,7 +315,7 @@ fun InteractiveMap(
             .fillMaxSize()
             .clipToBounds()
             .onSizeChanged{boxSize = Size(it.width.toFloat(), it.height.toFloat())}
-            .background(MaterialTheme.colorScheme.tertiary)
+            .background(colorScheme.tertiary)
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
                     val newScale = (scale * zoom).coerceIn(minScale, maxScale)
@@ -374,17 +377,19 @@ fun InteractiveMap(
             destinations.filter { it.id != selectedId }.forEach { destination ->
                 destination.imagePx?.let {
                     drawPin(toScreen(it),
-                    Color(0xFF002AFF), pinR)
-                } // TODO: color from theme
+                    pinColor, pinR)
+                }
             }
             destinations.find { it.id == selectedId }?.let { selDest ->
                 val tip = selDest.imagePx?.let (::toScreen) ?: return@let
-                drawPin(tip, Color(0xFF00FF00), pinR*1.5f) // TODO: color from theme
+                drawPin(tip, selectedPinColor, pinR*1.5f)
             }
             robotPose()?.let { drawRobot(
                 center = toScreen(Offset(it.xPx, it.yPx)),
                 yawDeg = it.yawDeg,
-                radius = pinR
+                radius = pinR,
+                pinBackground = robotPinBackground,
+                pinForeground = robotPinForeground
             ) }
         }
 
