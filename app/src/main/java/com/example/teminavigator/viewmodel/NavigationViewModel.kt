@@ -14,11 +14,10 @@ import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotController
 import com.example.teminavigator.domain.RobotEvent
-import com.example.teminavigator.domain.toDestinations
+import com.example.teminavigator.domain.RobotPose
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,20 +41,16 @@ class NavigationViewModel(
     val readyState : StateFlow<Boolean> = _readyState.asStateFlow()
 
     private var currentDestination : Destination? = null
-    private var _xFLow = MutableStateFlow(0.0)
-    private var _yFLow = MutableStateFlow(0.0)
-    private var _yawFlow = MutableStateFlow(0.0)
+    private val _pose = MutableStateFlow<RobotPose?>(null)
+    val pose: StateFlow<RobotPose?> = _pose.asStateFlow()
 
-    var xFlow : StateFlow<Double> = _xFLow.asStateFlow()
-    var yFlow : StateFlow<Double> = _yFLow.asStateFlow()
-    var yawFlow : StateFlow<Double> = _yawFlow.asStateFlow()
 
     private val _calibration = MutableStateFlow(
         MapCalibration(
             originPx = Offset(0f, 0f),
             pxPerMeter = 50f,
             anchorYaw = 0f
-        ) // load from config
+        ) // TODO: load from config
     )
 
     val destinations: StateFlow<List<Destination>> =
@@ -110,9 +105,8 @@ class NavigationViewModel(
                 NavigationState.Guiding(it)
             }
             is RobotEvent.PositionChanged -> {
-                _xFLow.value = event.x.toDouble()
-                _yFLow.value = event.y.toDouble()
-                _yawFlow.value = event.yaw.toDouble()
+                val (px, py) = _calibration.value.robotToImagePx(event.x, event.y)
+                _pose.value = RobotPose(px, py, _calibration.value.arrowRotationDeg(event.yaw))
             }
             is RobotEvent.Ready -> _readyState.value = event.isReady
             is RobotEvent.SpeechRecognised -> TODO()

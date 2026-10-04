@@ -2,10 +2,12 @@ package com.example.teminavigator.ui.screens
 import android.annotation.SuppressLint
 import android.graphics.BitmapFactory
 import android.util.Log
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -46,20 +48,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.teminavigator.domain.Destination
+import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.ui.langs.LocalStrings
+import com.example.teminavigator.ui.map.drawPin
+import com.example.teminavigator.ui.map.drawRobot
+import com.example.teminavigator.ui.map.imageToScreen
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 
+/*
 val mockDestinations = listOf(
     Destination(
         id = "lobby",
@@ -122,11 +133,12 @@ val mockDestinations = listOf(
         mapY = 0.51f
     )
 )
-
+*/
 
 @Composable
 fun HomeScreen(
     destinations: List<Destination>,
+    robotPose: () -> RobotPose?,
     onDestinationConfirmed: (Destination) -> Unit,
     onOpenSettings: () -> Unit
 ) {
@@ -164,6 +176,10 @@ fun HomeScreen(
                     .fillMaxHeight()
             ) {
                 InteractiveMap(
+                    destinations = destinations,
+                    selectedId = selectedId,
+                    onSelectDestination = { selectedId = it.id },
+                    robotPose = robotPose,
                     modifier = Modifier.padding(8.dp),
                     onSettingsClick = onOpenSettings,
                     acceptEnabled = (selected != null), // accept button enabled only when smth selected
@@ -266,6 +282,10 @@ fun PossibleLocation(
 fun InteractiveMap(
     onSettingsClick: () -> Unit,
     onAcceptClick: () -> Unit,
+    destinations: List<Destination>,
+    selectedId: String?,
+    onSelectDestination: (Destination) -> Unit,
+    robotPose: () -> RobotPose?,
     acceptEnabled: Boolean,
     modifier: Modifier = Modifier,
     assetFileName: String = "uni_map.png" // image from assets
@@ -285,10 +305,13 @@ fun InteractiveMap(
     val minScale = 1f
     val maxScale = 5f
 
+    var boxSize by remember {mutableStateOf(Size.Zero)}
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .clipToBounds()
+            .onSizeChanged{boxSize = Size(it.width.toFloat(), it.height.toFloat())}
             .background(MaterialTheme.colorScheme.tertiary)
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
@@ -301,6 +324,30 @@ fun InteractiveMap(
                     }
                 }
             }
+            .pointerInput(destinations){
+                detectTapGestures { tap -> //tap on destination pin
+                    val hitRadius = 32.dp.toPx() // tap area
+                    val pinR = 14.dp.toPx()
+                    val hit = destinations
+                        .mapNotNull { destination ->
+                            val p = destination.imagePx ?: return@mapNotNull null
+                            // pin coordinates
+                            val tip = imageToScreen(
+                                p, boxSize,
+                                imageBitmap.width,
+                                imageBitmap.height,
+                                scale,
+                                offset
+                            )
+                            val body = Offset(tip.x, tip.y - pinR*1.5f)
+                            destination to (body - tap).getDistance()
+                        }
+                        .filter {it.second <= hitRadius} // filter out taps if too far away
+                        .minByOrNull { it.second }
+                        ?.first
+                    if (hit!=null) onSelectDestination(hit)
+                }
+            }
     ) {
         Image(
             bitmap = imageBitmap,
@@ -308,15 +355,38 @@ fun InteractiveMap(
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offset.x,
-                    translationY = offset.y
-                )
+                .graphicsLayer {                       // TODO: check -> lambda should not recompose while panning
+                    scaleX = scale; scaleY = scale
+                    translationX = offset.x; translationY = offset.y
+                }
         )
 
-        // TODO: add pins on the map
+        Canvas(Modifier.fillMaxSize()){
+            val pinR = 14.dp.toPx()
+            val width = imageBitmap.width
+            val height = imageBitmap.height
+            // internal redeclaration to pass less params (since most stay the same)
+            fun toScreen(p: Offset) = imageToScreen(
+                p, size, width, height, scale, offset
+            )
+
+            // first draw unselected dest's, then selected
+            destinations.filter { it.id != selectedId }.forEach { destination ->
+                destination.imagePx?.let {
+                    drawPin(toScreen(it),
+                    Color(0xFF002AFF), pinR)
+                } // TODO: color from theme
+            }
+            destinations.find { it.id == selectedId }?.let { selDest ->
+                val tip = selDest.imagePx?.let (::toScreen) ?: return@let
+                drawPin(tip, Color(0xFF00FF00), pinR*1.5f) // TODO: color from theme
+            }
+            robotPose()?.let { drawRobot(
+                center = toScreen(Offset(it.xPx, it.yPx)),
+                yawDeg = it.yawDeg,
+                radius = pinR
+            ) }
+        }
 
 
         Column(
@@ -371,6 +441,7 @@ fun InteractiveMap(
     }
 }
 
+/* TODO: fix preview ?
 @Preview(name = "Tablet", device = Devices.TABLET)
 @Composable
 fun HSPreview(){
@@ -379,3 +450,4 @@ fun HSPreview(){
             { Log.i("Info", "Destination Confirmed") }, { Log.i("Info", "Settings opened") })
     }
 }
+*/

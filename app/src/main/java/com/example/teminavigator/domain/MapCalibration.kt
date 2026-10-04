@@ -29,3 +29,5 @@ data class MapCalibration (
     fun arrowRotationDeg(yaw: Float): Float =
         Math.toDegrees((anchorYaw - yaw).toDouble()).toFloat()
 }
+
+data class RobotPose(val xPx: Float, val yPx: Float, val yawDeg: Float)

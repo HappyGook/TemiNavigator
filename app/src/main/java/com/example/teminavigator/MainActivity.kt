@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.domain.Destination
+import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.screens.HomeScreen
@@ -41,8 +42,9 @@ sealed class Screen {
 @Composable
 fun TemiApp(
     language: AppLanguage,
-    onLanguageSelected:(AppLanguage) -> Unit,
-    destinations: List<Destination>
+    onLanguageSelected: (AppLanguage) -> Unit,
+    destinations: List<Destination>,
+    robotPose: () -> RobotPose?
 ){
     var selectedDestination by remember { mutableStateOf<Destination?>(null) }
     var currentScreen by remember {
@@ -52,6 +54,7 @@ fun TemiApp(
     when (val screen = currentScreen) {
         Screen.HomeScreen -> HomeScreen(
             destinations = destinations,
+            robotPose = robotPose,
             onDestinationConfirmed = { destination ->
                 selectedDestination = destination
                 currentScreen = Screen.NavigationScreen(destination)
@@ -97,13 +100,15 @@ class MainActivity : ComponentActivity() {
             // take latest value of the language flow
             val language by viewModel.language.collectAsState()
             val destinations by viewModel.destinations.collectAsState()
+            val pose = viewModel.pose.collectAsState()
 
             CompositionLocalProvider(LocalStrings provides language.strings) {
                 TemiNavigatorTheme {
                     TemiApp(
                         language = language,
                         onLanguageSelected = viewModel::setLanguage,
-                        destinations = destinations
+                        destinations = destinations,
+                        robotPose = {pose.value}
                     )
                 }
             }
