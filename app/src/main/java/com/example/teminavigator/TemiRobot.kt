@@ -1,12 +1,10 @@
 package com.example.teminavigator
-import android.media.tv.TsRequest
 import android.util.Log
 import com.example.teminavigator.domain.RobotController
 import com.example.teminavigator.domain.RobotEvent
 import com.robotemi.sdk.Robot
 import com.robotemi.sdk.TtsRequest
 import com.robotemi.sdk.listeners.OnGoToLocationStatusChangedListener
-import com.robotemi.sdk.listeners.OnLocationsUpdatedListener
 import com.robotemi.sdk.listeners.OnRobotReadyListener
 import com.robotemi.sdk.navigation.listener.OnCurrentPositionChangedListener
 import com.robotemi.sdk.navigation.model.Position
