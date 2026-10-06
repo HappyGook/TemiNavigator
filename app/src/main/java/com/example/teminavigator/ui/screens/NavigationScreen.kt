@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material3.Icon
@@ -34,12 +35,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.teminavigator.domain.Destination
+import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.ui.langs.LocalStrings
-import com.google.android.libraries.mapsplatform.transportation.consumer.model.Route
 
 @Composable
 fun NavigationScreen(
     destination: Destination,
+    navigationState: NavigationState,
+    onTogglePause: () -> Unit,
     onAbort: () -> Unit,
 ) {
     val strings = LocalStrings.current
@@ -84,7 +87,7 @@ fun NavigationScreen(
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
-                    "Ca. 2" + strings.minutes,   // todo: add estimated remaining time parameter
+                    "Ca. 2 " + strings.minutes,   // todo: add estimated remaining time parameter
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray
                 )
@@ -109,9 +112,18 @@ fun NavigationScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Pause Navigation
                 AppButton(
-                    strings.pause,
-                    Icons.Filled.Pause,
-                    onClick = { /* todo */ })             // todo: add pause drawable
+                    text = if (navigationState is NavigationState.Paused) {
+                        strings.resumeNavigation
+                    } else {
+                        strings.pauseNavigation
+                    },
+                    icon = if (navigationState is NavigationState.Paused) {
+                        Icons.Filled.PlayArrow
+                    } else {
+                        Icons.Filled.Pause
+                    },
+                    onClick = onTogglePause
+                )
 
                 // Abort Navigation
                 AppButton(

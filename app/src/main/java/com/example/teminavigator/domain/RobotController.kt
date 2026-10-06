@@ -10,6 +10,11 @@ import kotlinx.coroutines.flow.Flow
 interface RobotController {
     val availableLocations: List<String>
     val events: Flow<RobotEvent> // flow allows collecting events as they arise, like a stream of returns
+
+    fun locationPoses(): Map<String, Triple<Double, Double, Double>>
+
+    fun attach()
+    fun detach()
     fun goTo(locationId: String)
     fun stop()
     fun speak(text: String)

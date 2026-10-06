@@ -1,5 +1,6 @@
 package com.example.teminavigator
 
+import android.app.Application
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -13,14 +14,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.domain.Destination
+import com.example.teminavigator.domain.NavigationState
+import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.screens.HomeScreen
 import com.example.teminavigator.ui.screens.NavigationScreen
 import com.example.teminavigator.ui.screens.SettingsScreen
 import com.example.teminavigator.ui.screens.WaitingScreen
-import com.example.teminavigator.ui.screens.mockDestinations
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
 
@@ -37,7 +42,11 @@ sealed class Screen {
 @Composable
 fun TemiApp(
     language: AppLanguage,
-    onLanguageSelected:(AppLanguage) -> Unit
+    onLanguageSelected: (AppLanguage) -> Unit,
+    destinations: List<Destination>,
+    robotPose: () -> RobotPose?,
+    navigationState: NavigationState,
+    onToggleNavigationPause: (Destination) -> Unit,
 ){
     var selectedDestination by remember { mutableStateOf<Destination?>(null) }
     var currentScreen by remember {
@@ -46,10 +55,12 @@ fun TemiApp(
 
     when (val screen = currentScreen) {
         Screen.HomeScreen -> HomeScreen(
-            destinations = mockDestinations,
+            destinations = destinations,
+            robotPose = robotPose,
             onDestinationConfirmed = { destination ->
                 selectedDestination = destination
                 currentScreen = Screen.NavigationScreen(destination)
+                Log.i("Info", "Destination Confirmed")
             },
             onOpenSettings = { currentScreen = Screen.SettingsScreen })
         Screen.SettingsScreen -> SettingsScreen(
@@ -67,13 +78,24 @@ fun TemiApp(
         )
         is Screen.NavigationScreen -> NavigationScreen(
             destination = screen.destination,
+            navigationState = navigationState,
+            onTogglePause = { onToggleNavigationPause(screen.destination) },
             onAbort = {currentScreen = Screen.HomeScreen}
         )
     }
 }
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: NavigationViewModel by viewModels()
+    private val viewModel: NavigationViewModel by viewModels {
+        viewModelFactory {
+            initializer {
+                NavigationViewModel(
+                    this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as Application,
+                    TemiRobot
+                )
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,12 +103,19 @@ class MainActivity : ComponentActivity() {
         setContent {
             // take latest value of the language flow
             val language by viewModel.language.collectAsState()
+            val destinations by viewModel.destinations.collectAsState()
+            val pose = viewModel.pose.collectAsState()
+            val navigationState by viewModel.navState.collectAsState()
 
             CompositionLocalProvider(LocalStrings provides language.strings) {
                 TemiNavigatorTheme {
                     TemiApp(
                         language = language,
-                        onLanguageSelected = viewModel::setLanguage
+                        onLanguageSelected = viewModel::setLanguage,
+                        destinations = destinations,
+                        robotPose = {pose.value},
+                        navigationState = navigationState,
+                        onToggleNavigationPause = viewModel::toggleNavigationPause
                     )
                 }
             }

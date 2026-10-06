@@ -1,11 +1,12 @@
 package com.example.teminavigator.ui.screens
 import android.annotation.SuppressLint
 import android.graphics.BitmapFactory
-import android.util.Log
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -28,7 +29,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,20 +47,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.teminavigator.domain.Destination
+import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.ui.langs.LocalStrings
-import com.example.teminavigator.ui.theme.TemiNavigatorTheme
+import com.example.teminavigator.ui.map.drawPin
+import com.example.teminavigator.ui.map.drawRobot
+import com.example.teminavigator.ui.map.imageToScreen
+import com.example.teminavigator.ui.theme.locationBackground
+import com.example.teminavigator.ui.theme.locationForeground
+import com.example.teminavigator.ui.theme.pinColor
+import com.example.teminavigator.ui.theme.selectedPinColor
 
+/*
 val mockDestinations = listOf(
     Destination(
         id = "lobby",
@@ -122,11 +132,12 @@ val mockDestinations = listOf(
         mapY = 0.51f
     )
 )
-
+*/
 
 @Composable
 fun HomeScreen(
     destinations: List<Destination>,
+    robotPose: () -> RobotPose?,
     onDestinationConfirmed: (Destination) -> Unit,
     onOpenSettings: () -> Unit
 ) {
@@ -145,7 +156,7 @@ fun HomeScreen(
         ) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainer,
+                color = colorScheme.surfaceContainer,
                 modifier = Modifier
                     .fillMaxWidth(0.3f)
                     .fillMaxHeight()
@@ -158,12 +169,16 @@ fun HomeScreen(
             }
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.tertiary,
+                color = colorScheme.tertiary,
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight()
             ) {
                 InteractiveMap(
+                    destinations = destinations,
+                    selectedId = selectedId,
+                    onSelectDestination = { selectedId = it.id },
+                    robotPose = robotPose,
                     modifier = Modifier.padding(8.dp),
                     onSettingsClick = onOpenSettings,
                     acceptEnabled = (selected != null), // accept button enabled only when smth selected
@@ -227,12 +242,12 @@ fun PossibleLocation(
             .clip(RoundedCornerShape(12.dp))
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.tertiary,
+                color = colorScheme.tertiary,
                 shape = RoundedCornerShape(12.dp)
             )
             .background(
-                if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.surface
+                if (isSelected) colorScheme.primaryContainer
+                else colorScheme.surface
             )
             .hoverable(interactionSource = interactionSource)
             .clickable(
@@ -248,15 +263,15 @@ fun PossibleLocation(
                 modifier = Modifier.fillMaxWidth(),
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = colorScheme.onSurface
             )
             LazyRow {
                 items(location.aliases){
                         alias ->
                     Text(
                         text = "$alias ",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )}
+                        color = colorScheme.onSurfaceVariant
+                        )}
             }
         }
     }
@@ -266,12 +281,20 @@ fun PossibleLocation(
 fun InteractiveMap(
     onSettingsClick: () -> Unit,
     onAcceptClick: () -> Unit,
+    destinations: List<Destination>,
+    selectedId: String?,
+    onSelectDestination: (Destination) -> Unit,
+    robotPose: () -> RobotPose?,
     acceptEnabled: Boolean,
     modifier: Modifier = Modifier,
     assetFileName: String = "uni_map.png" // image from assets
 ) {
     val context = LocalContext.current
     val strings = LocalStrings.current
+    val robotPinBackground = colorScheme.locationBackground // colors to use in canvas
+    val robotPinForeground = colorScheme.locationForeground
+    val pinColor = colorScheme.pinColor
+    val selectedPinColor = colorScheme.selectedPinColor
 
     val imageBitmap = remember {
         context.assets.open(assetFileName).use { stream ->
@@ -285,11 +308,14 @@ fun InteractiveMap(
     val minScale = 1f
     val maxScale = 5f
 
+    var boxSize by remember {mutableStateOf(Size.Zero)}
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .clipToBounds()
-            .background(MaterialTheme.colorScheme.tertiary)
+            .onSizeChanged{boxSize = Size(it.width.toFloat(), it.height.toFloat())}
+            .background(colorScheme.tertiary)
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
                     val newScale = (scale * zoom).coerceIn(minScale, maxScale)
@@ -301,6 +327,30 @@ fun InteractiveMap(
                     }
                 }
             }
+            .pointerInput(destinations){
+                detectTapGestures { tap -> //tap on destination pin
+                    val hitRadius = 32.dp.toPx() // tap area
+                    val pinR = 14.dp.toPx()
+                    val hit = destinations
+                        .mapNotNull { destination ->
+                            val p = destination.imagePx ?: return@mapNotNull null
+                            // pin coordinates
+                            val tip = imageToScreen(
+                                p, boxSize,
+                                imageBitmap.width,
+                                imageBitmap.height,
+                                scale,
+                                offset
+                            )
+                            val body = Offset(tip.x, tip.y - pinR*1.5f)
+                            destination to (body - tap).getDistance()
+                        }
+                        .filter {it.second <= hitRadius} // filter out taps if too far away
+                        .minByOrNull { it.second }
+                        ?.first
+                    if (hit!=null) onSelectDestination(hit)
+                }
+            }
     ) {
         Image(
             bitmap = imageBitmap,
@@ -308,15 +358,40 @@ fun InteractiveMap(
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offset.x,
-                    translationY = offset.y
-                )
+                .graphicsLayer {                       // TODO: check -> lambda should not recompose while panning
+                    scaleX = scale; scaleY = scale
+                    translationX = offset.x; translationY = offset.y
+                }
         )
 
-        // TODO: add pins on the map
+        Canvas(Modifier.fillMaxSize()){
+            val pinR = 14.dp.toPx()
+            val width = imageBitmap.width
+            val height = imageBitmap.height
+            // internal redeclaration to pass less params (since most stay the same)
+            fun toScreen(p: Offset) = imageToScreen(
+                p, size, width, height, scale, offset
+            )
+
+            // first draw unselected dest's, then selected
+            destinations.filter { it.id != selectedId }.forEach { destination ->
+                destination.imagePx?.let {
+                    drawPin(toScreen(it),
+                    pinColor, pinR)
+                }
+            }
+            destinations.find { it.id == selectedId }?.let { selDest ->
+                val tip = selDest.imagePx?.let (::toScreen) ?: return@let
+                drawPin(tip, selectedPinColor, pinR*1.5f)
+            }
+            robotPose()?.let { drawRobot(
+                center = toScreen(Offset(it.xPx, it.yPx)),
+                yawDeg = it.yawDeg,
+                radius = pinR,
+                pinBackground = robotPinBackground,
+                pinForeground = robotPinForeground
+            ) }
+        }
 
 
         Column(
@@ -371,6 +446,7 @@ fun InteractiveMap(
     }
 }
 
+/* TODO: fix preview ?
 @Preview(name = "Tablet", device = Devices.TABLET)
 @Composable
 fun HSPreview(){
@@ -379,3 +455,4 @@ fun HSPreview(){
             { Log.i("Info", "Destination Confirmed") }, { Log.i("Info", "Settings opened") })
     }
 }
+*/
