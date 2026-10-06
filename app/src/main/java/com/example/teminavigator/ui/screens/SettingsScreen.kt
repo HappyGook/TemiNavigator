@@ -39,7 +39,9 @@ fun SettingsScreen(
 ){
     val strings = LocalStrings.current
 
-    Scaffold{innerPadding ->
+    Scaffold(
+        topBar = { /* Top Bar Content */ }
+    ) {innerPadding ->
         Column(Modifier.padding(16.dp)){
             Text(strings.settingsTitle, Modifier.padding(innerPadding))
             FloatingActionButton(onClick = onBack, Modifier.padding(innerPadding)) {
