@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.NavigationState
+import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
@@ -44,6 +45,8 @@ fun TemiApp(
     language: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
     destinations: List<Destination>,
+    calibration: MapCalibration,
+    onCalibrationSaved: (MapCalibration) -> Unit,
     robotPose: () -> RobotPose?,
     navigationState: NavigationState,
     onToggleNavigationPause: (Destination) -> Unit,
@@ -67,6 +70,8 @@ fun TemiApp(
             currentLanguage = language,
             onLanguageChanged = onLanguageSelected,
             onBack = {currentScreen = Screen.HomeScreen},
+            calibration = calibration,
+            onCalibrationSaved = onCalibrationSaved,
         )
         Screen.WaitingScreen -> WaitingScreen(
             onSelectLocation = {currentScreen = Screen.HomeScreen},
@@ -105,6 +110,7 @@ class MainActivity : ComponentActivity() {
             val language by viewModel.language.collectAsState()
             val destinations by viewModel.destinations.collectAsState()
             val pose = viewModel.pose.collectAsState()
+            val calibration by viewModel.calibration.collectAsState()
             val navigationState by viewModel.navState.collectAsState()
 
             CompositionLocalProvider(LocalStrings provides language.strings) {
@@ -114,6 +120,8 @@ class MainActivity : ComponentActivity() {
                         onLanguageSelected = viewModel::setLanguage,
                         destinations = destinations,
                         robotPose = {pose.value},
+                        calibration = calibration,
+                        onCalibrationSaved = viewModel::setCalibration,
                         navigationState = navigationState,
                         onToggleNavigationPause = viewModel::toggleNavigationPause
                     )
