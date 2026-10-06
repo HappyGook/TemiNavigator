@@ -106,6 +106,9 @@ class MainActivity : ComponentActivity() {
             val destinations by viewModel.destinations.collectAsState()
             val pose = viewModel.pose.collectAsState()
             val calibration by viewModel.calibration.collectAsState()
+            Log.i("Main Map Infos","Calibration state in main activity:\n" +
+                    "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
+                    "") // TODO: calibrate map only when internal values have been read
 
             CompositionLocalProvider(LocalStrings provides language.strings) {
                 TemiNavigatorTheme {

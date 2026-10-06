@@ -1,6 +1,7 @@
 package com.example.teminavigator.viewmodel
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.AndroidViewModel
 import com.example.teminavigator.ui.langs.AppLanguage
@@ -42,8 +43,6 @@ class NavigationViewModel(
     val readyState : StateFlow<Boolean> = _readyState.asStateFlow()
 
     private var currentDestination : Destination? = null
-    private val _pose = MutableStateFlow<RobotPose?>(null)
-    val pose: StateFlow<RobotPose?> = _pose.asStateFlow()
 
     private val calibrationRepo = CalibrationRepository(app)
 
@@ -51,8 +50,18 @@ class NavigationViewModel(
         calibrationRepo.calibration.stateIn(
             viewModelScope,
             SharingStarted.Eagerly,
-            MapCalibration(Offset.Zero, 50f, 0f)   // only used until the first load finishes
+            MapCalibration(Offset(418F,1191F), 20F, -1.832F)   // only used until the first load finishes
         )
+
+    private data class RawPose(val x: Float, val y: Float, val yaw: Float)
+    private val rawPose = MutableStateFlow<RawPose?>(null)
+    val pose: StateFlow<RobotPose?> =
+        combine(rawPose, calibration) { raw, cal ->
+            raw?.let {
+                val px = cal.robotToImagePx(it.x, it.y)
+                RobotPose(px.x, px.y, cal.arrowRotationDeg(it.yaw))
+            }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun setCalibration(c: MapCalibration) {
         viewModelScope.launch { calibrationRepo.save(c) }
@@ -60,6 +69,7 @@ class NavigationViewModel(
 
     val destinations: StateFlow<List<Destination>> =
         combine(readyState, calibration) { ready, cal ->
+            Log.i("Dest", "recompute: ready=$ready, origin=${cal.originPx}, scale=${cal.pxPerMeter}")
             if (!ready) return@combine emptyList()
 
             val poses = withContext(Dispatchers.IO) { robot.locationPoses() }
@@ -110,8 +120,7 @@ class NavigationViewModel(
                 NavigationState.Guiding(it)
             }
             is RobotEvent.PositionChanged -> {
-                val (px, py) = calibration.value.robotToImagePx(event.x, event.y)
-                _pose.value = RobotPose(px, py, calibration.value.arrowRotationDeg(event.yaw))
+                rawPose.value = RawPose(event.x, event.y, event.yaw)
             }
             is RobotEvent.Ready -> _readyState.value = event.isReady
             is RobotEvent.SpeechRecognised -> TODO()
