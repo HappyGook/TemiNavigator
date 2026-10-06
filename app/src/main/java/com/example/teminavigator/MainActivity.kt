@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.domain.Destination
+import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
@@ -25,7 +26,6 @@ import com.example.teminavigator.ui.screens.HomeScreen
 import com.example.teminavigator.ui.screens.NavigationScreen
 import com.example.teminavigator.ui.screens.SettingsScreen
 import com.example.teminavigator.ui.screens.WaitingScreen
-import com.example.teminavigator.ui.screens.mockDestinations
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
 
@@ -44,7 +44,9 @@ fun TemiApp(
     language: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
     destinations: List<Destination>,
-    robotPose: () -> RobotPose?
+    robotPose: () -> RobotPose?,
+    calibration: MapCalibration,
+    onCalibrationSaved: (MapCalibration) -> Unit
 ){
     var selectedDestination by remember { mutableStateOf<Destination?>(null) }
     var currentScreen by remember {
@@ -65,6 +67,8 @@ fun TemiApp(
             currentLanguage = language,
             onLanguageChanged = onLanguageSelected,
             onBack = {currentScreen = Screen.HomeScreen},
+            calibration = calibration,
+            onCalibrationSaved = onCalibrationSaved,
         )
         Screen.WaitingScreen -> WaitingScreen(
             onSelectLocation = {currentScreen = Screen.HomeScreen},
@@ -101,6 +105,7 @@ class MainActivity : ComponentActivity() {
             val language by viewModel.language.collectAsState()
             val destinations by viewModel.destinations.collectAsState()
             val pose = viewModel.pose.collectAsState()
+            val calibration by viewModel.calibration.collectAsState()
 
             CompositionLocalProvider(LocalStrings provides language.strings) {
                 TemiNavigatorTheme {
@@ -108,7 +113,9 @@ class MainActivity : ComponentActivity() {
                         language = language,
                         onLanguageSelected = viewModel::setLanguage,
                         destinations = destinations,
-                        robotPose = {pose.value}
+                        robotPose = {pose.value},
+                        calibration = calibration,
+                        onCalibrationSaved = viewModel::setCalibration
                     )
                 }
             }

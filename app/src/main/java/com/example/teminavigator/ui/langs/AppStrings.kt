@@ -39,6 +39,15 @@ data class AppStrings (
     val descriptionVoiceOutput: String,
     val autoReturn: String,
     val descriptionAutoReturn: String,
+    val calibrationHeader: String,
+    val originXText: String,
+    val originYText: String,
+    val pxPerMeterText: String,
+    val pxPerMeterWarning: String,
+    val anchorYawText: String,
+    val saveCalibrationButton: String,
+
+
 
     // Spoken by the robot
     val spokenArrived: (destination: String) -> String,
