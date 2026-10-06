@@ -8,11 +8,18 @@ import com.robotemi.sdk.listeners.OnGoToLocationStatusChangedListener
 import com.robotemi.sdk.listeners.OnRobotReadyListener
 import com.robotemi.sdk.navigation.listener.OnCurrentPositionChangedListener
 import com.robotemi.sdk.navigation.model.Position
+import com.robotemi.sdk.permission.Permission
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-object TemiRobot: RobotController, OnRobotReadyListener, OnGoToLocationStatusChangedListener, OnCurrentPositionChangedListener {
+object TemiRobot: RobotController,
+    OnRobotReadyListener,
+    OnGoToLocationStatusChangedListener,
+    OnCurrentPositionChangedListener {
+
+    const val REQUEST_CODE_MAP = 1
+
     private val robot: Robot get()=Robot.getInstance()
 
     // private constantly changing version
@@ -44,15 +51,33 @@ object TemiRobot: RobotController, OnRobotReadyListener, OnGoToLocationStatusCha
     override fun speak(text: String){
         robot.speak(TtsRequest.create(text,false))
     }
-    // TODO: find out the exact home location name (Raum 2.72?)
-    override fun goHome() = robot.goTo("home?")
+    override fun goHome() = robot.goTo("home base") //TODO: create config variable for home name
 
     override fun locationPoses(): Map<String, Triple<Double, Double, Double>> {
-        val map = robot.getMapData() ?: return emptyMap()
-        return map.locations.mapNotNull { layer ->
+        Log.i("Temi", "Location Poses called!")
+
+        val map = robot.getMapData()
+        if (map == null) {
+            Log.i("Temi", "Robot map data was empty")
+            return emptyMap()
+        }
+
+        val poses = map.locations.mapNotNull { layer ->
             val pose = layer.layerPoses?.firstOrNull() ?: return@mapNotNull null
-            layer.layerId to Triple(pose.x.toDouble(), pose.y.toDouble(), pose.theta.toDouble())
+            layer.layerId to Triple(
+                pose.x.toDouble(),
+                pose.y.toDouble(),
+                pose.theta.toDouble()
+            )
         }.toMap()
+
+        poses.forEach { (name, pose) ->
+            Log.i(
+                "Temi",
+                "$name: x=${pose.first}, y=${pose.second}, theta=${pose.third}"
+            )
+        }
+        return poses
     }
 
     override fun onGoToLocationStatusChanged(
@@ -65,6 +90,12 @@ object TemiRobot: RobotController, OnRobotReadyListener, OnGoToLocationStatusCha
     }
 
     override fun onRobotReady(isReady: Boolean){
+        if (!isReady) return
+        if (robot.checkSelfPermission(Permission.MAP) != Permission.GRANTED) {
+            Log.i("Permissions","Requesting permission to map...")
+            robot.requestPermissions(listOf(Permission.MAP), REQUEST_CODE_MAP)
+        }
+        robot.requestPermissions(listOf(Permission.MAP), 1)
         _events.tryEmit(RobotEvent.Ready(isReady))
         Log.i("Temi","Robot ready state: $isReady")
         val (x,y,yaw,tilt) = robot.getPosition()
@@ -74,6 +105,7 @@ object TemiRobot: RobotController, OnRobotReadyListener, OnGoToLocationStatusCha
     }
 
     override fun onCurrentPositionChanged(position: Position) {
+        Log.i("Temi","X: ${position.x}, Y:${position.y}")
         _events.tryEmit(RobotEvent.PositionChanged(x = position.x, y = position.y, yaw = position.yaw))
     }
 }
