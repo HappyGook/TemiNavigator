@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Home
@@ -53,7 +55,10 @@ fun SettingsScreen(
     val strings = LocalStrings.current
 
     Scaffold{innerPadding ->
-        Column(Modifier.padding(16.dp)){
+        Column(
+            Modifier.padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ){
             Text(strings.settingsTitle, Modifier.padding(innerPadding))
             FloatingActionButton(onClick = onBack, Modifier.padding(innerPadding)) {
                 Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Go Back")
