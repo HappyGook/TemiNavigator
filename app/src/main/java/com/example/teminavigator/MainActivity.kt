@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.domain.Destination
+import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
@@ -25,7 +26,6 @@ import com.example.teminavigator.ui.screens.HomeScreen
 import com.example.teminavigator.ui.screens.NavigationScreen
 import com.example.teminavigator.ui.screens.SettingsScreen
 import com.example.teminavigator.ui.screens.WaitingScreen
-import com.example.teminavigator.ui.screens.mockDestinations
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
 
@@ -44,7 +44,9 @@ fun TemiApp(
     language: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
     destinations: List<Destination>,
-    robotPose: () -> RobotPose?
+    robotPose: () -> RobotPose?,
+    navigationState: NavigationState,
+    onToggleNavigationPause: (Destination) -> Unit,
 ){
     var selectedDestination by remember { mutableStateOf<Destination?>(null) }
     var currentScreen by remember {
@@ -76,6 +78,8 @@ fun TemiApp(
         )
         is Screen.NavigationScreen -> NavigationScreen(
             destination = screen.destination,
+            navigationState = navigationState,
+            onTogglePause = { onToggleNavigationPause(screen.destination) },
             onAbort = {currentScreen = Screen.HomeScreen}
         )
     }
@@ -101,6 +105,7 @@ class MainActivity : ComponentActivity() {
             val language by viewModel.language.collectAsState()
             val destinations by viewModel.destinations.collectAsState()
             val pose = viewModel.pose.collectAsState()
+            val navigationState by viewModel.navState.collectAsState()
 
             CompositionLocalProvider(LocalStrings provides language.strings) {
                 TemiNavigatorTheme {
@@ -108,7 +113,9 @@ class MainActivity : ComponentActivity() {
                         language = language,
                         onLanguageSelected = viewModel::setLanguage,
                         destinations = destinations,
-                        robotPose = {pose.value}
+                        robotPose = {pose.value},
+                        navigationState = navigationState,
+                        onToggleNavigationPause = viewModel::toggleNavigationPause
                     )
                 }
             }

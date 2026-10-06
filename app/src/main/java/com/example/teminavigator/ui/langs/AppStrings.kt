@@ -18,7 +18,8 @@ data class AppStrings (
     // Navigation screen
     val goingTo: String,
     val minutes: String,
-    val pause: String,
+    val pauseNavigation: String,
+    val resumeNavigation: String,
     val abortNavigation: String,
     val simulateArrival: String,
 

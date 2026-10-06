@@ -91,6 +91,14 @@ class NavigationViewModel(
         robot.speak("Guidance Placeholder $destination") //TODO: add to the language pack
         robot.goTo(destination.id)
     }
+
+    fun toggleNavigationPause(destination: Destination) {
+        _navState.value = when (_navState.value) {
+            is NavigationState.Paused -> NavigationState.Guiding(destination)
+            else -> NavigationState.Paused(destination)
+        }
+    }
+
     fun cancelGuidance() = robot.stop()
 
     fun speak(text:String){
