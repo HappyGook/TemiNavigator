@@ -90,7 +90,11 @@ object TemiRobot: RobotController,
         descriptionId: Int,
         description: String
     ) {
-        TODO("Not yet implemented")
+        when (status){
+            "start" -> _events.tryEmit(RobotEvent.GoToStarted(locationId=location))
+            "abort" -> _events.tryEmit(RobotEvent.GoToCancelled(locationId=location, reason = description))
+            "complete" -> _events.tryEmit(RobotEvent.GoToFinished(locationId=location))
+        }
     }
 
     override fun onRobotReady(isReady: Boolean) {
