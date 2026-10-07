@@ -8,6 +8,7 @@ import com.robotemi.sdk.listeners.OnGoToLocationStatusChangedListener
 import com.robotemi.sdk.listeners.OnRobotReadyListener
 import com.robotemi.sdk.navigation.listener.OnCurrentPositionChangedListener
 import com.robotemi.sdk.navigation.model.Position
+import com.robotemi.sdk.permission.OnRequestPermissionResultListener
 import com.robotemi.sdk.permission.Permission
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 object TemiRobot: RobotController,
     OnRobotReadyListener,
     OnGoToLocationStatusChangedListener,
+    OnRequestPermissionResultListener,
     OnCurrentPositionChangedListener {
 
     const val REQUEST_CODE_MAP = 1
@@ -39,11 +41,13 @@ object TemiRobot: RobotController,
     override fun attach(){
         robot.addOnRobotReadyListener(this)
         robot.addOnGoToLocationStatusChangedListener(this)
+        robot.addOnRequestPermissionResultListener(this)
     }
 
     override fun detach(){
         robot.removeOnRobotReadyListener(this)
         robot.removeOnGoToLocationStatusChangedListener(this)
+        robot.removeOnRequestPermissionResultListener(this)
     }
 
     override fun goTo(locationId: String) = robot.goTo(locationId)
@@ -89,13 +93,19 @@ object TemiRobot: RobotController,
         TODO("Not yet implemented")
     }
 
-    override fun onRobotReady(isReady: Boolean){
+    override fun onRobotReady(isReady: Boolean) {
         if (!isReady) return
-        if (robot.checkSelfPermission(Permission.MAP) != Permission.GRANTED) {
-            Log.i("Permissions","Requesting permission to map...")
-            robot.requestPermissions(listOf(Permission.MAP), REQUEST_CODE_MAP)
+        val mapPermission =
+            robot.checkSelfPermission(Permission.MAP)
+        if (mapPermission != Permission.GRANTED) {
+            Log.i("Permissions", "Requesting permission to map...")
+            robot.requestPermissions(
+                listOf(Permission.MAP),
+                REQUEST_CODE_MAP
+            )
+            return
         }
-        robot.requestPermissions(listOf(Permission.MAP), 1)
+        // Permission was already granted
         _events.tryEmit(RobotEvent.Ready(isReady))
         Log.i("Temi","Robot ready state: $isReady")
         val (x,y,yaw,tilt) = robot.getPosition()
@@ -107,5 +117,20 @@ object TemiRobot: RobotController,
     override fun onCurrentPositionChanged(position: Position) {
         Log.i("Temi","X: ${position.x}, Y:${position.y}")
         _events.tryEmit(RobotEvent.PositionChanged(x = position.x, y = position.y, yaw = position.yaw))
+    }
+
+    override fun onRequestPermissionResult(
+        permission: Permission,
+        grantResult: Int,
+        requestCode: Int
+    ) {
+        if (requestCode != REQUEST_CODE_MAP) return
+        if (permission != Permission.MAP) return
+        if (grantResult == Permission.GRANTED) {
+            Log.i("Permissions", "MAP permission granted")
+            _events.tryEmit(RobotEvent.Ready(true))
+        } else {
+            Log.w("Permissions", "MAP permission denied")
+        }
     }
 }
