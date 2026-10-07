@@ -32,4 +32,11 @@ val germanStrings = AppStrings(
     descriptionVoiceInput = "Erlaube Spracheingabe durch Nutzer",
     autoReturn = "Automatisch zurückkehren",
     descriptionAutoReturn = "Nach 3 Minuten zum Startpunkt fahren",
+    calibrationHeader = "Karten-Kalibration",
+    originXText = "Origin X (px)",
+    originYText = "Origin Y (px)",
+    pxPerMeterText = "Pixels pro Meter",
+    pxPerMeterWarning = "Muss eine Zahl > 0 sein",
+    anchorYawText = "Anchor-Yaw (Radianen)",
+    saveCalibrationButton = "Kalibration speichern"
 )

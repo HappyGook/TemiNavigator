@@ -1,6 +1,7 @@
 package com.example.teminavigator.viewmodel
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.AndroidViewModel
 import com.example.teminavigator.ui.langs.AppLanguage
@@ -9,6 +10,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.core.content.edit
 import androidx.lifecycle.viewModelScope
+import com.example.teminavigator.data.CalibrationRepository
+import com.example.teminavigator.data.DestinationLabelRepository
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
@@ -41,29 +44,45 @@ class NavigationViewModel(
     val readyState : StateFlow<Boolean> = _readyState.asStateFlow()
 
     private var currentDestination : Destination? = null
-    private val _pose = MutableStateFlow<RobotPose?>(null)
-    val pose: StateFlow<RobotPose?> = _pose.asStateFlow()
 
+    private val calibrationRepo = CalibrationRepository(app)
 
-    private val _calibration = MutableStateFlow(
-        MapCalibration(
-            originPx = Offset(0f, 0f),
-            pxPerMeter = 50f,
-            anchorYaw = 0f
-        ) // TODO: load from config
-    )
+    private val labelRepo = DestinationLabelRepository(app)
+
+    val calibration: StateFlow<MapCalibration> =
+        calibrationRepo.calibration.stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            MapCalibration(Offset(418F, 1191F), 24F, -1.6F)   // only used until the first load finishes
+        )
+
+    private data class RawPose(val x: Float, val y: Float, val yaw: Float)
+    private val rawPose = MutableStateFlow<RawPose?>(null)
+    val pose: StateFlow<RobotPose?> =
+        combine(rawPose, calibration) { raw, cal ->
+            raw?.let {
+                val px = cal.robotToImagePx(it.x, it.y)
+                RobotPose(px.x, px.y, cal.arrowRotationDeg(it.yaw))
+            }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun setCalibration(c: MapCalibration) {
+        viewModelScope.launch { calibrationRepo.save(c) }
+    }
 
     val destinations: StateFlow<List<Destination>> =
-        combine(readyState, _calibration) { ready, cal ->
+        combine(readyState, calibration, labelRepo.labels) { ready, cal, labels ->
+            Log.i("Dest", "recompute: ready=$ready, origin=${cal.originPx}, scale=${cal.pxPerMeter}")
             if (!ready) return@combine emptyList()
 
             val poses = withContext(Dispatchers.IO) { robot.locationPoses() }
             robot.availableLocations.map { name ->
                 val pose = poses[name]
+                val label = labels[name]
                 Destination(
                     id = name,
-                    displayName = name,   // TODO: registry
-                    aliases = emptyList(), // TODO: alias registry
+                    displayName = label?.displayName ?: name,
+                    aliases = label?.aliases.orEmpty(),
                     imagePx = pose?.let { (x, y, _) ->
                         cal.robotToImagePx(x.toFloat(), y.toFloat())
                     },
@@ -113,8 +132,7 @@ class NavigationViewModel(
                 NavigationState.Guiding(it)
             }
             is RobotEvent.PositionChanged -> {
-                val (px, py) = _calibration.value.robotToImagePx(event.x, event.y)
-                _pose.value = RobotPose(px, py, _calibration.value.arrowRotationDeg(event.yaw))
+                rawPose.value = RawPose(event.x, event.y, event.yaw)
             }
             is RobotEvent.Ready -> _readyState.value = event.isReady
             is RobotEvent.SpeechRecognised -> TODO()

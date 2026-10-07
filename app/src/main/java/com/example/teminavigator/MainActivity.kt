@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.domain.Destination
+import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.ui.langs.AppLanguage
@@ -45,6 +46,8 @@ fun TemiApp(
     onLanguageSelected: (AppLanguage) -> Unit,
     destinations: List<Destination>,
     robotPose: () -> RobotPose?,
+    calibration: MapCalibration,
+    onCalibrationSaved: (MapCalibration) -> Unit,
     navigationState: NavigationState,
     onToggleNavigationPause: (Destination) -> Unit,
 ){
@@ -67,6 +70,8 @@ fun TemiApp(
             currentLanguage = language,
             onLanguageChanged = onLanguageSelected,
             onBack = {currentScreen = Screen.HomeScreen},
+            calibration = calibration,
+            onCalibrationSaved = onCalibrationSaved,
         )
         Screen.WaitingScreen -> WaitingScreen(
             onSelectLocation = {currentScreen = Screen.HomeScreen},
@@ -105,7 +110,14 @@ class MainActivity : ComponentActivity() {
             val language by viewModel.language.collectAsState()
             val destinations by viewModel.destinations.collectAsState()
             val pose = viewModel.pose.collectAsState()
+            val calibration by viewModel.calibration.collectAsState()
             val navigationState by viewModel.navState.collectAsState()
+            Log.i("Main Map Infos","Calibration state in main activity:\n" +
+                    "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
+                    "")
+            Log.i("Main Map Infos","Calibration state in main activity:\n" +
+                    "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
+                    "")
 
             CompositionLocalProvider(LocalStrings provides language.strings) {
                 TemiNavigatorTheme {
@@ -114,6 +126,8 @@ class MainActivity : ComponentActivity() {
                         onLanguageSelected = viewModel::setLanguage,
                         destinations = destinations,
                         robotPose = {pose.value},
+                        calibration = calibration,
+                        onCalibrationSaved = viewModel::setCalibration,
                         navigationState = navigationState,
                         onToggleNavigationPause = viewModel::toggleNavigationPause
                     )

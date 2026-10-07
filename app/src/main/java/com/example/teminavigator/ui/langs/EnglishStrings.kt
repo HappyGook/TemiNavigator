@@ -32,4 +32,11 @@ val englishStrings = AppStrings(
     descriptionVoiceInput = "Allow voice input from users",
     autoReturn = "Auto return",
     descriptionAutoReturn = "Return to Start after 3 minutes",
+    calibrationHeader = "Map calibration",
+    originXText = "Origin X (px)",
+    originYText = "Origin Y (px)",
+    pxPerMeterText = "Pixels per meter",
+    pxPerMeterWarning = "Must be a number > 0",
+    anchorYawText = "Anchor yaw (radians)",
+    saveCalibrationButton = "Save calibration"
 )
