@@ -18,8 +18,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.domain.Destination
-import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.MapCalibration
+import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
@@ -45,9 +45,9 @@ fun TemiApp(
     language: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
     destinations: List<Destination>,
+    robotPose: () -> RobotPose?,
     calibration: MapCalibration,
     onCalibrationSaved: (MapCalibration) -> Unit,
-    robotPose: () -> RobotPose?,
     navigationState: NavigationState,
     onToggleNavigationPause: (Destination) -> Unit,
 ){
@@ -112,6 +112,9 @@ class MainActivity : ComponentActivity() {
             val pose = viewModel.pose.collectAsState()
             val calibration by viewModel.calibration.collectAsState()
             val navigationState by viewModel.navState.collectAsState()
+            Log.i("Main Map Infos","Calibration state in main activity:\n" +
+                    "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
+                    "")
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
                     "")
