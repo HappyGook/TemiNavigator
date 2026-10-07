@@ -19,6 +19,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.data.AdminPasswordStore
+import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
@@ -53,6 +54,10 @@ fun TemiApp(
     navigationState: NavigationState,
     voiceDestination: Destination?,
     onToggleNavigationPause: (Destination) -> Unit,
+    labels: Map<String, DestinationLabels>,
+    onDisplayNameChanged: (String, String) -> Unit,
+    onAliasesChanged: (String, List<String>) -> Unit,
+    onLabelsReset: (String) -> Unit
     onVoiceDestinationHandled: () -> Unit,
     onStartSpeechRecognition: () -> Unit,
     adminPasswordStore: AdminPasswordStore,
@@ -89,6 +94,11 @@ fun TemiApp(
             calibration = calibration,
             onCalibrationSaved = onCalibrationSaved,
             adminPasswordStore = adminPasswordStore,
+            labels = labels,
+            onDisplayNameChanged = onDisplayNameChanged,
+            onAliasesChanged = onAliasesChanged,
+            onLabelsReset = onLabelsReset,
+            destinations = destinations
         )
         Screen.WaitingScreen -> WaitingScreen(
             onSelectLocation = {currentScreen = Screen.HomeScreen},
@@ -130,6 +140,7 @@ class MainActivity : ComponentActivity() {
             val pose = viewModel.pose.collectAsState()
             val calibration by viewModel.calibration.collectAsState()
             val navigationState by viewModel.navState.collectAsState()
+            val labels by viewModel.labels.collectAsState()
             val voiceDestination by viewModel.voiceDestination.collectAsState()
             /*
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
@@ -155,6 +166,11 @@ class MainActivity : ComponentActivity() {
                         onVoiceDestinationHandled = viewModel::clearVoiceDestination,
                         onStartSpeechRecognition = viewModel::startSpeechRecognition,
                         adminPasswordStore = adminPasswordStore
+                        onToggleNavigationPause = viewModel::toggleNavigationPause,
+                        labels = labels,
+                        onDisplayNameChanged = viewModel::setDisplayName,
+                        onAliasesChanged = viewModel::setAliases,
+                        onLabelsReset = viewModel::resetLabels,
                     )
                 }
             }
