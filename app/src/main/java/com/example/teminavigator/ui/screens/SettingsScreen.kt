@@ -22,6 +22,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -39,6 +40,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.teminavigator.data.DestinationLabels
+import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
@@ -50,7 +53,12 @@ fun SettingsScreen(
     onLanguageChanged: (AppLanguage) -> Unit,
     onBack: () -> Unit,
     calibration: MapCalibration,
-    onCalibrationSaved: (MapCalibration) -> Unit
+    onCalibrationSaved: (MapCalibration) -> Unit,
+    destinations: List<Destination>,
+    labels: Map<String, DestinationLabels>,
+    onDisplayNameChanged: (String, String) -> Unit,
+    onAliasesChanged: (String, List<String>) -> Unit,
+    onLabelsReset: (String) -> Unit
 ){
     val strings = LocalStrings.current
 
@@ -81,6 +89,8 @@ fun SettingsScreen(
                 calibration = calibration,
                 onSave = onCalibrationSaved
             )
+            DestinationLabelSection(destinations = destinations,
+                labels = labels, onDisplayNameSave = onDisplayNameChanged, onAliasesSave = onAliasesChanged, onReset = onLabelsReset)
         }
     }
 }
@@ -310,6 +320,76 @@ fun CalibrationSection(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(strings.saveCalibrationButton)
+        }
+    }
+}
+
+
+@Composable
+fun DestinationLabelSection(
+    destinations: List<Destination>,
+    labels: Map<String, DestinationLabels>,
+    onDisplayNameSave: (String, String) -> Unit,
+    onAliasesSave: (String, List<String>) -> Unit,
+    onReset: (String) -> Unit,
+    modifier: Modifier = Modifier
+){
+    val strings = LocalStrings.current
+    Column(
+        modifier = modifier.fillMaxWidth().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(strings.destinationHeader, style = MaterialTheme.typography.titleLarge)
+        destinations.forEach { dest ->
+            DestinationLabelRow(
+                id = dest.id,
+                saved = labels[dest.id],
+                onDisplayNameSave = { onDisplayNameSave(dest.id, it) },
+                onAliasesSave = { onAliasesSave(dest.id, it) },
+                onReset = { onReset(dest.id) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun DestinationLabelRow(
+    id: String,
+    saved: DestinationLabels?,
+    onDisplayNameSave: (String) -> Unit,
+    onAliasesSave: (List<String>) -> Unit,
+    onReset: () -> Unit
+) {
+    val strings = LocalStrings.current
+
+    // key on saved values so the fields refresh after save/reset
+    var name by rememberSaveable(id, saved?.displayName) { mutableStateOf(saved?.displayName ?: id) }
+    var aliases by rememberSaveable(id, saved?.aliases) {
+        mutableStateOf(saved?.aliases.orEmpty().joinToString(", "))
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(id, style = MaterialTheme.typography.labelLarge)
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = {strings.destinationDisplayName},
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = aliases,
+            onValueChange = { aliases = it },
+            label = {strings.destinationAliases},
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = {
+                onDisplayNameSave(name)
+                onAliasesSave(aliases.split(',').map { it.trim() }.filter { it.isNotEmpty() })
+            }) { strings.destinationButtonSave }
+            OutlinedButton(onClick = onReset) { strings.destinationButtonReset }
         }
     }
 }

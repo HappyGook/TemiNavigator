@@ -47,6 +47,12 @@ data class AppStrings (
     val pxPerMeterWarning: String,
     val anchorYawText: String,
     val saveCalibrationButton: String,
+    val destinationHeader: String,
+    val destinationDisplayName: String,
+    val destinationAliases: String,
+    val destinationButtonSave: String,
+    val destinationButtonReset: String,
+
 
 
 

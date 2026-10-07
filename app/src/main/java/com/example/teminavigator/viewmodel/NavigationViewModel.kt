@@ -12,6 +12,7 @@ import androidx.core.content.edit
 import androidx.lifecycle.viewModelScope
 import com.example.teminavigator.data.CalibrationRepository
 import com.example.teminavigator.data.DestinationLabelRepository
+import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
@@ -48,6 +49,9 @@ class NavigationViewModel(
     private val calibrationRepo = CalibrationRepository(app)
 
     private val labelRepo = DestinationLabelRepository(app)
+
+    val labels: StateFlow<Map<String, DestinationLabels>> =
+        labelRepo.labels.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     val calibration: StateFlow<MapCalibration> =
         calibrationRepo.calibration.stateIn(
@@ -96,6 +100,19 @@ class NavigationViewModel(
     fun setLanguage(language: AppLanguage){
         _language.value = language
         prefs.edit { putString("language", language.code) }
+    }
+
+    // Label setting functions
+    fun setDisplayName(id: String, name: String) {
+        viewModelScope.launch { labelRepo.setDisplayName(id, name) }
+    }
+
+    fun setAliases(id: String, aliases: List<String>) {
+        viewModelScope.launch { labelRepo.setAliases(id, aliases) }
+    }
+
+    fun resetLabels(id: String) {
+        viewModelScope.launch { labelRepo.reset(id) }
     }
 
     // robot integration

@@ -38,5 +38,10 @@ val germanStrings = AppStrings(
     pxPerMeterText = "Pixels pro Meter",
     pxPerMeterWarning = "Muss eine Zahl > 0 sein",
     anchorYawText = "Anchor-Yaw (Radianen)",
-    saveCalibrationButton = "Kalibration speichern"
+    saveCalibrationButton = "Kalibration speichern",
+    destinationHeader = "Ziele",
+    destinationDisplayName = "Darstellname",
+    destinationAliases = "Aliases (comma-separiert)",
+    destinationButtonSave = "Speichern",
+    destinationButtonReset = "Zurücksetzen"
 )

@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
@@ -50,6 +51,10 @@ fun TemiApp(
     onCalibrationSaved: (MapCalibration) -> Unit,
     navigationState: NavigationState,
     onToggleNavigationPause: (Destination) -> Unit,
+    labels: Map<String, DestinationLabels>,
+    onDisplayNameChanged: (String, String) -> Unit,
+    onAliasesChanged: (String, List<String>) -> Unit,
+    onLabelsReset: (String) -> Unit
 ){
     var selectedDestination by remember { mutableStateOf<Destination?>(null) }
     var currentScreen by remember {
@@ -72,6 +77,11 @@ fun TemiApp(
             onBack = {currentScreen = Screen.HomeScreen},
             calibration = calibration,
             onCalibrationSaved = onCalibrationSaved,
+            labels = labels,
+            onDisplayNameChanged = onDisplayNameChanged,
+            onAliasesChanged = onAliasesChanged,
+            onLabelsReset = onLabelsReset,
+            destinations = destinations
         )
         Screen.WaitingScreen -> WaitingScreen(
             onSelectLocation = {currentScreen = Screen.HomeScreen},
@@ -112,6 +122,7 @@ class MainActivity : ComponentActivity() {
             val pose = viewModel.pose.collectAsState()
             val calibration by viewModel.calibration.collectAsState()
             val navigationState by viewModel.navState.collectAsState()
+            val labels by viewModel.labels.collectAsState()
             /*
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
@@ -131,7 +142,11 @@ class MainActivity : ComponentActivity() {
                         calibration = calibration,
                         onCalibrationSaved = viewModel::setCalibration,
                         navigationState = navigationState,
-                        onToggleNavigationPause = viewModel::toggleNavigationPause
+                        onToggleNavigationPause = viewModel::toggleNavigationPause,
+                        labels = labels,
+                        onDisplayNameChanged = viewModel::setDisplayName,
+                        onAliasesChanged = viewModel::setAliases,
+                        onLabelsReset = viewModel::resetLabels,
                     )
                 }
             }
