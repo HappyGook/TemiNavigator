@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import androidx.core.content.edit
 import androidx.lifecycle.viewModelScope
 import com.example.teminavigator.data.CalibrationRepository
+import com.example.teminavigator.data.DestinationLabelRepository
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
@@ -46,6 +47,8 @@ class NavigationViewModel(
 
     private val calibrationRepo = CalibrationRepository(app)
 
+    private val labelRepo = DestinationLabelRepository(app)
+
     val calibration: StateFlow<MapCalibration> =
         calibrationRepo.calibration.stateIn(
             viewModelScope,
@@ -68,17 +71,18 @@ class NavigationViewModel(
     }
 
     val destinations: StateFlow<List<Destination>> =
-        combine(readyState, calibration) { ready, cal ->
+        combine(readyState, calibration, labelRepo.labels) { ready, cal, labels ->
             Log.i("Dest", "recompute: ready=$ready, origin=${cal.originPx}, scale=${cal.pxPerMeter}")
             if (!ready) return@combine emptyList()
 
             val poses = withContext(Dispatchers.IO) { robot.locationPoses() }
             robot.availableLocations.map { name ->
                 val pose = poses[name]
+                val label = labels[name]
                 Destination(
                     id = name,
-                    displayName = name,   // TODO: registry
-                    aliases = emptyList(), // TODO: alias registry
+                    displayName = label?.displayName ?: name,
+                    aliases = label?.aliases.orEmpty(),
                     imagePx = pose?.let { (x, y, _) ->
                         cal.robotToImagePx(x.toFloat(), y.toFloat())
                     },
