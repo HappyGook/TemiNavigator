@@ -22,8 +22,8 @@ class CalibrationRepository(private val context: Context){
     val calibration: Flow<MapCalibration> = context.dataStore.data.map {p->
         MapCalibration(
             originPx = Offset(p[Keys.ORIGIN_X] ?: 418f, p[Keys.ORIGIN_Y] ?: 1191f),
-            pxPerMeter = p[Keys.PX_PER_METER] ?: 20f,
-            anchorYaw = p[Keys.ANCHOR_YAW] ?: -1.832f
+            pxPerMeter = p[Keys.PX_PER_METER] ?: 24f,
+            anchorYaw = p[Keys.ANCHOR_YAW] ?: -1.6f
         )
     }
 

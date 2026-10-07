@@ -220,7 +220,7 @@ fun LocationsList(
         items(locationList, key = { it.id }){location ->
             PossibleLocation(
                 location=location,
-                isSelected = location.id == selectedId,
+                isSelected = location.id == selectedId, // TODO: scroll list onSelect to the selected Id
                 onClick = onSelect
             )
         }
