@@ -35,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.ui.langs.LocalStrings
-import com.google.android.libraries.mapsplatform.transportation.consumer.model.Route
 
 @Composable
 fun NavigationScreen(

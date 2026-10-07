@@ -53,7 +53,7 @@ class NavigationViewModel(
         calibrationRepo.calibration.stateIn(
             viewModelScope,
             SharingStarted.Eagerly,
-            MapCalibration(Offset(418F,1191F), 20F, -1.832F)   // only used until the first load finishes
+            MapCalibration(Offset(418F, 1191F), 24F, -1.6F)   // only used until the first load finishes
         )
 
     private data class RawPose(val x: Float, val y: Float, val yaw: Float)
