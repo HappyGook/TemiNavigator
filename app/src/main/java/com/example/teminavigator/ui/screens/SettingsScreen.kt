@@ -7,26 +7,39 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.SurroundSound
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
 
@@ -36,13 +49,16 @@ fun SettingsScreen(
     currentLanguage: AppLanguage,
     onLanguageChanged: (AppLanguage) -> Unit,
     onBack: () -> Unit,
+    calibration: MapCalibration,
+    onCalibrationSaved: (MapCalibration) -> Unit
 ){
     val strings = LocalStrings.current
 
-    Scaffold(
-        topBar = { /* Top Bar Content */ }
-    ) {innerPadding ->
-        Column(Modifier.padding(16.dp)){
+    Scaffold{innerPadding ->
+        Column(
+            Modifier.padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ){
             Text(strings.settingsTitle, Modifier.padding(innerPadding))
             FloatingActionButton(onClick = onBack, Modifier.padding(innerPadding)) {
                 Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Go Back")
@@ -61,6 +77,10 @@ fun SettingsScreen(
                 }
             }
             SettingsColumn()
+            CalibrationSection(                        // UI block for map calibration part
+                calibration = calibration,
+                onSave = onCalibrationSaved
+            )
         }
     }
 }
@@ -174,6 +194,123 @@ fun SettingRow(
             checked = checked,
             onCheckedChange = onCheckedChange
         )
+    }
+}
+
+/**
+ * Function for Creating a MapCalibration block with inputs and confirmation
+ */
+@Composable
+fun CalibrationSection(
+    calibration: MapCalibration,
+    onSave: (MapCalibration) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val focusManager = LocalFocusManager.current
+    val strings = LocalStrings.current
+
+    var originX by rememberSaveable { mutableStateOf("") }
+    var originY by rememberSaveable { mutableStateOf("") }
+    var pxPerMeter by rememberSaveable { mutableStateOf("") }
+    var anchorYaw by rememberSaveable { mutableStateOf("") }
+
+    // keep old value, if invalid text -> null (shown as error)
+    fun parse(text: String, fallback: Float): Float? =
+        if (text.isBlank()) fallback else text.replace(',', '.').toFloatOrNull()
+
+    val newX = parse(originX, calibration.originPx.x)
+    val newY = parse(originY, calibration.originPx.y)
+    val newScale = parse(pxPerMeter, calibration.pxPerMeter)?.takeIf { it > 0f }
+    val newYaw = parse(anchorYaw, calibration.anchorYaw)
+
+    val allValid = newX != null && newY != null && newScale != null && newYaw != null
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(strings.calibrationHeader, style = MaterialTheme.typography.titleLarge)
+
+        // Origin (x and y in one row)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = originX,
+                onValueChange = { originX = it },
+                label = { Text(strings.originXText) },
+                placeholder = { Text(calibration.originPx.x.toString()) },
+                isError = newX == null,
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Next
+                ),
+                modifier = Modifier.weight(1f)
+            )
+            OutlinedTextField(
+                value = originY,
+                onValueChange = { originY = it },
+                label = { Text(strings.originYText) },
+                placeholder = { Text(calibration.originPx.y.toString()) },
+                isError = newY == null,
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Next
+                ),
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        OutlinedTextField(
+            value = pxPerMeter,
+            onValueChange = { pxPerMeter = it },
+            label = { Text(strings.pxPerMeterText) },
+            placeholder = { Text(calibration.pxPerMeter.toString()) },
+            isError = newScale == null,
+            supportingText = { if (newScale == null) Text(strings.pxPerMeterWarning) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Decimal,
+                imeAction = ImeAction.Next
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = anchorYaw,
+            onValueChange = { anchorYaw = it },
+            label = { Text(strings.anchorYawText) },
+            placeholder = { Text(calibration.anchorYaw.toString()) },
+            isError = newYaw == null,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Decimal,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Button(
+            enabled = allValid,
+            onClick = {
+                onSave(
+                    MapCalibration(
+                        originPx = Offset(newX!!, newY!!),
+                        pxPerMeter = newScale!!,
+                        anchorYaw = newYaw!!
+                    )
+                )
+                // clear fields so that placeholders show new values
+                originX = ""; originY = ""; pxPerMeter = ""; anchorYaw = ""
+                focusManager.clearFocus()
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(strings.saveCalibrationButton)
+        }
     }
 }
 
