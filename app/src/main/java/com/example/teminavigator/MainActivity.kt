@@ -65,7 +65,9 @@ fun TemiApp(
                 currentScreen = Screen.NavigationScreen(destination)
                 Log.i("Info", "Destination Confirmed")
             },
-            onOpenSettings = { currentScreen = Screen.SettingsScreen })
+            onOpenSettings = { currentScreen = Screen.SettingsScreen },
+            speechLanguage = language.code
+        )
         Screen.SettingsScreen -> SettingsScreen(
             currentLanguage = language,
             onLanguageChanged = onLanguageSelected,

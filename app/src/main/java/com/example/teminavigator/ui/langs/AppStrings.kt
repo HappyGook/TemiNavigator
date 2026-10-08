@@ -7,6 +7,8 @@ data class AppStrings (
     val confirmTitle: (destination: String) -> String,
     val confirmYes: String,
     val confirmNo: String,
+    val searchDestinations: String,
+    val speechUnavailable: String,
 
     // Waiting screen
     val greeting: String,

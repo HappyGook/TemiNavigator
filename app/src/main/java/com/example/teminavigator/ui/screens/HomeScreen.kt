@@ -1,6 +1,12 @@
 package com.example.teminavigator.ui.screens
+import android.app.Activity
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.graphics.BitmapFactory
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -22,10 +28,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -59,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.RobotPose
+import com.example.teminavigator.domain.match
 import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.map.drawPin
 import com.example.teminavigator.ui.map.drawRobot
@@ -138,16 +148,44 @@ fun HomeScreen(
     destinations: List<Destination>,
     robotPose: () -> RobotPose?,
     onDestinationConfirmed: (Destination) -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    speechLanguage: String
 ) {
     var selectedId by rememberSaveable{mutableStateOf<String?>(null)}
     var showConfirmationDialog by rememberSaveable {mutableStateOf(false)}
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var speechMessage by rememberSaveable { mutableStateOf<String?>(null) }
     val selected = destinations.find{it.id==selectedId}
     val strings = LocalStrings.current
 
-    Scaffold(
-        topBar = { /* Top Bar Content */ }
-    ){ innerPadding ->
+    // Registers a launcher for the system speech recognizer (external activity)
+    val speechLauncher = rememberLauncherForActivityResult(
+        // Generic contract: start any Intent and receive the raw ActivityResult back
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenText = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+            if (spokenText != null) {
+                // Map spoken text to a location in destinations
+                val match = destinations.match(spokenText)
+                searchQuery = match?.displayName ?: spokenText // if matched: show destination - otherwise: show spoken text
+                selectedId = match?.id // select matched destination or clear if no match
+                speechMessage = if (match == null) strings.spokenUnknownDestination else null
+            }
+        }
+    }
+
+    // List of destinations - filtered by the current search query
+    val filteredDestinations = destinations.filter { destination ->
+        searchQuery.isBlank() ||
+            destination.displayName.contains(searchQuery, ignoreCase = true) ||
+            destination.id.contains(searchQuery, ignoreCase = true) ||
+            destination.aliases.any { it.contains(searchQuery, ignoreCase = true) }
+    }
+
+    Scaffold{ innerPadding ->
         Row(
             modifier = Modifier
                 .padding(innerPadding)
@@ -162,11 +200,63 @@ fun HomeScreen(
                     .fillMaxWidth(0.3f)
                     .fillMaxHeight()
             ) {
-                LocationsList(
-                    destinations,
-                    selectedId = selectedId,
-                    onSelect = {selectedId = it.id}
-                )
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Search input -> bound to searchQuery state
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = {
+                                searchQuery = it        // update search text
+                                speechMessage = null    // clears old speech error if user types
+                            },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            placeholder = { Text(strings.searchDestinations) }
+                        )
+
+                        // Microphone button -> starts voice input
+                        IconButton(
+                            onClick = {
+                                speechMessage = null // clears old speech error before new input
+
+                                // Intent object: tells Android what has to be done and asks it
+                                // to find an app that can do it (here -> speech recognition, i.e.
+                                // Google speech service)
+                                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                    // Extra: key-value pair inside the Intent, basically settings
+                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM) // language model for free, natural speech
+                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, speechLanguage)  // Language to recognize ("de", "en", etc.)
+                                    putExtra(RecognizerIntent.EXTRA_PROMPT, strings.locationQuery) // text shown in input dialog
+                                }
+                                try {
+                                    speechLauncher.launch(intent)
+                                } catch (_: ActivityNotFoundException) {
+                                    speechMessage = strings.speechUnavailable
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Filled.Mic, contentDescription = strings.voiceInput)
+                        }
+                    }
+                    speechMessage?.let { message ->
+                        Text(
+                            text = message,
+                            color = colorScheme.error,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
+                    }
+                    // Filtered list of destinations (filtered by search query)
+                    LocationsList(
+                        filteredDestinations,
+                        selectedId = selectedId,
+                        onSelect = { selectedId = it.id }
+                    )
+                }
             }
             Surface(
                 shape = RoundedCornerShape(16.dp),
