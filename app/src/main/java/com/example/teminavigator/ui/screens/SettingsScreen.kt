@@ -370,6 +370,7 @@ private fun DestinationLabelRow(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(id, style = MaterialTheme.typography.labelLarge)
+        Text(strings.destinationDisplayName)
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
@@ -377,6 +378,7 @@ private fun DestinationLabelRow(
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
+        Text(strings.destinationAliases)
         OutlinedTextField(
             value = aliases,
             onValueChange = { aliases = it },
@@ -388,8 +390,9 @@ private fun DestinationLabelRow(
             Button(onClick = {
                 onDisplayNameSave(name)
                 onAliasesSave(aliases.split(',').map { it.trim() }.filter { it.isNotEmpty() })
-            }) { strings.destinationButtonSave }
-            OutlinedButton(onClick = onReset) { strings.destinationButtonReset }
+            },
+                content = { Text(strings.destinationButtonSave) })
+            OutlinedButton(onClick = onReset, content= { Text(strings.destinationButtonReset) })
         }
     }
 }

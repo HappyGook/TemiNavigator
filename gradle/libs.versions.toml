@@ -13,6 +13,7 @@ composeBom = "2026.02.01"
 materialIconsExtended = "1.7.5"
 runtimeSaveable = "1.12.1"
 sdk = "1.138.0"
+serializationJson = "1.7.3"
 
 [libraries]
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
@@ -38,4 +39,5 @@ sdk = { module = "com.robotemi:sdk", version.ref = "sdk" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
