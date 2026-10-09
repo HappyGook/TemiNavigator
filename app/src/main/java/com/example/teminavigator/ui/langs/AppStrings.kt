@@ -33,6 +33,18 @@ data class AppStrings (
 
     // Settings
     val settingsTitle: String,
+    val adminPasswordTitle: String,
+    val adminPasswordPrompt: String,
+    val adminPasswordLabel: String,
+    val unlockSettingsButton: String,
+    val incorrectAdminPassword: String,
+    val changeAdminPasswordTitle: String,
+    val newAdminPasswordLabel: String,
+    val confirmAdminPasswordLabel: String,
+    val saveAdminPasswordButton: String,
+    val adminPasswordTooShort: String,
+    val adminPasswordsDoNotMatch: String,
+    val adminPasswordChanged: String,
     val languageLabel: String,
     val sounds: String,
     val descriptionSounds: String,

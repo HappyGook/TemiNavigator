@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.teminavigator.data.AdminPasswordStore
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
@@ -50,6 +51,7 @@ fun TemiApp(
     onCalibrationSaved: (MapCalibration) -> Unit,
     navigationState: NavigationState,
     onToggleNavigationPause: (Destination) -> Unit,
+    adminPasswordStore: AdminPasswordStore,
 ){
     var selectedDestination by remember { mutableStateOf<Destination?>(null) }
     var currentScreen by remember {
@@ -74,6 +76,7 @@ fun TemiApp(
             onBack = {currentScreen = Screen.HomeScreen},
             calibration = calibration,
             onCalibrationSaved = onCalibrationSaved,
+            adminPasswordStore = adminPasswordStore,
         )
         Screen.WaitingScreen -> WaitingScreen(
             onSelectLocation = {currentScreen = Screen.HomeScreen},
@@ -107,6 +110,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val adminPasswordStore = AdminPasswordStore(applicationContext)
         setContent {
             // take latest value of the language flow
             val language by viewModel.language.collectAsState()
@@ -131,7 +135,8 @@ class MainActivity : ComponentActivity() {
                         calibration = calibration,
                         onCalibrationSaved = viewModel::setCalibration,
                         navigationState = navigationState,
-                        onToggleNavigationPause = viewModel::toggleNavigationPause
+                        onToggleNavigationPause = viewModel::toggleNavigationPause,
+                        adminPasswordStore = adminPasswordStore
                     )
                 }
             }
