@@ -19,6 +19,8 @@ import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotController
 import com.example.teminavigator.domain.RobotEvent
 import com.example.teminavigator.domain.RobotPose
+import com.example.teminavigator.ui.langs.AppStrings
+import com.example.teminavigator.ui.langs.LocalStrings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -102,6 +104,9 @@ class NavigationViewModel(
         prefs.edit { putString("language", language.code) }
     }
 
+    private val strings: AppStrings
+        get() = _language.value.strings
+
     // Label setting functions
     fun setDisplayName(id: String, name: String) {
         viewModelScope.launch { labelRepo.setDisplayName(id, name) }
@@ -124,21 +129,30 @@ class NavigationViewModel(
     }
 
     fun startGuidance(destination: Destination){
-        robot.speak("Guidance Placeholder $destination") //TODO: add to the language pack
         robot.goTo(destination.id)
+        speak(strings.spokenStarting(destination.displayName))
     }
 
     fun toggleNavigationPause(destination: Destination) {
-        _navState.value = when (_navState.value) {
-            is NavigationState.Paused -> NavigationState.Guiding(destination)
-            else -> NavigationState.Paused(destination)
+        when (_navState.value) {
+            is NavigationState.Paused -> {
+                startGuidance(destination)
+                _navState.value = NavigationState.Guiding(destination)
+            }
+            else -> {
+                cancelGuidance()
+                _navState.value = NavigationState.Paused(destination)
+            }
         }
     }
 
-    fun cancelGuidance() = robot.stop()
+    fun cancelGuidance(){
+        robot.stop()
+        speak(strings.spokenAbort)
+    }
 
-    fun speak(text:String){
-        robot.speak(text)
+    fun speak(text: String) {
+        robot.speak(text, _language.value.code)
     }
 
     private fun handleEvent(event: RobotEvent){

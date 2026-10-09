@@ -52,8 +52,14 @@ object TemiRobot: RobotController,
 
     override fun goTo(locationId: String) = robot.goTo(locationId)
     override fun stop() = robot.stopMovement()
-    override fun speak(text: String){
-        robot.speak(TtsRequest.create(text,false))
+    override fun speak(text: String, languageCode: String) {
+        val ttsLang = when (languageCode) {
+            "de" -> TtsRequest.Language.DE_DE
+            "en" -> TtsRequest.Language.EN_US
+            "ru" -> TtsRequest.Language.RU_RU
+            else -> TtsRequest.Language.SYSTEM
+        }
+        robot.speak(TtsRequest.create(text, false, ttsLang))
     }
     override fun goHome() = robot.goTo("home base") //TODO: create config variable for home name
 

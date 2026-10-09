@@ -58,5 +58,7 @@ data class AppStrings (
 
     // Spoken by the robot
     val spokenArrived: (destination: String) -> String,
+    val spokenStarting: (destination: String) -> String,
+    val spokenAbort: String,
     val spokenUnknownDestination: String,
     )

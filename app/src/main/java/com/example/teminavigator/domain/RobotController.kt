@@ -1,4 +1,5 @@
 package com.example.teminavigator.domain
+import com.example.teminavigator.ui.langs.AppLanguage
 import kotlinx.coroutines.flow.Flow
 
 /*
@@ -17,6 +18,6 @@ interface RobotController {
     fun detach()
     fun goTo(locationId: String)
     fun stop()
-    fun speak(text: String)
+    fun speak(text: String, languageCode: String)
     fun goHome()
 }

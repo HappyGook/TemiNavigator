@@ -1,5 +1,7 @@
 package com.example.teminavigator.ui.langs
 
+import kotlin.String
+
 val germanStrings = AppStrings(
     acceptButton = "Bring mich hin",
     confirmTitle = { name -> "Zu $name gehen?" },
@@ -12,6 +14,8 @@ val germanStrings = AppStrings(
     settingsTitle = "Einstellungen",
     languageLabel = "Sprache",
     spokenArrived = { name -> "Wir sind bei $name angekommen." },
+    spokenStarting = { name -> "Starte die Führung zu $name" },
+    spokenAbort = "Stoppe die Führung",
     spokenUnknownDestination = "Entschuldigung, dieses Ziel kenne ich nicht.",
     greeting = "Hallo, schön dich zu sehen!",
     locationQuery =  "Wo darf ich dich hinbringen?",

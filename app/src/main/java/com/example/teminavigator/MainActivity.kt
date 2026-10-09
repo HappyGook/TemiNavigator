@@ -54,7 +54,9 @@ fun TemiApp(
     labels: Map<String, DestinationLabels>,
     onDisplayNameChanged: (String, String) -> Unit,
     onAliasesChanged: (String, List<String>) -> Unit,
-    onLabelsReset: (String) -> Unit
+    onLabelsReset: (String) -> Unit,
+    onStartGuidance: (Destination) -> Unit,
+    onAbort: () -> Unit
 ){
     var selectedDestination by remember { mutableStateOf<Destination?>(null) }
     var currentScreen by remember {
@@ -67,6 +69,7 @@ fun TemiApp(
             robotPose = robotPose,
             onDestinationConfirmed = { destination ->
                 selectedDestination = destination
+                onStartGuidance(destination)
                 currentScreen = Screen.NavigationScreen(destination)
                 Log.i("Info", "Destination Confirmed")
             },
@@ -95,7 +98,10 @@ fun TemiApp(
             destination = screen.destination,
             navigationState = navigationState,
             onTogglePause = { onToggleNavigationPause(screen.destination) },
-            onAbort = {currentScreen = Screen.HomeScreen}
+            onAbort = {
+                currentScreen = Screen.HomeScreen
+                onAbort()
+            }
         )
     }
 }
@@ -147,6 +153,8 @@ class MainActivity : ComponentActivity() {
                         onDisplayNameChanged = viewModel::setDisplayName,
                         onAliasesChanged = viewModel::setAliases,
                         onLabelsReset = viewModel::resetLabels,
+                        onStartGuidance = viewModel::startGuidance,
+                        onAbort = viewModel::cancelGuidance
                     )
                 }
             }

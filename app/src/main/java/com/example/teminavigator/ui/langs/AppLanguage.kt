@@ -6,7 +6,10 @@ enum class AppLanguage (
     val strings: AppStrings
 ) {
     GERMAN("de","Deutsch",  germanStrings),
-    ENGLISH("en","English",  englishStrings);
+    ENGLISH("en","English",  englishStrings),
+    PIRATE("en","Yarrr",pirateStrings),
+    NADSAT("en","Nadsat",nadsatStrings),
+    RUSSIAN("ru","Русский", russianStrings);
 
     companion object{
         val DEFAULT = GERMAN
