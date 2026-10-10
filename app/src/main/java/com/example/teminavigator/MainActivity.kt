@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,12 +51,23 @@ fun TemiApp(
     calibration: MapCalibration,
     onCalibrationSaved: (MapCalibration) -> Unit,
     navigationState: NavigationState,
+    voiceDestination: Destination?,
     onToggleNavigationPause: (Destination) -> Unit,
+    onVoiceDestinationHandled: () -> Unit,
+    onStartSpeechRecognition: () -> Unit,
     adminPasswordStore: AdminPasswordStore,
 ){
     var selectedDestination by remember { mutableStateOf<Destination?>(null) }
     var currentScreen by remember {
         mutableStateOf<Screen>(Screen.HomeScreen)
+    }
+
+    LaunchedEffect(voiceDestination) {
+        voiceDestination?.let { destination ->
+            selectedDestination = destination
+            currentScreen = Screen.NavigationScreen(destination)
+            onVoiceDestinationHandled()
+        }
     }
 
     when (val screen = currentScreen) {
@@ -68,7 +80,7 @@ fun TemiApp(
                 Log.i("Info", "Destination Confirmed")
             },
             onOpenSettings = { currentScreen = Screen.SettingsScreen },
-            speechLanguage = language.code
+            onStartSpeechRecognition = onStartSpeechRecognition
         )
         Screen.SettingsScreen -> SettingsScreen(
             currentLanguage = language,
@@ -118,6 +130,7 @@ class MainActivity : ComponentActivity() {
             val pose = viewModel.pose.collectAsState()
             val calibration by viewModel.calibration.collectAsState()
             val navigationState by viewModel.navState.collectAsState()
+            val voiceDestination by viewModel.voiceDestination.collectAsState()
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
                     "")
@@ -136,6 +149,9 @@ class MainActivity : ComponentActivity() {
                         onCalibrationSaved = viewModel::setCalibration,
                         navigationState = navigationState,
                         onToggleNavigationPause = viewModel::toggleNavigationPause,
+                        voiceDestination = voiceDestination,
+                        onVoiceDestinationHandled = viewModel::clearVoiceDestination,
+                        onStartSpeechRecognition = viewModel::startSpeechRecognition,
                         adminPasswordStore = adminPasswordStore
                     )
                 }

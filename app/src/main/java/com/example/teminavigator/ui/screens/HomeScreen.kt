@@ -1,12 +1,6 @@
 package com.example.teminavigator.ui.screens
-import android.app.Activity
 import android.annotation.SuppressLint
-import android.content.ActivityNotFoundException
-import android.content.Intent
 import android.graphics.BitmapFactory
-import android.speech.RecognizerIntent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -68,7 +62,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.RobotPose
-import com.example.teminavigator.domain.match
 import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.map.drawPin
 import com.example.teminavigator.ui.map.drawRobot
@@ -149,33 +142,13 @@ fun HomeScreen(
     robotPose: () -> RobotPose?,
     onDestinationConfirmed: (Destination) -> Unit,
     onOpenSettings: () -> Unit,
-    speechLanguage: String
+    onStartSpeechRecognition: () -> Unit
 ) {
     var selectedId by rememberSaveable{mutableStateOf<String?>(null)}
     var showConfirmationDialog by rememberSaveable {mutableStateOf(false)}
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    var speechMessage by rememberSaveable { mutableStateOf<String?>(null) }
     val selected = destinations.find{it.id==selectedId}
     val strings = LocalStrings.current
-
-    // Registers a launcher for the system speech recognizer (external activity)
-    val speechLauncher = rememberLauncherForActivityResult(
-        // Generic contract: start any Intent and receive the raw ActivityResult back
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val spokenText = result.data
-                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                ?.firstOrNull()
-            if (spokenText != null) {
-                // Map spoken text to a location in destinations
-                val match = destinations.match(spokenText)
-                searchQuery = match?.displayName ?: spokenText // if matched: show destination - otherwise: show spoken text
-                selectedId = match?.id // select matched destination or clear if no match
-                speechMessage = if (match == null) strings.spokenUnknownDestination else null
-            }
-        }
-    }
 
     // List of destinations - filtered by the current search query
     val filteredDestinations = destinations.filter { destination ->
@@ -212,7 +185,6 @@ fun HomeScreen(
                             value = searchQuery,
                             onValueChange = {
                                 searchQuery = it        // update search text
-                                speechMessage = null    // clears old speech error if user types
                             },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
@@ -222,33 +194,11 @@ fun HomeScreen(
                         // Microphone button -> starts voice input
                         IconButton(
                             onClick = {
-                                speechMessage = null // clears old speech error before new input
-
-                                // Intent object: tells Android what has to be done and asks it
-                                // to find an app that can do it (here -> speech recognition, i.e.
-                                // Google speech service)
-                                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                    // Extra: key-value pair inside the Intent, basically settings
-                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM) // language model for free, natural speech
-                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, speechLanguage)  // Language to recognize ("de", "en", etc.)
-                                    putExtra(RecognizerIntent.EXTRA_PROMPT, strings.locationQuery) // text shown in input dialog
-                                }
-                                try {
-                                    speechLauncher.launch(intent)
-                                } catch (_: ActivityNotFoundException) {
-                                    speechMessage = strings.speechUnavailable
-                                }
+                                onStartSpeechRecognition()
                             }
                         ) {
                             Icon(Icons.Filled.Mic, contentDescription = strings.voiceInput)
                         }
-                    }
-                    speechMessage?.let { message ->
-                        Text(
-                            text = message,
-                            color = colorScheme.error,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                        )
                     }
                     // Filtered list of destinations (filtered by search query)
                     LocationsList(
