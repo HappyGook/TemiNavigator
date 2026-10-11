@@ -51,7 +51,6 @@ import com.example.teminavigator.ui.theme.selectedPinColor
  * @param selectedId       id of the highlighted pin
  * @param robotPose        lambda so the map redraws on pose changes without recomposing the caller
  * @param onSelectDestination null = pins are not tappable (Navigation screen)
- * @param route            polyline in image pixel coordinates, drawn below the pins
  * @param overlay          screen-specific buttons, e.g. settings / accept (use Modifier.align inside)
  */
 @Composable
@@ -69,7 +68,6 @@ fun InteractiveMap(
     val robotPinForeground = colorScheme.locationForeground
     val pinColor = colorScheme.pinColor
     val selectedPinColor = colorScheme.selectedPinColor
-    val routeColor = colorScheme.primary
 
     val imageBitmap = remember(assetFileName) {
         context.assets.open(assetFileName).use { stream ->

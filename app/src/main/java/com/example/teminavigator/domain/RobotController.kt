@@ -1,6 +1,4 @@
 package com.example.teminavigator.domain
-import com.example.teminavigator.ui.langs.AppLanguage
-import com.robotemi.sdk.navigation.model.SpeedLevel
 import kotlinx.coroutines.flow.Flow
 
 /*

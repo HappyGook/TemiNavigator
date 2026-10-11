@@ -22,7 +22,6 @@ import com.example.teminavigator.domain.RobotEvent
 import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.domain.SpeedCalibration
 import com.example.teminavigator.ui.langs.AppStrings
-import com.example.teminavigator.ui.langs.LocalStrings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine

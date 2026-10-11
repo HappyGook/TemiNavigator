@@ -1,5 +1,4 @@
 package com.example.teminavigator.ui.screens
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,8 +32,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -63,12 +60,6 @@ fun NavigationScreen(
     onAbort: () -> Unit,
 ) {
     val strings = LocalStrings.current
-    val context = LocalContext.current
-    val mapBitmap = remember {
-        context.assets.open("uni_map.png").use { stream ->
-            BitmapFactory.decodeStream(stream).asImageBitmap()
-        }
-    }
 
     var startPose by remember(destination) { mutableStateOf<RobotPose?>(null) }
 
