@@ -1,5 +1,6 @@
 package com.example.teminavigator
 import android.util.Log
+import com.example.teminavigator.domain.NavSpeed
 import com.example.teminavigator.domain.RobotController
 import com.example.teminavigator.domain.RobotEvent
 import com.robotemi.sdk.Robot
@@ -8,6 +9,7 @@ import com.robotemi.sdk.listeners.OnGoToLocationStatusChangedListener
 import com.robotemi.sdk.listeners.OnRobotReadyListener
 import com.robotemi.sdk.navigation.listener.OnCurrentPositionChangedListener
 import com.robotemi.sdk.navigation.model.Position
+import com.robotemi.sdk.navigation.model.SpeedLevel
 import com.robotemi.sdk.permission.OnRequestPermissionResultListener
 import com.robotemi.sdk.permission.Permission
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -88,6 +90,20 @@ object TemiRobot: RobotController,
             )
         }
         return poses
+    }
+
+    override fun getSpeed(): NavSpeed = when (robot.goToSpeed) {
+        SpeedLevel.SLOW -> NavSpeed.SLOW
+        SpeedLevel.HIGH -> NavSpeed.HIGH
+        else -> NavSpeed.MEDIUM          // MEDIUM and anything the SDK adds later
+    }
+
+    override fun setSpeed(speed: NavSpeed) {
+        robot.goToSpeed = when (speed) {
+            NavSpeed.SLOW -> SpeedLevel.SLOW
+            NavSpeed.MEDIUM -> SpeedLevel.MEDIUM
+            NavSpeed.HIGH -> SpeedLevel.HIGH
+        }
     }
 
     override fun onGoToLocationStatusChanged(

@@ -1,5 +1,6 @@
 package com.example.teminavigator.domain
 import com.example.teminavigator.ui.langs.AppLanguage
+import com.robotemi.sdk.navigation.model.SpeedLevel
 import kotlinx.coroutines.flow.Flow
 
 /*
@@ -20,4 +21,6 @@ interface RobotController {
     fun stop()
     fun speak(text: String, languageCode: String)
     fun goHome()
+    fun getSpeed(): NavSpeed
+    fun setSpeed(speed: NavSpeed)
 }

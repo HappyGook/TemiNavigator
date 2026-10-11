@@ -15,10 +15,12 @@ import com.example.teminavigator.data.DestinationLabelRepository
 import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
+import com.example.teminavigator.domain.NavSpeed
 import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotController
 import com.example.teminavigator.domain.RobotEvent
 import com.example.teminavigator.domain.RobotPose
+import com.example.teminavigator.domain.SpeedCalibration
 import com.example.teminavigator.ui.langs.AppStrings
 import com.example.teminavigator.ui.langs.LocalStrings
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +56,14 @@ class NavigationViewModel(
 
     val labels: StateFlow<Map<String, DestinationLabels>> =
         labelRepo.labels.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    val speed: StateFlow<NavSpeed> = MutableStateFlow(NavSpeed.MEDIUM)
+
+    val speedCalibration: StateFlow<SpeedCalibration> = MutableStateFlow(SpeedCalibration())
+
+    val speedMps: StateFlow<Float> =
+        combine(speed, speedCalibration) { s, c -> c.mps(s) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, 0.5f)
 
     val calibration: StateFlow<MapCalibration> =
         calibrationRepo.calibration.stateIn(
@@ -126,6 +136,7 @@ class NavigationViewModel(
         viewModelScope.launch {
             robot.events.collect {event -> handleEvent(event)}
         }
+        viewModelScope.launch { speed.collect { robot.setSpeed(it) } }
     }
 
     fun startGuidance(destination: Destination){

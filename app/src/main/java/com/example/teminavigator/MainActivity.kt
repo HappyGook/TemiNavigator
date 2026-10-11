@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.data.DestinationLabels
@@ -56,7 +57,8 @@ fun TemiApp(
     onAliasesChanged: (String, List<String>) -> Unit,
     onLabelsReset: (String) -> Unit,
     onStartGuidance: (Destination) -> Unit,
-    onAbort: () -> Unit
+    onAbort: () -> Unit,
+    currentSpeed: () -> Float
 ){
     var selectedDestination by remember { mutableStateOf<Destination?>(null) }
     var currentScreen by remember {
@@ -96,6 +98,9 @@ fun TemiApp(
         )
         is Screen.NavigationScreen -> NavigationScreen(
             destination = screen.destination,
+            robotPose = robotPose,
+            currentSpeed = currentSpeed,
+            pxPerMeter = calibration.pxPerMeter,
             navigationState = navigationState,
             onTogglePause = { onToggleNavigationPause(screen.destination) },
             onAbort = {
@@ -129,6 +134,7 @@ class MainActivity : ComponentActivity() {
             val calibration by viewModel.calibration.collectAsState()
             val navigationState by viewModel.navState.collectAsState()
             val labels by viewModel.labels.collectAsState()
+            val speedMps by viewModel.speedMps.collectAsStateWithLifecycle()
             /*
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
@@ -154,7 +160,8 @@ class MainActivity : ComponentActivity() {
                         onAliasesChanged = viewModel::setAliases,
                         onLabelsReset = viewModel::resetLabels,
                         onStartGuidance = viewModel::startGuidance,
-                        onAbort = viewModel::cancelGuidance
+                        onAbort = viewModel::cancelGuidance,
+                        currentSpeed = { speedMps }
                     )
                 }
             }
