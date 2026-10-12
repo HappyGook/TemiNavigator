@@ -63,6 +63,14 @@ fun SettingsScreen(
     onBack: () -> Unit,
     calibration: MapCalibration,
     onCalibrationSaved: (MapCalibration) -> Unit,
+    destinations: List<Destination>,
+    labels: Map<String, DestinationLabels>,
+    onDisplayNameChanged: (String, String) -> Unit,
+    onAliasesChanged: (String, List<String>) -> Unit,
+    onLabelsReset: (String) -> Unit,
+    returnHomeDelaySec: Int,
+    onReturnHomeDelayChanged: (Int) -> Unit,
+    onCalibrationSaved: (MapCalibration) -> Unit,
     adminPasswordStore: AdminPasswordStore
     onCalibrationSaved: (MapCalibration) -> Unit,
     destinations: List<Destination>,
@@ -285,6 +293,8 @@ private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
             } else {
                 Text(strings.saveAdminPasswordButton)
             }
+            DestinationLabelSection(destinations = destinations,
+                labels = labels, onDisplayNameSave = onDisplayNameChanged, onAliasesSave = onAliasesChanged, onReset = onLabelsReset)
         }
     }
 }
