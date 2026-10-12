@@ -63,16 +63,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     calibration: MapCalibration,
     onCalibrationSaved: (MapCalibration) -> Unit,
-    destinations: List<Destination>,
-    labels: Map<String, DestinationLabels>,
-    onDisplayNameChanged: (String, String) -> Unit,
-    onAliasesChanged: (String, List<String>) -> Unit,
-    onLabelsReset: (String) -> Unit,
-    returnHomeDelaySec: Int,
-    onReturnHomeDelayChanged: (Int) -> Unit,
-    onCalibrationSaved: (MapCalibration) -> Unit,
-    adminPasswordStore: AdminPasswordStore
-    onCalibrationSaved: (MapCalibration) -> Unit,
+    adminPasswordStore: AdminPasswordStore,
     destinations: List<Destination>,
     labels: Map<String, DestinationLabels>,
     onDisplayNameChanged: (String, String) -> Unit,
@@ -164,7 +155,10 @@ fun SettingsScreen(
                     }
                     ChangeAdminPasswordSection(adminPasswordStore) // todo: adjust space or finde better place for section
                 }
-                SettingsColumn()
+                SettingsColumn(
+                    returnHomeDelaySec = returnHomeDelaySec,
+                    onReturnHomeDelayChanged = onReturnHomeDelayChanged
+                )
                 CalibrationSection(
                     calibration = calibration,
                     onSave = onCalibrationSaved
@@ -208,6 +202,8 @@ fun SettingsScreen(
                             Text(strings.unlockSettingsButton)
                         }
                     }
+                    DestinationLabelSection(destinations = destinations,
+                        labels = labels, onDisplayNameSave = onDisplayNameChanged, onAliasesSave = onAliasesChanged, onReset = onLabelsReset)
                 }
             }
         }
@@ -293,8 +289,6 @@ private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
             } else {
                 Text(strings.saveAdminPasswordButton)
             }
-            DestinationLabelSection(destinations = destinations,
-                labels = labels, onDisplayNameSave = onDisplayNameChanged, onAliasesSave = onAliasesChanged, onReset = onLabelsReset)
         }
     }
 }

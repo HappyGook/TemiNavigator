@@ -17,7 +17,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.data.AdminPasswordStore
 import com.example.teminavigator.data.DestinationLabels
-import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
@@ -55,34 +54,13 @@ fun TemiApp(
     onLeaveWaiting: () -> Unit,
     returnHomeDelaySec: Int,
     onReturnHomeDelayChanged: (Int) -> Unit,
-    returnCountdown: Int?
-
-    onToggleNavigationPause: () -> Unit,
+    returnCountdown: Int?,
     voiceDestination: Destination?,
-    onToggleNavigationPause: (Destination) -> Unit,
-    labels: Map<String, DestinationLabels>,
-    onDisplayNameChanged: (String, String) -> Unit,
-    onAliasesChanged: (String, List<String>) -> Unit,
-    onLabelsReset: (String) -> Unit,
-    onAbort: () -> Unit,
-    currentSpeed: () -> Float,
-    onDestinationConfirmed: (Destination) -> Unit,
-    onOpenSettings: () -> Unit,
-    onCloseSettings: () -> Unit,
-    onLeaveWaiting: () -> Unit,
-    returnHomeDelaySec: Int,
-    onReturnHomeDelayChanged: (Int) -> Unit,
-    returnCountdown: Int?
-
-    onLeaveWaiting: () -> Unit
-    currentSpeed: () -> Float
-    onAbort: () -> Unit
-    onLabelsReset: (String) -> Unit
     onVoiceDestinationHandled: () -> Unit,
     onStartSpeechRecognition: () -> Unit,
     adminPasswordStore: AdminPasswordStore,
 ){
-
+/*
     when (screen) {
         Screen.Home -> HomeScreen(
     LaunchedEffect(voiceDestination) {
@@ -92,29 +70,16 @@ fun TemiApp(
             onVoiceDestinationHandled()
         }
     }
-
+*/
     when (screen) {
         Screen.Home -> HomeScreen(
             destinations = destinations,
             robotPose = robotPose,
             onDestinationConfirmed = onDestinationConfirmed,
-            onOpenSettings = onOpenSettings
-        )
-        Screen.Settings -> SettingsScreen(
-            onDestinationConfirmed = onDestinationConfirmed,
-            onOpenSettings = onOpenSettings
-        )
-        Screen.Settings -> SettingsScreen(
-            onDestinationConfirmed = { destination ->
-                selectedDestination = destination
-                onStartGuidance(destination)
-                currentScreen = Screen.NavigationScreen(destination)
-                Log.i("Info", "Destination Confirmed")
-            },
-            onOpenSettings = { currentScreen = Screen.SettingsScreen },
+            onOpenSettings = onOpenSettings,
             onStartSpeechRecognition = onStartSpeechRecognition
         )
-        Screen.SettingsScreen -> SettingsScreen(
+        Screen.Settings -> SettingsScreen(
             currentLanguage = language,
             onLanguageChanged = onLanguageSelected,
             onBack = onCloseSettings,
@@ -126,15 +91,8 @@ fun TemiApp(
             onLabelsReset = onLabelsReset,
             destinations = destinations,
             returnHomeDelaySec = returnHomeDelaySec,
-            onReturnHomeDelayChanged = onReturnHomeDelayChanged
+            onReturnHomeDelayChanged = onReturnHomeDelayChanged,
             adminPasswordStore = adminPasswordStore,
-            labels = labels,
-            onDisplayNameChanged = onDisplayNameChanged,
-            onAliasesChanged = onAliasesChanged,
-            onLabelsReset = onLabelsReset,
-            destinations = destinations,
-            returnHomeDelaySec = returnHomeDelaySec,
-            onReturnHomeDelayChanged = onReturnHomeDelayChanged
         )
         Screen.Waiting -> WaitingScreen(
             onLeaveWaiting = onLeaveWaiting,
@@ -182,12 +140,6 @@ class MainActivity : ComponentActivity() {
             val settings by viewModel.settings.collectAsStateWithLifecycle()
             val returnCountdown by viewModel.returnCountdown.collectAsStateWithLifecycle()
             /*
-            val labels by viewModel.labels.collectAsState()
-            val speedMps by viewModel.speedMps.collectAsStateWithLifecycle()
-            val screen by viewModel.screen.collectAsStateWithLifecycle()
-            val settings by viewModel.settings.collectAsStateWithLifecycle()
-            val returnCountdown by viewModel.returnCountdown.collectAsStateWithLifecycle()
-            /*
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
                     "")
@@ -211,22 +163,7 @@ class MainActivity : ComponentActivity() {
                         voiceDestination = voiceDestination,
                         onVoiceDestinationHandled = viewModel::clearVoiceDestination,
                         onStartSpeechRecognition = viewModel::startSpeechRecognition,
-                        adminPasswordStore = adminPasswordStore
-                        onToggleNavigationPause = viewModel::toggleNavigationPause,
-                        labels = labels,
-                        onDisplayNameChanged = viewModel::setDisplayName,
-                        onAliasesChanged = viewModel::setAliases,
-                        onLabelsReset = viewModel::resetLabels,
-                        onAbort = viewModel::cancelGuidance,
-                        currentSpeed = { speedMps },
-                        onDestinationConfirmed = viewModel::confirmDestination,
-                        onOpenSettings = viewModel::openSettings,
-                        onCloseSettings = viewModel::closeSettings,
-                        onLeaveWaiting = viewModel::leaveWaiting,
-                        returnHomeDelaySec = settings.returnHomeDelaySec,
-                        onReturnHomeDelayChanged = viewModel::setReturnHomeDelay,
-                        returnCountdown = returnCountdown
-                        onToggleNavigationPause = viewModel::toggleNavigationPause,
+                        adminPasswordStore = adminPasswordStore,
                         labels = labels,
                         onDisplayNameChanged = viewModel::setDisplayName,
                         onAliasesChanged = viewModel::setAliases,

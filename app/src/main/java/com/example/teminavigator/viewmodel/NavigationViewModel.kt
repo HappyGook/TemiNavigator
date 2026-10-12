@@ -26,9 +26,6 @@ import com.example.teminavigator.domain.Screen
 import com.example.teminavigator.domain.SpeedCalibration
 import com.example.teminavigator.domain.match
 import com.example.teminavigator.ui.langs.AppStrings
-import com.example.teminavigator.domain.Screen
-import com.example.teminavigator.domain.SpeedCalibration
-import com.example.teminavigator.ui.langs.AppStrings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -163,73 +160,6 @@ class NavigationViewModel(
 
     fun startSpeechRecognition() {
         robot.startSpeechRecognition()
-    }
-
-    // screen logic
-    private val _screen = MutableStateFlow<Screen>(Screen.Home)
-    val screen: StateFlow<Screen> = _screen.asStateFlow()
-
-    private var arrivalJob: Job? = null
-
-    fun openSettings() { _screen.value = Screen.Settings }
-    fun closeSettings() { _screen.value = Screen.Home }
-    fun leaveWaiting() { _screen.value = Screen.Home }
-
-    fun setReturnHomeDelay(sec: Int) {
-        viewModelScope.launch { settingsRepo.setReturnHomeDelay(sec) }
-    }
-    private fun isAtHome(): Boolean {
-        val pose = pose.value ?: return false
-        val home = destinations.value.find { it.id == HOME_LOCATION } ?: return false
-        val isAtHome = hypot(pose.xPx - (home.imagePx?.x ?: 0f), pose.yPx - (home.imagePx?.y ?: 0f)) < HOME_RADIUS_M
-        Log.i("ViewModel","HomeCheck called, result: $isAtHome")
-        return isAtHome
-    }
-
-    private fun startReturnTimer() {
-        returnJob?.cancel()
-        returnJob = viewModelScope.launch {
-            if (isAtHome()) return@launch
-            var left = settings.value.returnHomeDelaySec
-            while (left > 0) {
-                _returnCountdown.value = left
-                delay(1_000.milliseconds)
-                left--
-            }
-            _returnCountdown.value = null
-            currentDestination = null
-            robot.goTo(HOME_LOCATION)
-        }
-    }
-
-    private fun cancelReturnTimer() {
-        returnJob?.cancel()
-        _returnCountdown.value = null
-    }
-
-    private val strings: AppStrings
-        get() = _language.value.strings
-
-    // Settings
-    private val settingsRepo = SettingsRepository(app)
-    val settings: StateFlow<AppSettings> =
-        settingsRepo.settings.stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
-
-    private val _returnCountdown = MutableStateFlow<Int?>(null)
-    val returnCountdown: StateFlow<Int?> = _returnCountdown.asStateFlow()
-    private var returnJob: Job? = null
-
-    // Label setting functions
-    fun setDisplayName(id: String, name: String) {
-        viewModelScope.launch { labelRepo.setDisplayName(id, name) }
-    }
-
-    fun setAliases(id: String, aliases: List<String>) {
-        viewModelScope.launch { labelRepo.setAliases(id, aliases) }
-    }
-
-    fun resetLabels(id: String) {
-        viewModelScope.launch { labelRepo.reset(id) }
     }
 
     // screen logic
