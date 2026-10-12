@@ -69,7 +69,9 @@ fun SettingsScreen(
     labels: Map<String, DestinationLabels>,
     onDisplayNameChanged: (String, String) -> Unit,
     onAliasesChanged: (String, List<String>) -> Unit,
-    onLabelsReset: (String) -> Unit
+    onLabelsReset: (String) -> Unit,
+    returnHomeDelaySec: Int,
+    onReturnHomeDelayChanged: (Int) -> Unit,
 ){
     val strings = LocalStrings.current
     val scope = rememberCoroutineScope()
@@ -129,7 +131,10 @@ fun SettingsScreen(
                     )
                 }
             }
-            SettingsColumn()
+            SettingsColumn(
+                returnHomeDelaySec = returnHomeDelaySec,
+                onReturnHomeDelayChanged = onReturnHomeDelayChanged
+            )
             CalibrationSection(                        // UI block for map calibration part
                 calibration = calibration,
                 onSave = onCalibrationSaved
@@ -297,7 +302,9 @@ data class SettingItem(
  */
 @Composable
 fun SettingsColumn(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    returnHomeDelaySec: Int,
+    onReturnHomeDelayChanged: (Int) -> Unit,
 ) {
     val strings = LocalStrings.current
 
@@ -347,6 +354,22 @@ fun SettingsColumn(
             checked = autoReturnEnabled.value,
             onCheckedChange = { autoReturnEnabled.value = it }
         )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(strings.returnHomeAfter, modifier = Modifier.weight(1f))
+            Button(
+                onClick = { onReturnHomeDelayChanged(returnHomeDelaySec - 1) },
+                enabled = autoReturnEnabled.value
+            ) { Text("−") }
+            Text("$returnHomeDelaySec s", modifier = Modifier.padding(horizontal = 16.dp))
+            Button(
+                onClick = { onReturnHomeDelayChanged(returnHomeDelaySec + 1) },
+                enabled = autoReturnEnabled.value
+            ) { Text("+") }
+        }
     }
 }
 

@@ -1,6 +1,5 @@
 package com.example.teminavigator.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HourglassTop
@@ -14,14 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.teminavigator.ui.langs.LocalStrings
 
 @Composable
 fun WaitingScreen(
-    onLeaveWaiting: () -> Unit
+    onLeaveWaiting: () -> Unit,
+    returnCountdown: Int?
 ) {
     val strings = LocalStrings.current
 
@@ -80,6 +79,23 @@ fun WaitingScreen(
                 onClick = onLeaveWaiting
             )
         }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Element 4b - Returning home message
+        Box(
+            modifier = Modifier.height(40.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            returnCountdown?.let { seconds ->
+                Text(
+                    strings.returningHomeIn(seconds),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontSize = 24.sp,
+                    color = Color.Gray
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
 
         // Element 5

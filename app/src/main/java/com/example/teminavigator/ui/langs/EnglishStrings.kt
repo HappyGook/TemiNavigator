@@ -59,5 +59,7 @@ val englishStrings = AppStrings(
     destinationDisplayName = "Display name",
     destinationAliases = "Aliases (comma separated)",
     destinationButtonSave = "Save",
-    destinationButtonReset = "Reset"
+    destinationButtonReset = "Reset",
+    returningHomeIn = {s->"Returning home in $s s"},
+    returnHomeAfter = "return Home after"
 )
