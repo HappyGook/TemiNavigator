@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.SurroundSound
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -29,6 +31,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,10 +42,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.example.teminavigator.data.AdminPasswordStore
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 @Composable
@@ -50,37 +59,198 @@ fun SettingsScreen(
     onLanguageChanged: (AppLanguage) -> Unit,
     onBack: () -> Unit,
     calibration: MapCalibration,
-    onCalibrationSaved: (MapCalibration) -> Unit
+    onCalibrationSaved: (MapCalibration) -> Unit,
+    adminPasswordStore: AdminPasswordStore
 ){
     val strings = LocalStrings.current
+    val scope = rememberCoroutineScope()
+    var isUnlocked by remember { mutableStateOf(false) }
+    var password by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf(false) }
+    var isCheckingPassword by remember { mutableStateOf(false) }
+
+    // Validates entered password against stored credentials
+    // Enables settings when correct password is entered
+    fun unlockSettings() {
+
+        if (password.isEmpty() || isCheckingPassword) return
+
+        val enteredPassword = password
+
+        scope.launch {
+            // Show "checking" state when password is entered
+            isCheckingPassword = true
+
+            // moves verifyPassword to a background thread, so app does not freeze
+            val valid = try {
+                withContext(Dispatchers.IO) {
+                    adminPasswordStore.verifyPassword(enteredPassword)
+                }
+            } finally {
+                isCheckingPassword = false // clear "checking" state
+            }
+
+            isUnlocked = valid
+            passwordError = !valid
+            password = ""   // clears field so password is not left on screen
+        }
+    }
 
     Scaffold{innerPadding ->
         Column(
-            Modifier.padding(16.dp)
+            Modifier.fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ){
-            Text(strings.settingsTitle, Modifier.padding(innerPadding))
-            FloatingActionButton(onClick = onBack, Modifier.padding(innerPadding)) {
+            Text(strings.settingsTitle)
+            FloatingActionButton(onClick = onBack) {
                 Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Go Back")
             }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(strings.languageLabel)
-                AppLanguage.entries.forEach { language ->
-                    FilterChip(
-                        selected = (language == currentLanguage),
-                        onClick = { onLanguageChanged(language) },
-                        label = { Text(language.nativeName) }
+            if (isUnlocked) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(strings.languageLabel)
+                    AppLanguage.entries.forEach { language ->
+                        FilterChip(
+                            selected = (language == currentLanguage),
+                            onClick = { onLanguageChanged(language) },
+                            label = { Text(language.nativeName) }
+                        )
+                    }
+                    ChangeAdminPasswordSection(adminPasswordStore) // todo: adjust space or finde better place for section
+                }
+                SettingsColumn()
+                CalibrationSection(
+                    calibration = calibration,
+                    onSave = onCalibrationSaved
+                )
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(strings.adminPasswordTitle, style = MaterialTheme.typography.titleLarge)
+                    Text(strings.adminPasswordPrompt)
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = {
+                            password = it
+                            passwordError = false
+                        },
+                        label = { Text(strings.adminPasswordLabel) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        isError = passwordError,
+                        enabled = !isCheckingPassword,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(onDone = { unlockSettings() }),
+                        modifier = Modifier.fillMaxWidth()
                     )
+                    if (passwordError) {
+                        Text(strings.incorrectAdminPassword, color = MaterialTheme.colorScheme.error)
+                    }
+                    Button(
+                        enabled = password.isNotEmpty() && !isCheckingPassword,
+                        onClick = { unlockSettings() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (isCheckingPassword) {
+                            CircularProgressIndicator()
+                        } else {
+                            Text(strings.unlockSettingsButton)
+                        }
+                    }
                 }
             }
-            SettingsColumn()
-            CalibrationSection(                        // UI block for map calibration part
-                calibration = calibration,
-                onSave = onCalibrationSaved
-            )
+        }
+    }
+}
+
+
+// Set a new password
+@Composable
+private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
+
+    val strings = LocalStrings.current
+    val scope = rememberCoroutineScope()
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var statusMessage by rememberSaveable { mutableStateOf<String?>(null) }
+    var isSaving by rememberSaveable { mutableStateOf(false) }
+    val isLongEnough = newPassword.length >= 8
+    val passwordsMatch = newPassword == confirmPassword
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(strings.changeAdminPasswordTitle, style = MaterialTheme.typography.titleLarge)
+        OutlinedTextField(
+            value = newPassword,
+            onValueChange = {
+                newPassword = it
+                statusMessage = null
+            },
+            label = { Text(strings.newAdminPasswordLabel) },
+            visualTransformation = PasswordVisualTransformation(),
+            isError = newPassword.isNotEmpty() && !isLongEnough,
+            enabled = !isSaving,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = confirmPassword,
+            onValueChange = {
+                confirmPassword = it
+                statusMessage = null
+            },
+            label = { Text(strings.confirmAdminPasswordLabel) },
+            visualTransformation = PasswordVisualTransformation(),
+            isError = confirmPassword.isNotEmpty() && !passwordsMatch,
+            enabled = !isSaving,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth()
+        )
+        if (statusMessage != null) {
+            Text(statusMessage!!, color = MaterialTheme.colorScheme.primary)
+        } else if (newPassword.isNotEmpty() && !isLongEnough) {
+            Text(strings.adminPasswordTooShort, color = MaterialTheme.colorScheme.error)
+        } else if (confirmPassword.isNotEmpty() && !passwordsMatch) {
+            Text(strings.adminPasswordsDoNotMatch, color = MaterialTheme.colorScheme.error)
+        }
+        Button(
+            enabled = isLongEnough && passwordsMatch && !isSaving,
+            onClick = {
+                scope.launch {
+                    isSaving = true
+                    val passwordToSave = newPassword
+                    try {
+                        withContext(Dispatchers.IO) {
+                            adminPasswordStore.changePassword(passwordToSave)
+                        }
+                    } finally {
+                        isSaving = false
+                    }
+                    newPassword = ""
+                    confirmPassword = ""
+                    statusMessage = strings.adminPasswordChanged
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            if (isSaving) {
+                CircularProgressIndicator()
+            } else {
+                Text(strings.saveAdminPasswordButton)
+            }
         }
     }
 }
@@ -313,4 +483,3 @@ fun CalibrationSection(
         }
     }
 }
-

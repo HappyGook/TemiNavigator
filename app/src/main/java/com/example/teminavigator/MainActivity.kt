@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.teminavigator.data.AdminPasswordStore
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
@@ -49,11 +51,23 @@ fun TemiApp(
     calibration: MapCalibration,
     onCalibrationSaved: (MapCalibration) -> Unit,
     navigationState: NavigationState,
+    voiceDestination: Destination?,
     onToggleNavigationPause: (Destination) -> Unit,
+    onVoiceDestinationHandled: () -> Unit,
+    onStartSpeechRecognition: () -> Unit,
+    adminPasswordStore: AdminPasswordStore,
 ){
     var selectedDestination by remember { mutableStateOf<Destination?>(null) }
     var currentScreen by remember {
         mutableStateOf<Screen>(Screen.HomeScreen)
+    }
+
+    LaunchedEffect(voiceDestination) {
+        voiceDestination?.let { destination ->
+            selectedDestination = destination
+            currentScreen = Screen.NavigationScreen(destination)
+            onVoiceDestinationHandled()
+        }
     }
 
     when (val screen = currentScreen) {
@@ -65,13 +79,16 @@ fun TemiApp(
                 currentScreen = Screen.NavigationScreen(destination)
                 Log.i("Info", "Destination Confirmed")
             },
-            onOpenSettings = { currentScreen = Screen.SettingsScreen })
+            onOpenSettings = { currentScreen = Screen.SettingsScreen },
+            onStartSpeechRecognition = onStartSpeechRecognition
+        )
         Screen.SettingsScreen -> SettingsScreen(
             currentLanguage = language,
             onLanguageChanged = onLanguageSelected,
             onBack = {currentScreen = Screen.HomeScreen},
             calibration = calibration,
             onCalibrationSaved = onCalibrationSaved,
+            adminPasswordStore = adminPasswordStore,
         )
         Screen.WaitingScreen -> WaitingScreen(
             onSelectLocation = {currentScreen = Screen.HomeScreen},
@@ -105,6 +122,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val adminPasswordStore = AdminPasswordStore(applicationContext)
         setContent {
             // take latest value of the language flow
             val language by viewModel.language.collectAsState()
@@ -112,6 +130,7 @@ class MainActivity : ComponentActivity() {
             val pose = viewModel.pose.collectAsState()
             val calibration by viewModel.calibration.collectAsState()
             val navigationState by viewModel.navState.collectAsState()
+            val voiceDestination by viewModel.voiceDestination.collectAsState()
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
                     "")
@@ -129,7 +148,11 @@ class MainActivity : ComponentActivity() {
                         calibration = calibration,
                         onCalibrationSaved = viewModel::setCalibration,
                         navigationState = navigationState,
-                        onToggleNavigationPause = viewModel::toggleNavigationPause
+                        onToggleNavigationPause = viewModel::toggleNavigationPause,
+                        voiceDestination = voiceDestination,
+                        onVoiceDestinationHandled = viewModel::clearVoiceDestination,
+                        onStartSpeechRecognition = viewModel::startSpeechRecognition,
+                        adminPasswordStore = adminPasswordStore
                     )
                 }
             }

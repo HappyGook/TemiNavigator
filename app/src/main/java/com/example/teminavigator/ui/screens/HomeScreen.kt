@@ -22,10 +22,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -48,7 +51,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -139,12 +141,22 @@ fun HomeScreen(
     destinations: List<Destination>,
     robotPose: () -> RobotPose?,
     onDestinationConfirmed: (Destination) -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onStartSpeechRecognition: () -> Unit
 ) {
     var selectedId by rememberSaveable{mutableStateOf<String?>(null)}
     var showConfirmationDialog by rememberSaveable {mutableStateOf(false)}
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     val selected = destinations.find{it.id==selectedId}
     val strings = LocalStrings.current
+
+    // List of destinations - filtered by the current search query
+    val filteredDestinations = destinations.filter { destination ->
+        searchQuery.isBlank() ||
+            destination.displayName.contains(searchQuery, ignoreCase = true) ||
+            destination.id.contains(searchQuery, ignoreCase = true) ||
+            destination.aliases.any { it.contains(searchQuery, ignoreCase = true) }
+    }
 
     Scaffold{ innerPadding ->
         Row(
@@ -161,11 +173,40 @@ fun HomeScreen(
                     .fillMaxWidth(0.3f)
                     .fillMaxHeight()
             ) {
-                LocationsList(
-                    destinations,
-                    selectedId = selectedId,
-                    onSelect = {selectedId = it.id}
-                )
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Search input -> bound to searchQuery state
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = {
+                                searchQuery = it        // update search text
+                            },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            placeholder = { Text(strings.searchDestinations) }
+                        )
+
+                        // Microphone button -> starts voice input
+                        IconButton(
+                            onClick = {
+                                onStartSpeechRecognition()
+                            }
+                        ) {
+                            Icon(Icons.Filled.Mic, contentDescription = strings.voiceInput)
+                        }
+                    }
+                    // Filtered list of destinations (filtered by search query)
+                    LocationsList(
+                        filteredDestinations,
+                        selectedId = selectedId,
+                        onSelect = { selectedId = it.id }
+                    )
+                }
             }
             Surface(
                 shape = RoundedCornerShape(16.dp),

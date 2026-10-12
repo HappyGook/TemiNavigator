@@ -19,4 +19,6 @@ interface RobotController {
     fun stop()
     fun speak(text: String)
     fun goHome()
+    fun setSpeechLanguage(languageCode: String)
+    fun startSpeechRecognition()
 }

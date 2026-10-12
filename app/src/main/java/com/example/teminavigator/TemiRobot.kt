@@ -3,6 +3,7 @@ import android.util.Log
 import com.example.teminavigator.domain.RobotController
 import com.example.teminavigator.domain.RobotEvent
 import com.robotemi.sdk.Robot
+import com.robotemi.sdk.SttLanguage
 import com.robotemi.sdk.TtsRequest
 import com.robotemi.sdk.listeners.OnGoToLocationStatusChangedListener
 import com.robotemi.sdk.listeners.OnRobotReadyListener
@@ -10,6 +11,7 @@ import com.robotemi.sdk.navigation.listener.OnCurrentPositionChangedListener
 import com.robotemi.sdk.navigation.model.Position
 import com.robotemi.sdk.permission.OnRequestPermissionResultListener
 import com.robotemi.sdk.permission.Permission
+import com.robotemi.sdk.voice.WakeupOrigin
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +20,9 @@ object TemiRobot: RobotController,
     OnRobotReadyListener,
     OnGoToLocationStatusChangedListener,
     OnRequestPermissionResultListener,
-    OnCurrentPositionChangedListener {
+    OnCurrentPositionChangedListener,
+    Robot.AsrListener,
+    Robot.WakeupWordListener {
 
     const val REQUEST_CODE_MAP = 1
 
@@ -33,6 +37,8 @@ object TemiRobot: RobotController,
     private var _events = MutableSharedFlow<RobotEvent>(extraBufferCapacity = 10)
     override var events = _events
 
+    private var speechLanguage = SttLanguage.SYSTEM
+
     override val availableLocations: List<String>
         get() = robot.locations
 
@@ -42,12 +48,16 @@ object TemiRobot: RobotController,
         robot.addOnRobotReadyListener(this)
         robot.addOnGoToLocationStatusChangedListener(this)
         robot.addOnRequestPermissionResultListener(this)
+        robot.addAsrListener(this)
+        robot.addWakeupWordListener(this)
     }
 
     override fun detach(){
         robot.removeOnRobotReadyListener(this)
         robot.removeOnGoToLocationStatusChangedListener(this)
         robot.removeOnRequestPermissionResultListener(this)
+        robot.removeAsrListener(this)
+        robot.removeWakeupWordListener(this)
     }
 
     override fun goTo(locationId: String) = robot.goTo(locationId)
@@ -56,6 +66,18 @@ object TemiRobot: RobotController,
         robot.speak(TtsRequest.create(text,false))
     }
     override fun goHome() = robot.goTo("home base") //TODO: create config variable for home name
+
+    override fun setSpeechLanguage(languageCode: String) {
+        speechLanguage = when (languageCode.substringBefore('-').lowercase()) {
+            "de" -> SttLanguage.DE_DE
+            "en" -> SttLanguage.EN_US
+            else -> SttLanguage.SYSTEM
+        }
+    }
+
+    override fun startSpeechRecognition() {
+        robot.wakeup(listOf(speechLanguage))
+    }
 
     override fun locationPoses(): Map<String, Triple<Double, Double, Double>> {
         Log.i("Temi", "Location Poses called!")
@@ -90,7 +112,25 @@ object TemiRobot: RobotController,
         descriptionId: Int,
         description: String
     ) {
-        TODO("Not yet implemented")
+        when (status){
+            "start" -> _events.tryEmit(RobotEvent.GoToStarted(locationId=location))
+            "abort" -> _events.tryEmit(RobotEvent.GoToCancelled(locationId=location, reason = description))
+            "complete" -> _events.tryEmit(RobotEvent.GoToFinished(locationId=location))
+        }
+    }
+
+    override fun onAsrResult(asrResult: String, sttLanguage: SttLanguage) {
+        if (asrResult.isNotBlank()) {
+            _events.tryEmit(RobotEvent.SpeechRecognised(asrResult))
+        }
+    }
+
+    override fun onWakeupWord(
+        wakeupWord: String,
+        direction: Int,
+        origin: WakeupOrigin
+    ) {
+        startSpeechRecognition()
     }
 
     override fun onRobotReady(isReady: Boolean) {

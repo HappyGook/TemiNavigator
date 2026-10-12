@@ -18,6 +18,7 @@ import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotController
 import com.example.teminavigator.domain.RobotEvent
 import com.example.teminavigator.domain.RobotPose
+import com.example.teminavigator.domain.match
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -39,6 +40,9 @@ class NavigationViewModel(
 
     private val _navState = MutableStateFlow<NavigationState>(NavigationState.Idle)
     val navState : StateFlow<NavigationState> = _navState.asStateFlow()
+
+    private val _voiceDestination = MutableStateFlow<Destination?>(null)
+    val voiceDestination: StateFlow<Destination?> = _voiceDestination.asStateFlow()
 
     private val _readyState = MutableStateFlow(true)
     val readyState : StateFlow<Boolean> = _readyState.asStateFlow()
@@ -95,19 +99,34 @@ class NavigationViewModel(
 
     fun setLanguage(language: AppLanguage){
         _language.value = language
+        robot.setSpeechLanguage(language.code)
         prefs.edit { putString("language", language.code) }
+    }
+
+    fun clearVoiceDestination() {
+        _voiceDestination.value = null
+    }
+
+    fun startSpeechRecognition() {
+        robot.startSpeechRecognition()
     }
 
     // robot integration
     init {
+        robot.setSpeechLanguage(_language.value.code)
         robot.attach()
         viewModelScope.launch {
             robot.events.collect {event -> handleEvent(event)}
         }
     }
 
+    override fun onCleared() {
+        robot.detach()
+        super.onCleared()
+    }
+
     fun startGuidance(destination: Destination){
-        robot.speak("Guidance Placeholder $destination") //TODO: add to the language pack
+        currentDestination = destination
         robot.goTo(destination.id)
     }
 
@@ -135,7 +154,12 @@ class NavigationViewModel(
                 rawPose.value = RawPose(event.x, event.y, event.yaw)
             }
             is RobotEvent.Ready -> _readyState.value = event.isReady
-            is RobotEvent.SpeechRecognised -> TODO()
+            is RobotEvent.SpeechRecognised -> {
+                destinations.value.match(event.text)?.let { destination ->
+                    startGuidance(destination)
+                    _voiceDestination.value = destination
+                }
+            }
         }
     }
 
