@@ -117,6 +117,9 @@ object TemiRobot: RobotController,
             "abort" -> _events.tryEmit(RobotEvent.GoToCancelled(locationId=location, reason = description))
             "complete" -> _events.tryEmit(RobotEvent.GoToFinished(locationId=location))
         }
+        val (x,y,yaw,tilt) = robot.getPosition()
+        Log.i("Temi","Location Status changed: $status")
+        _events.tryEmit(RobotEvent.PositionChanged(x,y,yaw))
     }
 
     override fun onRobotReady(isReady: Boolean) {
@@ -141,7 +144,7 @@ object TemiRobot: RobotController,
     }
 
     override fun onCurrentPositionChanged(position: Position) {
-        Log.i("Temi","X: ${position.x}, Y:${position.y}")
+        Log.i("Temi","onCurrentPosChanged: X: ${position.x}, Y:${position.y}")
         _events.tryEmit(RobotEvent.PositionChanged(x = position.x, y = position.y, yaw = position.yaw))
     }
 

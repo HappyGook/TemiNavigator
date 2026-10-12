@@ -21,8 +21,7 @@ import com.example.teminavigator.ui.langs.LocalStrings
 
 @Composable
 fun WaitingScreen(
-    onSelectLocation: () -> Unit,
-    onBackToNavigation: () -> Unit,
+    onLeaveWaiting: () -> Unit
 ) {
     val strings = LocalStrings.current
 
@@ -69,7 +68,7 @@ fun WaitingScreen(
                 strings.selectLocation,
                 Icons.Filled.LocationOn,
                 modifier = Modifier.height(60.dp).width(220.dp),
-                onClick = onSelectLocation,
+                onClick = onLeaveWaiting,
             )
 
             // Button to go to the current destination screen
@@ -77,7 +76,7 @@ fun WaitingScreen(
                 strings.backToNavigation,
                 Icons.Filled.Navigation,
                 modifier = Modifier.height(60.dp).width(220.dp),
-                onClick = onBackToNavigation
+                onClick = onLeaveWaiting
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -118,7 +117,7 @@ fun AppButton(
     }
 }
 
-
+/*
 @Preview(showBackground = true)
 @Composable
 fun WaitingScreenPreview() {
@@ -126,3 +125,4 @@ fun WaitingScreenPreview() {
         WaitingScreen({ Log.i("Info", "Home screen opened") }, { Log.i("Info", "Navigation screen opened") })
     }
 }
+ */

@@ -2,7 +2,6 @@ package com.example.teminavigator
 
 import android.app.Application
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -23,6 +22,7 @@ import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotPose
+import com.example.teminavigator.domain.Screen
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.screens.HomeScreen
@@ -32,18 +32,9 @@ import com.example.teminavigator.ui.screens.WaitingScreen
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
 
-// Screen types
-// TODO: Screen type should be controlled by viewModel ?
-sealed class Screen {
-    object HomeScreen : Screen()
-    data class NavigationScreen(val destination: Destination) : Screen()
-    object WaitingScreen : Screen()
-    object SettingsScreen : Screen()
-
-}
-
 @Composable
 fun TemiApp(
+    screen: Screen,
     language: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
     destinations: List<Destination>,
@@ -51,35 +42,30 @@ fun TemiApp(
     calibration: MapCalibration,
     onCalibrationSaved: (MapCalibration) -> Unit,
     navigationState: NavigationState,
-    onToggleNavigationPause: (Destination) -> Unit,
+    onToggleNavigationPause: () -> Unit,
     labels: Map<String, DestinationLabels>,
     onDisplayNameChanged: (String, String) -> Unit,
     onAliasesChanged: (String, List<String>) -> Unit,
     onLabelsReset: (String) -> Unit,
-    onStartGuidance: (Destination) -> Unit,
     onAbort: () -> Unit,
-    currentSpeed: () -> Float
+    currentSpeed: () -> Float,
+    onDestinationConfirmed: (Destination) -> Unit,
+    onOpenSettings: () -> Unit,
+    onCloseSettings: () -> Unit,
+    onLeaveWaiting: () -> Unit
 ){
-    var selectedDestination by remember { mutableStateOf<Destination?>(null) }
-    var currentScreen by remember {
-        mutableStateOf<Screen>(Screen.HomeScreen)
-    }
 
-    when (val screen = currentScreen) {
-        Screen.HomeScreen -> HomeScreen(
+    when (screen) {
+        Screen.Home -> HomeScreen(
             destinations = destinations,
             robotPose = robotPose,
-            onDestinationConfirmed = { destination ->
-                selectedDestination = destination
-                onStartGuidance(destination)
-                currentScreen = Screen.NavigationScreen(destination)
-                Log.i("Info", "Destination Confirmed")
-            },
-            onOpenSettings = { currentScreen = Screen.SettingsScreen })
-        Screen.SettingsScreen -> SettingsScreen(
+            onDestinationConfirmed = onDestinationConfirmed,
+            onOpenSettings = onOpenSettings
+        )
+        Screen.Settings -> SettingsScreen(
             currentLanguage = language,
             onLanguageChanged = onLanguageSelected,
-            onBack = {currentScreen = Screen.HomeScreen},
+            onBack = onCloseSettings,
             calibration = calibration,
             onCalibrationSaved = onCalibrationSaved,
             labels = labels,
@@ -88,25 +74,17 @@ fun TemiApp(
             onLabelsReset = onLabelsReset,
             destinations = destinations
         )
-        Screen.WaitingScreen -> WaitingScreen(
-            onSelectLocation = {currentScreen = Screen.HomeScreen},
-            onBackToNavigation = {
-                selectedDestination?.let { destination ->
-                    currentScreen = Screen.NavigationScreen(destination)
-                }
-            }
+        Screen.Waiting -> WaitingScreen(
+            onLeaveWaiting = onLeaveWaiting
         )
-        is Screen.NavigationScreen -> NavigationScreen(
+        is Screen.Navigation -> NavigationScreen(
             destination = screen.destination,
             robotPose = robotPose,
             currentSpeed = currentSpeed,
             pxPerMeter = calibration.pxPerMeter,
             navigationState = navigationState,
-            onTogglePause = { onToggleNavigationPause(screen.destination) },
-            onAbort = {
-                currentScreen = Screen.HomeScreen
-                onAbort()
-            }
+            onTogglePause = onToggleNavigationPause,
+            onAbort = onAbort
         )
     }
 }
@@ -135,6 +113,7 @@ class MainActivity : ComponentActivity() {
             val navigationState by viewModel.navState.collectAsState()
             val labels by viewModel.labels.collectAsState()
             val speedMps by viewModel.speedMps.collectAsStateWithLifecycle()
+            val screen by viewModel.screen.collectAsStateWithLifecycle()
             /*
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
@@ -147,10 +126,11 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(LocalStrings provides language.strings) {
                 TemiNavigatorTheme {
                     TemiApp(
+                        screen = screen,
                         language = language,
                         onLanguageSelected = viewModel::setLanguage,
                         destinations = destinations,
-                        robotPose = {pose.value},
+                        robotPose = { pose.value },
                         calibration = calibration,
                         onCalibrationSaved = viewModel::setCalibration,
                         navigationState = navigationState,
@@ -159,9 +139,12 @@ class MainActivity : ComponentActivity() {
                         onDisplayNameChanged = viewModel::setDisplayName,
                         onAliasesChanged = viewModel::setAliases,
                         onLabelsReset = viewModel::resetLabels,
-                        onStartGuidance = viewModel::startGuidance,
                         onAbort = viewModel::cancelGuidance,
-                        currentSpeed = { speedMps }
+                        currentSpeed = { speedMps },
+                        onDestinationConfirmed = viewModel::confirmDestination,
+                        onOpenSettings = viewModel::openSettings,
+                        onCloseSettings = viewModel::closeSettings,
+                        onLeaveWaiting = viewModel::leaveWaiting
                     )
                 }
             }
