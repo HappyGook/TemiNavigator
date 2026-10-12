@@ -20,10 +20,12 @@ import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotController
 import com.example.teminavigator.domain.RobotEvent
 import com.example.teminavigator.domain.RobotPose
+import com.example.teminavigator.domain.Screen
 import com.example.teminavigator.domain.SpeedCalibration
 import com.example.teminavigator.domain.match
 import com.example.teminavigator.ui.langs.AppStrings
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -142,6 +144,16 @@ class NavigationViewModel(
         robot.startSpeechRecognition()
     }
 
+    // screen logic
+    private val _screen = MutableStateFlow<Screen>(Screen.Home)
+    val screen: StateFlow<Screen> = _screen.asStateFlow()
+
+    private var arrivalJob: Job? = null
+
+    fun openSettings() { _screen.value = Screen.Settings }
+    fun closeSettings() { _screen.value = Screen.Home }
+    fun leaveWaiting() { _screen.value = Screen.Home }
+
     // robot integration
     init {
         robot.setSpeechLanguage(_language.value.code)
@@ -163,20 +175,31 @@ class NavigationViewModel(
         speak(strings.spokenStarting(destination.displayName))
     }
 
-    fun toggleNavigationPause(destination: Destination) {
+    fun toggleNavigationPause() {
+        val dest = currentDestination ?: return
         when (_navState.value) {
+            is NavigationState.Guiding -> {
+                _navState.value = NavigationState.Paused(dest)
+                robot.stop()
+            }
             is NavigationState.Paused -> {
-                startGuidance(destination)
-                _navState.value = NavigationState.Guiding(destination)
+                _navState.value = NavigationState.Guiding(dest)
+                robot.goTo(dest.id)
             }
-            else -> {
-                cancelGuidance()
-                _navState.value = NavigationState.Paused(destination)
-            }
+            else -> Unit
         }
     }
 
+    fun confirmDestination(destination: Destination) {
+        arrivalJob?.cancel()
+        startGuidance(destination)
+        _screen.value = Screen.Navigation(destination)
+    }
+
     fun cancelGuidance(){
+        arrivalJob?.cancel()
+        _navState.value = NavigationState.Idle
+        _screen.value = Screen.Home
         robot.stop()
         speak(strings.spokenAbort)
     }
@@ -187,12 +210,24 @@ class NavigationViewModel(
 
     private fun handleEvent(event: RobotEvent){
         when (event){
-            is RobotEvent.GoToCancelled -> _navState.value = NavigationState.Idle
-            is RobotEvent.GoToFinished -> currentDestination?.let {_navState.value = NavigationState.Arrived(it)}
-            is RobotEvent.GoToStarted -> currentDestination?.let { _navState.value =
-                NavigationState.Guiding(it)
+            is RobotEvent.GoToCancelled -> {
+                if (_navState.value !is NavigationState.Paused) {
+                    _navState.value = NavigationState.Idle
+                }
+            }
+            is RobotEvent.GoToFinished -> currentDestination?.let { dest ->
+                _navState.value = NavigationState.Arrived(dest)
+                arrivalJob?.cancel()
+                arrivalJob = viewModelScope.launch { // TODO: delay e.g. 3_000L, so the user sees "arrived"
+                    _navState.value = NavigationState.Idle
+                    _screen.value = Screen.Waiting
+                }
+            }
+            is RobotEvent.GoToStarted -> currentDestination?.let {
+                _navState.value = NavigationState.Guiding(it)
             }
             is RobotEvent.PositionChanged -> {
+                Log.i("ViewModel","Viewmodel received a positionChanged event: X=${event.x}, Y=${event.y} ")
                 rawPose.value = RawPose(event.x, event.y, event.yaw)
             }
             is RobotEvent.Ready -> _readyState.value = event.isReady
