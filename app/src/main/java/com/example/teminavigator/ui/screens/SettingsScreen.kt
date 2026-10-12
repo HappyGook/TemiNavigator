@@ -130,17 +130,18 @@ fun SettingsScreen(
                     )
                 }
             }
-            SettingsColumn(
-                returnHomeDelaySec = returnHomeDelaySec,
-                onReturnHomeDelayChanged = onReturnHomeDelayChanged
-            )
-            CalibrationSection(                        // UI block for map calibration part
-                calibration = calibration,
-                onSave = onCalibrationSaved
-            )
-            DestinationLabelSection(destinations = destinations,
-                labels = labels, onDisplayNameSave = onDisplayNameChanged, onAliasesSave = onAliasesChanged, onReset = onLabelsReset)
             if (isUnlocked) {
+                SettingsColumn(
+                    returnHomeDelaySec = returnHomeDelaySec,
+                    onReturnHomeDelayChanged = onReturnHomeDelayChanged
+                )
+                CalibrationSection(                        // UI block for map calibration part
+                    calibration = calibration,
+                    onSave = onCalibrationSaved
+                )
+                DestinationLabelSection(destinations = destinations,
+                    labels = labels, onDisplayNameSave = onDisplayNameChanged, onAliasesSave = onAliasesChanged, onReset = onLabelsReset)
+
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -163,6 +164,8 @@ fun SettingsScreen(
                     calibration = calibration,
                     onSave = onCalibrationSaved
                 )
+                DestinationLabelSection(destinations = destinations,
+                    labels = labels, onDisplayNameSave = onDisplayNameChanged, onAliasesSave = onAliasesChanged, onReset = onLabelsReset)
             } else {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -202,8 +205,6 @@ fun SettingsScreen(
                             Text(strings.unlockSettingsButton)
                         }
                     }
-                    DestinationLabelSection(destinations = destinations,
-                        labels = labels, onDisplayNameSave = onDisplayNameChanged, onAliasesSave = onAliasesChanged, onReset = onLabelsReset)
                 }
             }
         }
