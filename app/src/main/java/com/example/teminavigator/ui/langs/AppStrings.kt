@@ -14,6 +14,8 @@ data class AppStrings (
     val selectLocation: String,
     val backToNavigation: String,
     val speechNotice: String,
+    val returningHomeIn: (Int) -> String,
+    val returnHomeAfter: String,
 
     // Navigation screen
     val goingTo: String,

@@ -45,5 +45,7 @@ val pirateStrings = AppStrings(
     destinationDisplayName = "Port name",
     destinationAliases = "Aliases (comma separated, like yer pirate names)",
     destinationButtonSave = "Stash it",
-    destinationButtonReset = "Scuttle it"
+    destinationButtonReset = "Scuttle it",
+    returningHomeIn = {s->"Sailing to my haven in $s s"},
+    returnHomeAfter = "Sailing back to haven after"
 )

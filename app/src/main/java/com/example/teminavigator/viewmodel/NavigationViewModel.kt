@@ -10,9 +10,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import androidx.core.content.edit
 import androidx.lifecycle.viewModelScope
+import com.example.teminavigator.data.AppSettings
 import com.example.teminavigator.data.CalibrationRepository
 import com.example.teminavigator.data.DestinationLabelRepository
 import com.example.teminavigator.data.DestinationLabels
+import com.example.teminavigator.data.SettingsRepository
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavSpeed
@@ -25,11 +27,18 @@ import com.example.teminavigator.domain.SpeedCalibration
 import com.example.teminavigator.ui.langs.AppStrings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.hypot
+import kotlin.time.Duration.Companion.milliseconds
+
+// constants
+private const val HOME_LOCATION = "home base"
+private const val HOME_RADIUS_M = 0.4
 
 class NavigationViewModel(
     app: Application,
@@ -118,6 +127,15 @@ class NavigationViewModel(
     private val strings: AppStrings
         get() = _language.value.strings
 
+    // Settings
+    private val settingsRepo = SettingsRepository(app)
+    val settings: StateFlow<AppSettings> =
+        settingsRepo.settings.stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
+
+    private val _returnCountdown = MutableStateFlow<Int?>(null)
+    val returnCountdown: StateFlow<Int?> = _returnCountdown.asStateFlow()
+    private var returnJob: Job? = null
+
     // Label setting functions
     fun setDisplayName(id: String, name: String) {
         viewModelScope.launch { labelRepo.setDisplayName(id, name) }
@@ -141,6 +159,38 @@ class NavigationViewModel(
     fun closeSettings() { _screen.value = Screen.Home }
     fun leaveWaiting() { _screen.value = Screen.Home }
 
+    fun setReturnHomeDelay(sec: Int) {
+        viewModelScope.launch { settingsRepo.setReturnHomeDelay(sec) }
+    }
+    private fun isAtHome(): Boolean {
+        val pose = pose.value ?: return false
+        val home = destinations.value.find { it.id == HOME_LOCATION } ?: return false
+        val isAtHome = hypot(pose.xPx - (home.imagePx?.x ?: 0f), pose.yPx - (home.imagePx?.y ?: 0f)) < HOME_RADIUS_M
+        Log.i("ViewModel","HomeCheck called, result: $isAtHome")
+        return isAtHome
+    }
+
+    private fun startReturnTimer() {
+        returnJob?.cancel()
+        returnJob = viewModelScope.launch {
+            if (isAtHome()) return@launch
+            var left = settings.value.returnHomeDelaySec
+            while (left > 0) {
+                _returnCountdown.value = left
+                delay(1_000.milliseconds)
+                left--
+            }
+            _returnCountdown.value = null
+            currentDestination = null
+            robot.goTo(HOME_LOCATION)
+        }
+    }
+
+    private fun cancelReturnTimer() {
+        returnJob?.cancel()
+        _returnCountdown.value = null
+    }
+
     // robot integration
     init {
         robot.attach()
@@ -148,6 +198,9 @@ class NavigationViewModel(
             robot.events.collect {event -> handleEvent(event)}
         }
         viewModelScope.launch { speed.collect { robot.setSpeed(it) } }
+        viewModelScope.launch {
+            screen.collect { if (it is Screen.Waiting) startReturnTimer() else cancelReturnTimer() }
+        }
     }
 
     fun startGuidance(destination: Destination){

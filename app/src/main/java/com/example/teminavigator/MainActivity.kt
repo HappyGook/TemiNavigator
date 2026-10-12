@@ -10,9 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
@@ -52,7 +49,11 @@ fun TemiApp(
     onDestinationConfirmed: (Destination) -> Unit,
     onOpenSettings: () -> Unit,
     onCloseSettings: () -> Unit,
-    onLeaveWaiting: () -> Unit
+    onLeaveWaiting: () -> Unit,
+    returnHomeDelaySec: Int,
+    onReturnHomeDelayChanged: (Int) -> Unit,
+    returnCountdown: Int?
+
 ){
 
     when (screen) {
@@ -72,10 +73,13 @@ fun TemiApp(
             onDisplayNameChanged = onDisplayNameChanged,
             onAliasesChanged = onAliasesChanged,
             onLabelsReset = onLabelsReset,
-            destinations = destinations
+            destinations = destinations,
+            returnHomeDelaySec = returnHomeDelaySec,
+            onReturnHomeDelayChanged = onReturnHomeDelayChanged
         )
         Screen.Waiting -> WaitingScreen(
-            onLeaveWaiting = onLeaveWaiting
+            onLeaveWaiting = onLeaveWaiting,
+            returnCountdown = returnCountdown
         )
         is Screen.Navigation -> NavigationScreen(
             destination = screen.destination,
@@ -114,6 +118,8 @@ class MainActivity : ComponentActivity() {
             val labels by viewModel.labels.collectAsState()
             val speedMps by viewModel.speedMps.collectAsStateWithLifecycle()
             val screen by viewModel.screen.collectAsStateWithLifecycle()
+            val settings by viewModel.settings.collectAsStateWithLifecycle()
+            val returnCountdown by viewModel.returnCountdown.collectAsStateWithLifecycle()
             /*
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
@@ -144,7 +150,10 @@ class MainActivity : ComponentActivity() {
                         onDestinationConfirmed = viewModel::confirmDestination,
                         onOpenSettings = viewModel::openSettings,
                         onCloseSettings = viewModel::closeSettings,
-                        onLeaveWaiting = viewModel::leaveWaiting
+                        onLeaveWaiting = viewModel::leaveWaiting,
+                        returnHomeDelaySec = settings.returnHomeDelaySec,
+                        onReturnHomeDelayChanged = viewModel::setReturnHomeDelay,
+                        returnCountdown = returnCountdown
                     )
                 }
             }

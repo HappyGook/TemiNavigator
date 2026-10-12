@@ -1,7 +1,5 @@
 package com.example.teminavigator.ui.langs
 
-import kotlin.String
-
 val germanStrings = AppStrings(
     acceptButton = "Bring mich hin",
     confirmTitle = { name -> "Zu $name gehen?" },
@@ -47,5 +45,7 @@ val germanStrings = AppStrings(
     destinationDisplayName = "Darstellname",
     destinationAliases = "Aliases (comma-separiert)",
     destinationButtonSave = "Speichern",
-    destinationButtonReset = "Zurücksetzen"
+    destinationButtonReset = "Zurücksetzen",
+    returningHomeIn = {s->"Zurück zur Warteposition in $s s"},
+    returnHomeAfter = "Zurück zur Basis fahren"
 )

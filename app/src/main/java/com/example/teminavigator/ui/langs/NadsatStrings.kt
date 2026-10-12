@@ -45,5 +45,7 @@ val nadsatStrings = AppStrings(
     destinationDisplayName = "Name for the glazzies",
     destinationAliases = "Other names (comma separated)",
     destinationButtonSave = "Save",
-    destinationButtonReset = "Reset"
+    destinationButtonReset = "Reset",
+    returningHomeIn = {s->"Ittying home in $s s"},
+    returnHomeAfter = "ittying Home after"
 )
