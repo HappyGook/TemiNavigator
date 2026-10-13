@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
@@ -19,12 +20,14 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -43,6 +46,8 @@ import com.example.teminavigator.ui.theme.locationBackground
 import com.example.teminavigator.ui.theme.locationForeground
 import com.example.teminavigator.ui.theme.pinColor
 import com.example.teminavigator.ui.theme.selectedPinColor
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 
 /**
  * Interactive floor map (pinch-zoom, pan, zoom buttons, pins, robot, optional route).
@@ -75,7 +80,7 @@ fun InteractiveMap(
         }
     }
 
-    var scale by remember { mutableFloatStateOf(1f) }
+    var scale by remember { mutableFloatStateOf(1.5f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
     val minScale = 1f
@@ -85,6 +90,25 @@ fun InteractiveMap(
 
     // always call the latest callback from inside pointerInput
     val currentOnTap by rememberUpdatedState(onSelectDestination)
+
+    // On the launch center the map on the current destination
+    LaunchedEffect(boxSize, imageBitmap) {
+        if (boxSize == Size.Zero) return@LaunchedEffect
+        val pose = snapshotFlow { robotPose() }.filterNotNull().first()
+
+        // robot position on screen at scale 1 / no offset
+        val base = imageToScreen(
+            Offset(pose.xPx, pose.yPx), boxSize,
+            imageBitmap.width, imageBitmap.height, 1f, Offset.Zero
+        )
+        val center = Offset(boxSize.width / 2f, boxSize.height / 2f)
+
+        // Shifting by (center - base) * scale centers the robot
+        offset = clampOffset(
+            (center - base) * scale, scale, boxSize,
+            imageBitmap.width, imageBitmap.height
+        )
+    }
 
     Box(
         modifier = modifier
@@ -96,11 +120,8 @@ fun InteractiveMap(
                 detectTransformGestures { _, pan, zoom, _ ->
                     val newScale = (scale * zoom).coerceIn(minScale, maxScale)
                     scale = newScale
-                    offset = if (newScale == minScale) {
-                        Offset.Zero
-                    } else {
-                        offset + pan
-                    }
+                    offset = if (newScale == minScale) Offset.Zero
+                    else clampOffset(offset + pan, newScale, boxSize, imageBitmap.width, imageBitmap.height)
                 }
             }
             .then(
@@ -183,21 +204,34 @@ fun InteractiveMap(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FloatingActionButton(
-                onClick = { scale = (scale + 0.3f).coerceIn(minScale, maxScale) }
+                onClick = { scale = (scale + 0.3f).coerceIn(minScale, maxScale) },
+                modifier = Modifier
+                    .size(56.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Zoom in")
+                Icon(Icons.Default.Add, contentDescription = "Zoom in", Modifier.size(40.dp))
             }
             FloatingActionButton(
                 onClick = {
                     scale = (scale - 0.3f).coerceIn(minScale, maxScale)
                     if (scale == minScale) offset = Offset.Zero
-                }
+                },
+                modifier = Modifier
+                    .size(56.dp)
             ) {
-                Icon(Icons.Default.Remove, contentDescription = "Zoom out")
+                Icon(Icons.Default.Remove, contentDescription = "Zoom out", Modifier.size(40.dp))
             }
         }
 
         // screen-specific buttons (e.g. settings, accept)
         overlay()
     }
+}
+
+private fun clampOffset(
+    offset: Offset, scale: Float, box: Size, imgW: Int, imgH: Int
+): Offset {
+    val fit = minOf(box.width / imgW, box.height / imgH)   // ContentScale.Fit factor
+    val maxX = maxOf(0f, (imgW * fit * scale - box.width) / 2f)
+    val maxY = maxOf(0f, (imgH * fit * scale - box.height) / 2f)
+    return Offset(offset.x.coerceIn(-maxX, maxX), offset.y.coerceIn(-maxY, maxY))
 }

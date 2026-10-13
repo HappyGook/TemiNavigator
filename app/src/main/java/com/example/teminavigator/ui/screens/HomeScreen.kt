@@ -273,7 +273,7 @@ fun HSPreview(){
         CompositionLocalProvider(LocalStrings provides germanStrings) {
         HomeScreen(
             listOf(mockDest),
-            robotPose = { RobotPose(0f,0f,0f) },
+            robotPose = { RobotPose(481f,1181f,0f) },
             onDestinationConfirmed = {},
             onOpenSettings = { },
             onStartSpeechRecognition = { }
