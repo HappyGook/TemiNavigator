@@ -14,7 +14,7 @@
 
         <meta-data
             android:name="com.robotemi.sdk.metadata.PERMISSIONS"
-            android:value="com.robotemi.permission.map" />
+            android:value="com.robotemi.permission.map,com.robotemi.permission.settings" />
 
         <activity
             android:name=".MainActivity"

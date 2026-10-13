@@ -167,23 +167,20 @@ object TemiRobot: RobotController,
 
     override fun onRobotReady(isReady: Boolean) {
         if (!isReady) return
-        val mapPermission =
-            robot.checkSelfPermission(Permission.MAP)
-        if (mapPermission != Permission.GRANTED) {
-            Log.i("Permissions", "Requesting permission to map...")
-            robot.requestPermissions(
-                listOf(Permission.MAP),
-                REQUEST_CODE_MAP
-            )
+        val missing = missingPermissions()
+        if (missing.isNotEmpty()) {
+            Log.i("Permissions", "Requesting $missing")
+            robot.requestPermissions(missing, REQUEST_CODE_MAP)
             return
         }
-        // Permission was already granted
+        // Permissions were already granted
         _events.tryEmit(RobotEvent.Ready(isReady))
         Log.i("Temi","Robot ready state: $isReady")
         val (x,y,yaw,tilt) = robot.getPosition()
         Log.i("Temi","X: $x, Y:$y, yaw: $yaw, tilt:$tilt")
         // emit positionChanged to get starting coordinates of the robot
         _events.tryEmit(RobotEvent.PositionChanged(x,y,yaw))
+        robot.setDetectionModeOn(true,1.5f)
     }
 
     override fun onCurrentPositionChanged(position: Position) {
@@ -191,18 +188,19 @@ object TemiRobot: RobotController,
         _events.tryEmit(RobotEvent.PositionChanged(x = position.x, y = position.y, yaw = position.yaw))
     }
 
+    private val requiredPermissions = listOf(Permission.MAP, Permission.SETTINGS)
+    private fun missingPermissions() =
+        requiredPermissions.filter { robot.checkSelfPermission(it) != Permission.GRANTED }
+
     override fun onRequestPermissionResult(
         permission: Permission,
         grantResult: Int,
         requestCode: Int
     ) {
         if (requestCode != REQUEST_CODE_MAP) return
-        if (permission != Permission.MAP) return
-        if (grantResult == Permission.GRANTED) {
-            Log.i("Permissions", "MAP permission granted")
-            _events.tryEmit(RobotEvent.Ready(true))
-        } else {
-            Log.w("Permissions", "MAP permission denied")
+        Log.i("Permissions", "$permission result: $grantResult")
+        if (grantResult == Permission.GRANTED && missingPermissions().isEmpty()) {
+            onRobotReady(true)
         }
     }
 
