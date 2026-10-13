@@ -5,7 +5,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,9 +12,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.teminavigator.ui.langs.LocalStrings
+import com.example.teminavigator.ui.langs.germanStrings
 
 @Composable
 fun WaitingScreen(
@@ -35,7 +36,7 @@ fun WaitingScreen(
         Icon(
             imageVector = Icons.Filled.HourglassTop,
             contentDescription = null,
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(96.dp)
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -44,7 +45,7 @@ fun WaitingScreen(
             strings.greeting,
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
-            fontSize = 48.sp
+            fontSize = 64.sp
         )
         Spacer(modifier = Modifier.height(18.dp))
 
@@ -53,7 +54,7 @@ fun WaitingScreen(
             strings.locationQuery,
             style = MaterialTheme.typography.bodyLarge,
             color = Color.Gray,
-            fontSize = 24.sp
+            fontSize = 36.sp
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -63,34 +64,26 @@ fun WaitingScreen(
          */
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
 
-            // Button to go to navigation screen
+            // Button to go to the current destination screen
             AppButton(
                 strings.selectLocation,
                 Icons.Filled.LocationOn,
-                modifier = Modifier.height(60.dp).width(220.dp),
+                modifier = Modifier.height(90.dp).width(380.dp),
                 onClick = onLeaveWaiting,
-            )
-
-            // Button to go to the current destination screen
-            AppButton(
-                strings.backToNavigation,
-                Icons.Filled.Navigation,
-                modifier = Modifier.height(60.dp).width(220.dp),
-                onClick = onLeaveWaiting
             )
         }
         Spacer(modifier = Modifier.height(8.dp))
 
         // Element 4b - Returning home message
         Box(
-            modifier = Modifier.height(40.dp),
+            modifier = Modifier.height(48.dp),
             contentAlignment = Alignment.Center
         ) {
             returnCountdown?.let { seconds ->
                 Text(
                     strings.returningHomeIn(seconds),
                     style = MaterialTheme.typography.titleLarge,
-                    fontSize = 24.sp,
+                    fontSize = 32.sp,
                     color = Color.Gray
                 )
             }
@@ -104,14 +97,15 @@ fun WaitingScreen(
                 imageVector = Icons.Filled.Mic,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(20.dp)
+                    .size(28.dp)
                     .alignByBaseline() // shift up a bit so it sits visually centered with lowercase text height
             )
             Spacer(modifier = Modifier.width(2.dp))
             Text(
                 strings.speechNotice,
+                fontSize = 32.sp,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                color = Color.DarkGray
             )
         }
     }
@@ -128,18 +122,19 @@ fun AppButton(
     Button(onClick = onClick, modifier = modifier, colors = colors) {
 
         /* Inside button body */
-        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp))
+        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(32.dp))
         Spacer(modifier = Modifier.width(4.dp))
-        Text(text)
+        Text(text, fontSize = 28.sp)
     }
 }
 
-/*
+
 @Preview(showBackground = true)
 @Composable
 fun WaitingScreenPreview() {
     MaterialTheme {
-        WaitingScreen({ Log.i("Info", "Home screen opened") }, { Log.i("Info", "Navigation screen opened") })
+        CompositionLocalProvider(LocalStrings provides germanStrings) {
+        WaitingScreen({ }, returnCountdown = null)
+        }
     }
 }
- */

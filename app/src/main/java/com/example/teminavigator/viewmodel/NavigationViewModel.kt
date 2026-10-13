@@ -165,7 +165,7 @@ class NavigationViewModel(
     }
 
     // screen logic
-    private val _screen = MutableStateFlow<Screen>(Screen.Home)
+    private val _screen = MutableStateFlow<Screen>(Screen.Waiting)
     val screen: StateFlow<Screen> = _screen.asStateFlow()
 
     private var arrivalJob: Job? = null
