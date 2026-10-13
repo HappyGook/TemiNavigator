@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -41,10 +43,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.data.AdminPasswordStore
@@ -113,20 +117,23 @@ fun SettingsScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ){
-            Text(strings.settingsTitle)
-            FloatingActionButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Go Back")
+            Text(strings.settingsTitle, fontSize = 36.sp, fontWeight = FontWeight.Bold)
+            FloatingActionButton(
+                onClick = onBack,
+                modifier = Modifier.size(56.dp)
+            ) {
+                Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Go Back", Modifier.size(40.dp))
             }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(strings.languageLabel)
+                Text(strings.languageLabel, fontSize = 32.sp)
                 AppLanguage.entries.forEach { language ->
                     FilterChip(
                         selected = (language == currentLanguage),
                         onClick = { onLanguageChanged(language) },
-                        label = { Text(language.nativeName) }
+                        label = { Text(language.nativeName, fontSize = 24.sp) }
                     )
                 }
             }
@@ -139,31 +146,13 @@ fun SettingsScreen(
                     calibration = calibration,
                     onSave = onCalibrationSaved
                 )
-                DestinationLabelSection(destinations = destinations,
-                    labels = labels, onDisplayNameSave = onDisplayNameChanged, onAliasesSave = onAliasesChanged, onReset = onLabelsReset)
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(strings.languageLabel)
-                    AppLanguage.entries.forEach { language ->
-                        FilterChip(
-                            selected = (language == currentLanguage),
-                            onClick = { onLanguageChanged(language) },
-                            label = { Text(language.nativeName) }
-                        )
-                    }
                     ChangeAdminPasswordSection(adminPasswordStore) // todo: adjust space or finde better place for section
                 }
-                SettingsColumn(
-                    returnHomeDelaySec = returnHomeDelaySec,
-                    onReturnHomeDelayChanged = onReturnHomeDelayChanged
-                )
-                CalibrationSection(
-                    calibration = calibration,
-                    onSave = onCalibrationSaved
-                )
                 DestinationLabelSection(destinations = destinations,
                     labels = labels, onDisplayNameSave = onDisplayNameChanged, onAliasesSave = onAliasesChanged, onReset = onLabelsReset)
             } else {
@@ -171,15 +160,15 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(strings.adminPasswordTitle, style = MaterialTheme.typography.titleLarge)
-                    Text(strings.adminPasswordPrompt)
+                    Text(strings.adminPasswordTitle, style = MaterialTheme.typography.titleLarge, fontSize = 32.sp)
+                    Text(strings.adminPasswordPrompt, fontSize = 24.sp)
                     OutlinedTextField(
                         value = password,
                         onValueChange = {
                             password = it
                             passwordError = false
                         },
-                        label = { Text(strings.adminPasswordLabel) },
+                        label = { Text(strings.adminPasswordLabel, fontSize = 24.sp) },
                         visualTransformation = PasswordVisualTransformation(),
                         isError = passwordError,
                         enabled = !isCheckingPassword,
@@ -192,17 +181,17 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                     if (passwordError) {
-                        Text(strings.incorrectAdminPassword, color = MaterialTheme.colorScheme.error)
+                        Text(strings.incorrectAdminPassword, color = MaterialTheme.colorScheme.error, fontSize = 24.sp)
                     }
                     Button(
                         enabled = password.isNotEmpty() && !isCheckingPassword,
                         onClick = { unlockSettings() },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().height(72.dp)
                     ) {
                         if (isCheckingPassword) {
                             CircularProgressIndicator()
                         } else {
-                            Text(strings.unlockSettingsButton)
+                            Text(strings.unlockSettingsButton, fontSize = 28.sp)
                         }
                     }
                 }
@@ -229,14 +218,14 @@ private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(strings.changeAdminPasswordTitle, style = MaterialTheme.typography.titleLarge)
+        Text(strings.changeAdminPasswordTitle, style = MaterialTheme.typography.titleLarge, fontSize = 32.sp)
         OutlinedTextField(
             value = newPassword,
             onValueChange = {
                 newPassword = it
                 statusMessage = null
             },
-            label = { Text(strings.newAdminPasswordLabel) },
+            label = { Text(strings.newAdminPasswordLabel, fontSize = 24.sp) },
             visualTransformation = PasswordVisualTransformation(),
             isError = newPassword.isNotEmpty() && !isLongEnough,
             enabled = !isSaving,
@@ -250,7 +239,7 @@ private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
                 confirmPassword = it
                 statusMessage = null
             },
-            label = { Text(strings.confirmAdminPasswordLabel) },
+            label = { Text(strings.confirmAdminPasswordLabel, fontSize = 24.sp) },
             visualTransformation = PasswordVisualTransformation(),
             isError = confirmPassword.isNotEmpty() && !passwordsMatch,
             enabled = !isSaving,
@@ -261,9 +250,9 @@ private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
         if (statusMessage != null) {
             Text(statusMessage!!, color = MaterialTheme.colorScheme.primary)
         } else if (newPassword.isNotEmpty() && !isLongEnough) {
-            Text(strings.adminPasswordTooShort, color = MaterialTheme.colorScheme.error)
+            Text(strings.adminPasswordTooShort, color = MaterialTheme.colorScheme.error, fontSize = 24.sp)
         } else if (confirmPassword.isNotEmpty() && !passwordsMatch) {
-            Text(strings.adminPasswordsDoNotMatch, color = MaterialTheme.colorScheme.error)
+            Text(strings.adminPasswordsDoNotMatch, color = MaterialTheme.colorScheme.error, fontSize = 24.sp)
         }
         Button(
             enabled = isLongEnough && passwordsMatch && !isSaving,
@@ -283,12 +272,12 @@ private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
                     statusMessage = strings.adminPasswordChanged
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().height(72.dp)
         ) {
             if (isSaving) {
                 CircularProgressIndicator()
             } else {
-                Text(strings.saveAdminPasswordButton)
+                Text(strings.saveAdminPasswordButton, fontSize = 24.sp)
             }
         }
     }
@@ -364,16 +353,18 @@ fun SettingsColumn(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(strings.returnHomeAfter, modifier = Modifier.weight(1f))
+            Text(strings.returnHomeAfter, fontSize = 24.sp, modifier = Modifier.weight(1f))
             Button(
                 onClick = { onReturnHomeDelayChanged(returnHomeDelaySec - 1) },
-                enabled = autoReturnEnabled.value
+                enabled = autoReturnEnabled.value,
+                modifier = Modifier.height(40.dp)
             ) { Text("−") }
-            Text("$returnHomeDelaySec s", modifier = Modifier.padding(horizontal = 16.dp))
+            Text("$returnHomeDelaySec s", fontSize = 24.sp, modifier = Modifier.padding(horizontal = 16.dp))
             Button(
                 onClick = { onReturnHomeDelayChanged(returnHomeDelaySec + 1) },
-                enabled = autoReturnEnabled.value
-            ) { Text("+") }
+                enabled = autoReturnEnabled.value,
+                modifier = Modifier.height(40.dp)
+            ) { Text("+", fontSize = 24.sp) }
         }
     }
 }
@@ -405,13 +396,15 @@ fun SettingRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = 24.sp
             )
 
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 20.sp
             )
         }
 
@@ -419,7 +412,8 @@ fun SettingRow(
 
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.size(40.dp)
         )
     }
 }
@@ -458,14 +452,14 @@ fun CalibrationSection(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(strings.calibrationHeader, style = MaterialTheme.typography.titleLarge)
+        Text(strings.calibrationHeader, style = MaterialTheme.typography.titleLarge, fontSize = 32.sp)
 
         // Origin (x and y in one row)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
                 value = originX,
                 onValueChange = { originX = it },
-                label = { Text(strings.originXText) },
+                label = { Text(strings.originXText, fontSize = 24.sp) },
                 placeholder = { Text(calibration.originPx.x.toString()) },
                 isError = newX == null,
                 singleLine = true,
@@ -478,7 +472,7 @@ fun CalibrationSection(
             OutlinedTextField(
                 value = originY,
                 onValueChange = { originY = it },
-                label = { Text(strings.originYText) },
+                label = { Text(strings.originYText, fontSize = 24.sp) },
                 placeholder = { Text(calibration.originPx.y.toString()) },
                 isError = newY == null,
                 singleLine = true,
@@ -493,7 +487,7 @@ fun CalibrationSection(
         OutlinedTextField(
             value = pxPerMeter,
             onValueChange = { pxPerMeter = it },
-            label = { Text(strings.pxPerMeterText) },
+            label = { Text(strings.pxPerMeterText, fontSize = 24.sp) },
             placeholder = { Text(calibration.pxPerMeter.toString()) },
             isError = newScale == null,
             supportingText = { if (newScale == null) Text(strings.pxPerMeterWarning) },
@@ -508,7 +502,7 @@ fun CalibrationSection(
         OutlinedTextField(
             value = anchorYaw,
             onValueChange = { anchorYaw = it },
-            label = { Text(strings.anchorYawText) },
+            label = { Text(strings.anchorYawText, fontSize = 24.sp) },
             placeholder = { Text(calibration.anchorYaw.toString()) },
             isError = newYaw == null,
             singleLine = true,
@@ -534,9 +528,9 @@ fun CalibrationSection(
                 originX = ""; originY = ""; pxPerMeter = ""; anchorYaw = ""
                 focusManager.clearFocus()
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().height(72.dp)
         ) {
-            Text(strings.saveCalibrationButton)
+            Text(strings.saveCalibrationButton, fontSize = 28.sp)
         }
     }
 }
@@ -556,7 +550,7 @@ fun DestinationLabelSection(
         modifier = modifier.fillMaxWidth().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(strings.destinationHeader, style = MaterialTheme.typography.titleLarge)
+        Text(strings.destinationHeader, style = MaterialTheme.typography.titleLarge, fontSize = 32.sp)
         destinations.forEach { dest ->
             DestinationLabelRow(
                 id = dest.id,
@@ -586,8 +580,8 @@ private fun DestinationLabelRow(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(id, style = MaterialTheme.typography.labelLarge)
-        Text(strings.destinationDisplayName)
+        Text(id, style = MaterialTheme.typography.labelLarge, fontSize = 28.sp)
+        Text(strings.destinationDisplayName, fontSize = 24.sp)
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
@@ -595,7 +589,7 @@ private fun DestinationLabelRow(
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
-        Text(strings.destinationAliases)
+        Text(strings.destinationAliases, fontSize = 24.sp)
         OutlinedTextField(
             value = aliases,
             onValueChange = { aliases = it },
@@ -608,8 +602,14 @@ private fun DestinationLabelRow(
                 onDisplayNameSave(name)
                 onAliasesSave(aliases.split(',').map { it.trim() }.filter { it.isNotEmpty() })
             },
-                content = { Text(strings.destinationButtonSave) })
-            OutlinedButton(onClick = onReset, content= { Text(strings.destinationButtonReset) })
+                content = { Text(strings.destinationButtonSave, fontSize = 24.sp) },
+                modifier = Modifier.height(72.dp)
+            )
+            OutlinedButton(
+                onClick = onReset,
+                content= { Text(strings.destinationButtonReset, fontSize = 24.sp) },
+                modifier = Modifier.height(72.dp)
+            )
         }
     }
 }
