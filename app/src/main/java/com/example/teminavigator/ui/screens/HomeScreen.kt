@@ -11,7 +11,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -31,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,78 +43,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.ui.langs.LocalStrings
+import com.example.teminavigator.ui.langs.germanStrings
 import com.example.teminavigator.ui.map.InteractiveMap
-
-/*
-val mockDestinations = listOf(
-    Destination(
-        id = "lobby",
-        displayName = "Lobby",
-        aliases = listOf(
-            "Lobby",
-            "Eingang",
-            "Empfang",
-            "Rezeption"
-        ),
-        mapX = 0.12f,
-        mapY = 0.84f
-    ),
-    Destination(
-        id = "raum_2_72",
-        displayName = "Raum 2.72",
-        aliases = listOf(
-            "Raum 2.72",
-            "Raum zweikommasiebzig",
-            "Robotik-Raum",
-            "Robotikraum"
-        ),
-        mapX = 0.42f,
-        mapY = 0.28f
-    ),
-    Destination(
-        id = "cafeteria",
-        displayName = "Cafeteria",
-        aliases = listOf(
-            "Cafeteria",
-            "Mensa",
-            "Kantine",
-            "Essensraum"
-        ),
-        mapX = 0.76f,
-        mapY = 0.67f
-    ),
-    Destination(
-        id = "besprechungsraum_a",
-        displayName = "Besprechungsraum A",
-        aliases = listOf(
-            "Besprechungsraum A",
-            "Meetingraum A",
-            "Konferenzraum A",
-            "Raum A"
-        ),
-        mapX = 0.63f,
-        mapY = 0.19f
-    ),
-    Destination(
-        id = "labor_1",
-        displayName = "Labor 1",
-        aliases = listOf(
-            "Labor 1",
-            "Labor eins",
-            "Forschungslabor",
-            "Laborraum"
-        ),
-        mapX = 0.28f,
-        mapY = 0.51f
-    )
-)
-*/
+import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 
 @Composable
 fun HomeScreen(
@@ -164,7 +109,8 @@ fun HomeScreen(
                             },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
-                            placeholder = { Text(strings.searchDestinations) }
+                            textStyle = TextStyle(fontSize = 28.sp),
+                            placeholder = { Text(strings.searchDestinations, fontSize = 28.sp) }
                         )
 
                         // Microphone button -> starts voice input
@@ -173,7 +119,7 @@ fun HomeScreen(
                                 onStartSpeechRecognition()
                             }
                         ) {
-                            Icon(Icons.Filled.Mic, contentDescription = strings.voiceInput)
+                            Icon(Icons.Filled.Mic, contentDescription = strings.voiceInput, Modifier.size(72.dp))
                         }
                     }
                     // Filtered list of destinations (filtered by search query)
@@ -200,13 +146,20 @@ fun HomeScreen(
                 ){
                     FloatingActionButton(
                         onClick = onOpenSettings,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
-                    ) { Icon(Icons.Default.Settings, contentDescription = "Settings") }
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(16.dp)
+                            .size(56.dp)
+                    ) { Icon(Icons.Default.Settings, contentDescription = "Settings", Modifier.size(40.dp)) }
 
                     FloatingActionButton(
                         onClick = { showConfirmationDialog = true },
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
-                    ) { Text(strings.acceptButton) }
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(16.dp)
+                            .height(72.dp)
+                            .widthIn(min=240.dp)
+                    ) { Text(strings.acceptButton, fontSize = 28.sp) }
                 }
             }
         }
@@ -214,21 +167,23 @@ fun HomeScreen(
     if(showConfirmationDialog && selected!=null){
         AlertDialog(
             onDismissRequest = { showConfirmationDialog = false },
-            title = { Text(strings.confirmTitle(selected.displayName)) },
+            title = { Text(strings.confirmTitle(selected.displayName), fontSize = 36.sp) },
             confirmButton ={
                 TextButton(
+                    modifier = Modifier.height(72.dp),
                     onClick = {
                         showConfirmationDialog = false
                         onDestinationConfirmed(selected) // to ViewModel
                     }
-                ) { Text(strings.confirmYes)}
+                ) { Text(strings.confirmYes, fontSize = 28.sp)}
             },
             dismissButton = {
                 TextButton(
+                    modifier = Modifier.height(72.dp),
                     onClick = {
                         showConfirmationDialog = false
                     }
-                ) { Text(strings.confirmNo)}
+                ) { Text(strings.confirmNo, fontSize = 28.sp)}
             }
         )
     }
@@ -285,7 +240,7 @@ fun PossibleLocation(
             Text(
                 text=location.displayName,
                 modifier = Modifier.fillMaxWidth(),
-                fontSize = 22.sp,
+                fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
                 color = colorScheme.onSurface
             )
@@ -294,7 +249,8 @@ fun PossibleLocation(
                         alias ->
                     Text(
                         text = "$alias ",
-                        color = colorScheme.onSurfaceVariant
+                        color = colorScheme.onSurfaceVariant,
+                        fontSize = 24.sp
                         )}
             }
         }
@@ -302,13 +258,26 @@ fun PossibleLocation(
 }
 
 
-/* TODO: fix preview ?
+
 @Preview(name = "Tablet", device = Devices.TABLET)
 @Composable
 fun HSPreview(){
+    val mockDest = Destination(
+        id = "mock stuff",
+        displayName = "Cool Name",
+        aliases = emptyList(),
+        imagePx = Offset(1167f, 1167f),
+        imageYawDeg = 1.6f
+    )
     TemiNavigatorTheme {
-        HomeScreen(mockDestinations,
-            { Log.i("Info", "Destination Confirmed") }, { Log.i("Info", "Settings opened") })
+        CompositionLocalProvider(LocalStrings provides germanStrings) {
+        HomeScreen(
+            listOf(mockDest),
+            robotPose = { RobotPose(0f,0f,0f) },
+            onDestinationConfirmed = {},
+            onOpenSettings = { },
+            onStartSpeechRecognition = { }
+        )
+        }
     }
 }
-*/
