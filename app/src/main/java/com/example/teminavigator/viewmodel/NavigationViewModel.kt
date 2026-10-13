@@ -1,6 +1,7 @@
 package com.example.teminavigator.viewmodel
 import android.app.Application
 import android.content.Context
+import android.os.SystemClock
 import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.AndroidViewModel
@@ -40,6 +41,7 @@ import kotlin.time.Duration.Companion.milliseconds
 // constants
 private const val HOME_LOCATION = "home base"
 private const val HOME_RADIUS_M = 0.4
+private const val GREETING_COOLDOWN_MS = 10 * 1000
 
 class NavigationViewModel(
     app: Application,
@@ -170,7 +172,10 @@ class NavigationViewModel(
 
     fun openSettings() { _screen.value = Screen.Settings }
     fun closeSettings() { _screen.value = Screen.Home }
-    fun leaveWaiting() { _screen.value = Screen.Home }
+    fun leaveWaiting() {
+        robot.stopSpeaking()
+        _screen.value = Screen.Home
+    }
 
     fun setReturnHomeDelay(sec: Int) {
         viewModelScope.launch { settingsRepo.setReturnHomeDelay(sec) }
@@ -202,6 +207,20 @@ class NavigationViewModel(
     private fun cancelReturnTimer() {
         returnJob?.cancel()
         _returnCountdown.value = null
+    }
+
+    // greetings in WaitingScreen logic
+    private var lastGreetingAt = 0L
+    private var greetingIndex = 0
+
+    private fun greetIfAppropriate() {
+        if (_screen.value !is Screen.Waiting) return
+        if (_navState.value !is NavigationState.Idle) return
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastGreetingAt < GREETING_COOLDOWN_MS) return
+        lastGreetingAt = now
+        // rotating phrases
+        speak(strings.greetings[greetingIndex++ % strings.greetings.size])
     }
 
     // robot integration
@@ -293,6 +312,10 @@ class NavigationViewModel(
                     startGuidance(destination)
                     _voiceDestination.value = destination
                 }
+            }
+
+            is RobotEvent.DetectionStatusChanged -> {
+                if (event.status == RobotEvent.DetectionState.Detected) greetIfAppropriate()
             }
         }
     }

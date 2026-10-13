@@ -18,7 +18,7 @@ interface RobotController {
     fun goTo(locationId: String)
     fun stop()
     fun speak(text: String, languageCode: String)
-    fun goHome()
+    fun stopSpeaking()
     fun setSpeechLanguage(languageCode: String)
     fun startSpeechRecognition()
     fun getSpeed(): NavSpeed

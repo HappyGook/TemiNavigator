@@ -5,7 +5,7 @@ enum class AppLanguage (
     val nativeName: String, // name of language in this language, for settings
     val strings: AppStrings
 ) {
-    GERMAN("de","Deutsch",  germanStrings),
+    GERMAN("de","Deutsch",  germanStrings), // TODO: make correct translations in all files
     ENGLISH("en","English",  englishStrings),
     PIRATE("en","Yarrr",pirateStrings),
     NADSAT("en","Nadsat",nadsatStrings),

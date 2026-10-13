@@ -6,6 +6,7 @@ import com.example.teminavigator.domain.RobotEvent
 import com.robotemi.sdk.Robot
 import com.robotemi.sdk.SttLanguage
 import com.robotemi.sdk.TtsRequest
+import com.robotemi.sdk.listeners.OnDetectionStateChangedListener
 import com.robotemi.sdk.listeners.OnGoToLocationStatusChangedListener
 import com.robotemi.sdk.listeners.OnRobotReadyListener
 import com.robotemi.sdk.navigation.listener.OnCurrentPositionChangedListener
@@ -23,6 +24,7 @@ object TemiRobot: RobotController,
     OnGoToLocationStatusChangedListener,
     OnRequestPermissionResultListener,
     OnCurrentPositionChangedListener,
+    OnDetectionStateChangedListener,
     Robot.AsrListener,
     Robot.WakeupWordListener {
 
@@ -52,6 +54,7 @@ object TemiRobot: RobotController,
         robot.addOnRequestPermissionResultListener(this)
         robot.addAsrListener(this)
         robot.addWakeupWordListener(this)
+        robot.addOnDetectionStateChangedListener(this)
     }
 
     override fun detach(){
@@ -60,6 +63,7 @@ object TemiRobot: RobotController,
         robot.removeOnRequestPermissionResultListener(this)
         robot.removeAsrListener(this)
         robot.removeWakeupWordListener(this)
+        robot.removeOnDetectionStateChangedListener(this)
     }
 
     override fun goTo(locationId: String) = robot.goTo(locationId)
@@ -73,7 +77,10 @@ object TemiRobot: RobotController,
         }
         robot.speak(TtsRequest.create(text, false, ttsLang))
     }
-    override fun goHome() = robot.goTo("home base") //TODO: create config variable for home name
+
+    override fun stopSpeaking() {
+        robot.cancelAllTtsRequests()
+    }
 
     override fun setSpeechLanguage(languageCode: String) {
         speechLanguage = when (languageCode.substringBefore('-').lowercase()) {
@@ -197,5 +204,15 @@ object TemiRobot: RobotController,
         } else {
             Log.w("Permissions", "MAP permission denied")
         }
+    }
+
+    override fun onDetectionStateChanged(state: Int) {
+        Log.i("Temi_Detection", "Detection state changed to $state")
+        val mapped = when (state) {
+            OnDetectionStateChangedListener.DETECTED -> RobotEvent.DetectionState.Detected
+            OnDetectionStateChangedListener.LOST -> RobotEvent.DetectionState.Lost
+            else -> RobotEvent.DetectionState.Idle
+        }
+        _events.tryEmit(RobotEvent.DetectionStatusChanged(mapped))
     }
 }

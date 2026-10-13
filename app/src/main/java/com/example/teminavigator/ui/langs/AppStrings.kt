@@ -77,4 +77,5 @@ data class AppStrings (
     val spokenStarting: (destination: String) -> String,
     val spokenAbort: String,
     val spokenUnknownDestination: String,
-    )
+    val greetings: List<String>
+)

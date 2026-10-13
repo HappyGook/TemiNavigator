@@ -61,5 +61,9 @@ val englishStrings = AppStrings(
     destinationButtonSave = "Save",
     destinationButtonReset = "Reset",
     returningHomeIn = {s->"Returning home in $s s"},
-    returnHomeAfter = "return Home after"
+    returnHomeAfter = "return Home after",
+    greetings = listOf(
+        "Hallo! Ich kann dir den Weg zu Räumen im zweiten Stock zeigen. Tippe einfach auf den Bildschirm oder sag mir, wohin du möchtest.",
+        "Hi! Suchst du einen Raum? Sag mir einfach, wohin du willst, dann bringe ich dich hin."
+    )
 )
