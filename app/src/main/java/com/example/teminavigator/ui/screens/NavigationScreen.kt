@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotPose
@@ -115,7 +116,7 @@ fun NavigationScreen(
             verticalArrangement = Arrangement.Center
         ) {
             // Element 1
-            Text(strings.goingTo, style = MaterialTheme.typography.labelMedium)
+            Text(strings.goingTo, style = MaterialTheme.typography.labelMedium, fontSize = 28.sp)
             Spacer(modifier = Modifier.height(8.dp))
 
             // Element 2 - Destination String
@@ -134,18 +135,20 @@ fun NavigationScreen(
                 Icon(
                     imageVector = Icons.Filled.Route,
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(32.dp)
                 )
                 Text(
                     text = etaMin?.let { "Ca. $it ${strings.minutes}" } ?: "– ${strings.minutes}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    fontSize = 24.sp,
+                    color = Color.DarkGray
                 )
 
                 Text(
                     text = distanceM?.let { " -  ${it.roundToInt()} m" } ?: " -  – m",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    fontSize = 24.sp,
+                    color = Color.DarkGray
                 )
 
             }
@@ -154,7 +157,7 @@ fun NavigationScreen(
             // Element 4 - Progress bar
             LinearProgressIndicator(
                 progress = { progress },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(10.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -187,7 +190,7 @@ fun NavigationScreen(
         /** Right side - Map */
         Box(
             modifier = Modifier
-                .weight(2f)
+                .weight(1.5f)
                 .fillMaxHeight()
         ) {
             InteractiveMap(
