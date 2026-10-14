@@ -282,7 +282,6 @@ class NavigationViewModel(
         robot.goTo(destination.id)
         speak(strings.spokenStarting(destination.displayName))
     }
-
     fun toggleNavigationPause() {
         val dest = currentDestination ?: return
         when (_navState.value) {

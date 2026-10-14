@@ -120,7 +120,7 @@ fun HomeScreen(
                             )
                             // Microphone button -> starts voice input
                             IconButton(
-                                enabled = voiseInputEnabled,
+                                enabled = voiceInputEnabled,
                                 onClick = {
                                     onStartSpeechRecognition
                                 }
