@@ -78,6 +78,10 @@ object TemiRobot: RobotController,
         robot.cancelAllTtsRequests()
     }
 
+    override fun stopSpeechRecognition() {
+        robot.finishConversation()
+    }
+
     override fun setSpeechLanguage(languageCode: String) {
         speechLanguageCode = languageCode
         speechLanguage = when (languageCode.substringBefore('-').lowercase()) {
@@ -87,12 +91,17 @@ object TemiRobot: RobotController,
         }
     }
 
-    override fun startSpeechRecognition(question: String) {
+    override fun startSpeechRecognition(question: String, speakPrompt: Boolean) {
         Log.i("Temi", "Starting speech conversation")
-        robot.askQuestion(
-            TtsRequest.create(question, false, ttsLanguage(speechLanguageCode)),
-            SttRequest(languages = listOf(speechLanguage))
-        )
+        val request = SttRequest(languages = listOf(speechLanguage))
+        if (speakPrompt) {
+            robot.askQuestion(
+                TtsRequest.create(question, false, ttsLanguage(speechLanguageCode)),
+                request
+            )
+        } else {
+            robot.wakeup(request)
+        }
     }
 
     private fun ttsLanguage(languageCode: String): TtsRequest.Language = when (

@@ -63,7 +63,8 @@ fun HomeScreen(
     robotPose: () -> RobotPose?,
     onDestinationConfirmed: (Destination) -> Unit,
     onOpenSettings: () -> Unit,
-    onStartSpeechRecognition: () -> Unit
+    onStartSpeechRecognition: () -> Unit,
+    voiceInputEnabled: Boolean,
 ) {
     var selectedId by rememberSaveable{mutableStateOf<String?>(null)}
     var showConfirmationDialog by rememberSaveable {mutableStateOf(false)}
@@ -115,6 +116,7 @@ fun HomeScreen(
 
                         // Microphone button -> starts voice input
                         IconButton(
+                            enabled = voiceInputEnabled,
                             onClick = {
                                 onStartSpeechRecognition()
                             }
@@ -276,7 +278,8 @@ fun HSPreview(){
             robotPose = { RobotPose(481f,1181f,0f) },
             onDestinationConfirmed = {},
             onOpenSettings = { },
-            onStartSpeechRecognition = { }
+            onStartSpeechRecognition = { },
+            voiceInputEnabled = true,
         )
         }
     }

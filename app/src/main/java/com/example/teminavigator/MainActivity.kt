@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.data.AdminPasswordStore
+import com.example.teminavigator.data.AppSettings
 import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
@@ -59,6 +60,11 @@ fun TemiApp(
     onVoiceDestinationHandled: () -> Unit,
     onStartSpeechRecognition: () -> Unit,
     adminPasswordStore: AdminPasswordStore,
+    settings: AppSettings,
+    onSoundsEnabledChanged: (Boolean) -> Unit,
+    onVoiceOutputEnabledChanged: (Boolean) -> Unit,
+    onVoiceInputEnabledChanged: (Boolean) -> Unit,
+    onAutoReturnEnabledChanged: (Boolean) -> Unit,
 ){
 /*
     when (screen) {
@@ -77,7 +83,8 @@ fun TemiApp(
             robotPose = robotPose,
             onDestinationConfirmed = onDestinationConfirmed,
             onOpenSettings = onOpenSettings,
-            onStartSpeechRecognition = onStartSpeechRecognition
+            onStartSpeechRecognition = onStartSpeechRecognition,
+            voiceInputEnabled = settings.voiceInputEnabled,
         )
         Screen.Settings -> SettingsScreen(
             currentLanguage = language,
@@ -93,10 +100,18 @@ fun TemiApp(
             returnHomeDelaySec = returnHomeDelaySec,
             onReturnHomeDelayChanged = onReturnHomeDelayChanged,
             adminPasswordStore = adminPasswordStore,
+            soundsEnabled = settings.soundsEnabled,
+            onSoundsEnabledChanged = onSoundsEnabledChanged,
+            voiceOutputEnabled = settings.voiceOutputEnabled,
+            onVoiceOutputEnabledChanged = onVoiceOutputEnabledChanged,
+            voiceInputEnabled = settings.voiceInputEnabled,
+            onVoiceInputEnabledChanged = onVoiceInputEnabledChanged,
+            autoReturnEnabled = settings.autoReturnEnabled,
+            onAutoReturnEnabledChanged = onAutoReturnEnabledChanged,
         )
         Screen.Waiting -> WaitingScreen(
             onLeaveWaiting = onLeaveWaiting,
-            returnCountdown = returnCountdown
+            returnCountdown = returnCountdown,
         )
         is Screen.Navigation -> NavigationScreen(
             destination = screen.destination,
@@ -176,7 +191,12 @@ class MainActivity : ComponentActivity() {
                         onLeaveWaiting = viewModel::leaveWaiting,
                         returnHomeDelaySec = settings.returnHomeDelaySec,
                         onReturnHomeDelayChanged = viewModel::setReturnHomeDelay,
-                        returnCountdown = returnCountdown
+                        returnCountdown = returnCountdown,
+                        settings = settings,
+                        onSoundsEnabledChanged = viewModel::setSoundsEnabled,
+                        onVoiceOutputEnabledChanged = viewModel::setVoiceOutputEnabled,
+                        onVoiceInputEnabledChanged = viewModel::setVoiceInputEnabled,
+                        onAutoReturnEnabledChanged = viewModel::setAutoReturnEnabled,
                     )
                 }
             }

@@ -19,8 +19,9 @@ interface RobotController {
     fun stop()
     fun speak(text: String, languageCode: String)
     fun stopSpeaking()
+    fun stopSpeechRecognition()
     fun setSpeechLanguage(languageCode: String)
-    fun startSpeechRecognition(question: String)
+    fun startSpeechRecognition(question: String, speakPrompt: Boolean)
     fun getSpeed(): NavSpeed
     fun setSpeed(speed: NavSpeed)
 }

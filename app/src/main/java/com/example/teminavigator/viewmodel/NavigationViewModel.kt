@@ -32,6 +32,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -161,11 +163,12 @@ class NavigationViewModel(
     }
 
     fun startSpeechRecognition() {
-        startSpeechConversation()
+        if (settings.value.voiceInputEnabled) startSpeechConversation()
     }
 
     private fun startSpeechConversation() {
-        robot.startSpeechRecognition(strings.locationQuery)
+        if (!settings.value.voiceInputEnabled) return
+        robot.startSpeechRecognition(strings.locationQuery, settings.value.voiceOutputEnabled)
     }
 
     // screen logic
@@ -183,6 +186,24 @@ class NavigationViewModel(
 
     fun setReturnHomeDelay(sec: Int) {
         viewModelScope.launch { settingsRepo.setReturnHomeDelay(sec) }
+    }
+
+    fun setSoundsEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepo.setSoundsEnabled(enabled) }
+    }
+
+    fun setVoiceOutputEnabled(enabled: Boolean) {
+        if (!enabled) robot.stopSpeaking()
+        viewModelScope.launch { settingsRepo.setVoiceOutputEnabled(enabled) }
+    }
+
+    fun setVoiceInputEnabled(enabled: Boolean) {
+        if (!enabled) robot.stopSpeechRecognition()
+        viewModelScope.launch { settingsRepo.setVoiceInputEnabled(enabled) }
+    }
+
+    fun setAutoReturnEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepo.setAutoReturnEnabled(enabled) }
     }
     private fun isAtHome(): Boolean {
         val pose = pose.value ?: return false
@@ -236,11 +257,14 @@ class NavigationViewModel(
         }
         viewModelScope.launch { speed.collect { robot.setSpeed(it) } }
         viewModelScope.launch {
-            screen.collect { if (it is Screen.Waiting) startReturnTimer() else cancelReturnTimer() }
-        }
-        viewModelScope.launch { speed.collect { robot.setSpeed(it) } }
-        viewModelScope.launch {
-            screen.collect { if (it is Screen.Waiting) startReturnTimer() else cancelReturnTimer() }
+            combine(
+                screen,
+                settings.map { it.autoReturnEnabled to it.returnHomeDelaySec }.distinctUntilChanged()
+            ) { currentScreen, (autoReturnEnabled, _) ->
+                currentScreen is Screen.Waiting && autoReturnEnabled
+            }.collect { shouldRunTimer ->
+                if (shouldRunTimer) startReturnTimer() else cancelReturnTimer()
+            }
         }
     }
 
@@ -285,7 +309,7 @@ class NavigationViewModel(
     }
 
     fun speak(text: String) {
-        robot.speak(text, _language.value.code)
+        if (settings.value.voiceOutputEnabled) robot.speak(text, _language.value.code)
     }
 
     private fun handleEvent(event: RobotEvent){
@@ -314,6 +338,7 @@ class NavigationViewModel(
 
             // When speech recognition successfully -> try and match destination
             is RobotEvent.SpeechRecognised -> {
+                if (!settings.value.voiceInputEnabled) return
                 val destination = destinations.value.match(event.text)
                 if (destination != null) {
                     startGuidance(destination)
@@ -323,7 +348,9 @@ class NavigationViewModel(
                 }
             }
 
-            RobotEvent.WakeupWordDetected -> startSpeechConversation()
+            RobotEvent.WakeupWordDetected -> {
+                if (settings.value.voiceInputEnabled) startSpeechConversation()
+            }
 
             is RobotEvent.DetectionStatusChanged -> {
                 if (event.status == RobotEvent.DetectionState.Detected) greetIfAppropriate()
