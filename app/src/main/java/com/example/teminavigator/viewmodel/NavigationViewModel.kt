@@ -27,6 +27,7 @@ import com.example.teminavigator.domain.Screen
 import com.example.teminavigator.domain.SpeedCalibration
 import com.example.teminavigator.domain.match
 import com.example.teminavigator.ui.langs.AppStrings
+import com.example.teminavigator.ui.sound.SoundPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -49,6 +50,8 @@ class NavigationViewModel(
     app: Application,
     private val robot: RobotController
 ) : AndroidViewModel(app){
+    private val soundPlayer = SoundPlayer(app)
+
     // language setup
     private val prefs = app.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
@@ -270,6 +273,7 @@ class NavigationViewModel(
 
     override fun onCleared() {
         robot.detach()
+        soundPlayer.release()
         super.onCleared()
     }
 
@@ -315,20 +319,25 @@ class NavigationViewModel(
     private fun handleEvent(event: RobotEvent){
         when (event){
             is RobotEvent.GoToCancelled -> {
+                playSoundIfEnabled { playError() }
                 if (_navState.value !is NavigationState.Paused) {
                     _navState.value = NavigationState.Idle
                 }
             }
-            is RobotEvent.GoToFinished -> currentDestination?.let { dest ->
-                _navState.value = NavigationState.Arrived(dest)
-                arrivalJob?.cancel()
-                arrivalJob = viewModelScope.launch { // TODO: delay e.g. 3_000L, so the user sees "arrived"
-                    _navState.value = NavigationState.Idle
-                    _screen.value = Screen.Waiting
+            is RobotEvent.GoToFinished -> {
+                playSoundIfEnabled { playArrival() }
+                currentDestination?.let { dest ->
+                    _navState.value = NavigationState.Arrived(dest)
+                    arrivalJob?.cancel()
+                    arrivalJob = viewModelScope.launch { // TODO: delay e.g. 3_000L, so the user sees "arrived"
+                        _navState.value = NavigationState.Idle
+                        _screen.value = Screen.Waiting
+                    }
                 }
             }
-            is RobotEvent.GoToStarted -> currentDestination?.let {
-                _navState.value = NavigationState.Guiding(it)
+            is RobotEvent.GoToStarted -> {
+                playSoundIfEnabled { playStart() }
+                currentDestination?.let { _navState.value = NavigationState.Guiding(it) }
             }
             is RobotEvent.PositionChanged -> {
                 Log.i("ViewModel","Viewmodel received a positionChanged event: X=${event.x}, Y=${event.y} ")
@@ -356,6 +365,10 @@ class NavigationViewModel(
                 if (event.status == RobotEvent.DetectionState.Detected) greetIfAppropriate()
             }
         }
+    }
+
+    private inline fun playSoundIfEnabled(play: SoundPlayer.() -> Unit) {
+        if (settings.value.soundsEnabled) soundPlayer.play()
     }
 
 }

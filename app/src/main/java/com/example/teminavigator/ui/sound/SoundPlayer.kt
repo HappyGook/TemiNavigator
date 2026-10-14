@@ -17,6 +17,11 @@ class SoundPlayer(context: Context) {
         .build()
 
     private val sampleId = soundPool.load(context, R.raw.sample_sound, 1)
+    // todo: add other sounds
+    //private val startId = soundPool.load(context, R.raw.start_sound, 1)
+    //private val arrivedId = soundPool.load(context, R.raw.arrived_sound, 1)
+    //private val errorId = soundPool.load(context, R.raw.error_sound, 1)
+
     private var sampleLoaded = false
 
     init {
@@ -25,8 +30,21 @@ class SoundPlayer(context: Context) {
         }
     }
 
-    fun playSample() {
-        if (sampleLoaded) soundPool.play(sampleId, 1f, 1f, 1, 0, 1f)
+    // todo: swap out sounds with different ones, which will lead to an amazing user experience!!!
+    fun playStart() {
+        play(sampleId)
+    }
+
+    fun playArrival() {
+        play(sampleId)
+    }
+
+    fun playError() {
+        play(sampleId)
+    }
+
+    private fun play(soundId: Int) {
+        if (sampleLoaded) soundPool.play(soundId, 1f, 1f, 1, 0, 1f)
     }
 
     fun release() = soundPool.release()
