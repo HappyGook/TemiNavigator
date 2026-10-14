@@ -161,7 +161,11 @@ class NavigationViewModel(
     }
 
     fun startSpeechRecognition() {
-        robot.startSpeechRecognition()
+        startSpeechConversation()
+    }
+
+    private fun startSpeechConversation() {
+        robot.startSpeechRecognition(strings.locationQuery)
     }
 
     // screen logic
@@ -307,12 +311,19 @@ class NavigationViewModel(
                 rawPose.value = RawPose(event.x, event.y, event.yaw)
             }
             is RobotEvent.Ready -> _readyState.value = event.isReady
+
+            // When speech recognition successfully -> try and match destination
             is RobotEvent.SpeechRecognised -> {
-                destinations.value.match(event.text)?.let { destination ->
+                val destination = destinations.value.match(event.text)
+                if (destination != null) {
                     startGuidance(destination)
                     _voiceDestination.value = destination
+                } else {
+                    speak(strings.spokenUnknownDestination)
                 }
             }
+
+            RobotEvent.WakeupWordDetected -> startSpeechConversation()
 
             is RobotEvent.DetectionStatusChanged -> {
                 if (event.status == RobotEvent.DetectionState.Detected) greetIfAppropriate()

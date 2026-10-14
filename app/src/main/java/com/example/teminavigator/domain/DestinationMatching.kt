@@ -17,16 +17,16 @@ fun List<Destination>.match(text: String): Destination? {
     }
         ?.let { return it }
 
-    // query contains a known name
-    val containingMatch = filter {
-        dest -> (dest.aliases + dest.displayName + dest.id).any { name ->
-            name.normalizeForMatch().let { normalizedName ->
-                normalizedName.isNotEmpty() && query.contains(normalizedName)
-            }
-        }
-    }.maxByOrNull { dest ->
-        (dest.aliases + dest.displayName + dest.id).maxOf { it.normalizeForMatch().length }
-    }
+
+    // query contains a known name as whole word(s)
+    val containingMatch = mapNotNull { dest ->
+        val matchedLength = dest.allNames()
+            .map { it.normalizeForMatch() }
+            .filter { it.isNotEmpty() && query.containsWholePhrase(it) }
+            .maxOfOrNull { it.length }
+        matchedLength?.let { dest to it }
+    }.maxByOrNull { it.second }?.first
+
     if (containingMatch != null) return containingMatch
 
     val queryWords = query.split(' ')
@@ -77,9 +77,10 @@ private fun String.normalizeForMatch(): String {
         .replace("ß", "ss")
     val withoutAccents = Normalizer.normalize(folded, Normalizer.Form.NFD)
         .filterNot { Character.getType(it) == Character.NON_SPACING_MARK.toInt() }
-    return withoutAccents.trim()
-        .replace(Regex("[^\\p{L}\\p{N} ]"), "")
+    return withoutAccents
+        .replace(Regex("[^\\p{L}\\p{N} ]"), " ")
         .replace(Regex("\\s+"), " ")
+        .trim()
 }
 
 private fun editDistance(first: String, second: String): Int {
@@ -99,3 +100,8 @@ private fun editDistance(first: String, second: String): Int {
     }
     return previous[second.length]
 }
+
+private fun String.containsWholePhrase(phrase: String): Boolean =
+    " $this ".contains(" $phrase ")
+
+private fun Destination.allNames(): List<String> = aliases + displayName + id

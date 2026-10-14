@@ -4,6 +4,7 @@ import com.example.teminavigator.domain.NavSpeed
 import com.example.teminavigator.domain.RobotController
 import com.example.teminavigator.domain.RobotEvent
 import com.robotemi.sdk.Robot
+import com.robotemi.sdk.SttRequest
 import com.robotemi.sdk.SttLanguage
 import com.robotemi.sdk.TtsRequest
 import com.robotemi.sdk.listeners.OnDetectionStateChangedListener
@@ -42,6 +43,7 @@ object TemiRobot: RobotController,
     override var events = _events
 
     private var speechLanguage = SttLanguage.SYSTEM
+    private var speechLanguageCode = ""
 
     override val availableLocations: List<String>
         get() = robot.locations
@@ -69,13 +71,7 @@ object TemiRobot: RobotController,
     override fun goTo(locationId: String) = robot.goTo(locationId)
     override fun stop() = robot.stopMovement()
     override fun speak(text: String, languageCode: String) {
-        val ttsLang = when (languageCode) {
-            "de" -> TtsRequest.Language.DE_DE
-            "en" -> TtsRequest.Language.EN_US
-            "ru" -> TtsRequest.Language.RU_RU
-            else -> TtsRequest.Language.SYSTEM
-        }
-        robot.speak(TtsRequest.create(text, false, ttsLang))
+        robot.speak(TtsRequest.create(text, false, ttsLanguage(languageCode)))
     }
 
     override fun stopSpeaking() {
@@ -83,6 +79,7 @@ object TemiRobot: RobotController,
     }
 
     override fun setSpeechLanguage(languageCode: String) {
+        speechLanguageCode = languageCode
         speechLanguage = when (languageCode.substringBefore('-').lowercase()) {
             "de" -> SttLanguage.DE_DE
             "en" -> SttLanguage.EN_US
@@ -90,8 +87,21 @@ object TemiRobot: RobotController,
         }
     }
 
-    override fun startSpeechRecognition() {
-        robot.wakeup(listOf(speechLanguage))
+    override fun startSpeechRecognition(question: String) {
+        Log.i("Temi", "Starting speech conversation")
+        robot.askQuestion(
+            TtsRequest.create(question, false, ttsLanguage(speechLanguageCode)),
+            SttRequest(languages = listOf(speechLanguage))
+        )
+    }
+
+    private fun ttsLanguage(languageCode: String): TtsRequest.Language = when (
+        languageCode.substringBefore('-').lowercase()
+    ) {
+        "de" -> TtsRequest.Language.DE_DE
+        "en" -> TtsRequest.Language.EN_US
+        "ru" -> TtsRequest.Language.RU_RU
+        else -> TtsRequest.Language.SYSTEM
     }
 
     override fun locationPoses(): Map<String, Triple<Double, Double, Double>> {
@@ -151,6 +161,7 @@ object TemiRobot: RobotController,
         _events.tryEmit(RobotEvent.PositionChanged(x,y,yaw))
     }
 
+    // Is called when speech recognition is done and spoken phrase is converted to string
     override fun onAsrResult(asrResult: String, sttLanguage: SttLanguage) {
         if (asrResult.isNotBlank()) {
             _events.tryEmit(RobotEvent.SpeechRecognised(asrResult))
@@ -162,7 +173,7 @@ object TemiRobot: RobotController,
         direction: Int,
         origin: WakeupOrigin
     ) {
-        startSpeechRecognition()
+        _events.tryEmit(RobotEvent.WakeupWordDetected)
     }
 
     override fun onRobotReady(isReady: Boolean) {
