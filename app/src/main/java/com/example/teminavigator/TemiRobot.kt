@@ -177,6 +177,7 @@ object TemiRobot: RobotController,
 
     // Is called when speech recognition is done and spoken phrase is converted to string
     override fun onAsrResult(asrResult: String, sttLanguage: SttLanguage) {
+        robot.finishConversation()   // stops Temi's default NLP/answer
         if (asrResult.isNotBlank()) {
             _events.tryEmit(RobotEvent.SpeechRecognised(asrResult))
         }
