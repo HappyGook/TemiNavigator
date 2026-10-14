@@ -1,5 +1,6 @@
 package com.example.teminavigator.ui.screens
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -122,7 +123,7 @@ fun HomeScreen(
                             IconButton(
                                 enabled = voiceInputEnabled,
                                 onClick = {
-                                    onStartSpeechRecognition
+                                    onStartSpeechRecognition()
                                 }
                             ) {
                                 Icon(

@@ -55,8 +55,6 @@ fun TemiApp(
     returnHomeDelaySec: Int,
     onReturnHomeDelayChanged: (Int) -> Unit,
     returnCountdown: Int?,
-    voiceDestination: Destination?,
-    onVoiceDestinationHandled: () -> Unit,
     onStartSpeechRecognition: () -> Unit,
     adminPasswordStore: AdminPasswordStore,
     settings: AppSettings,
@@ -147,7 +145,6 @@ class MainActivity : ComponentActivity() {
             val calibration by viewModel.calibration.collectAsState()
             val navigationState by viewModel.navState.collectAsState()
             val labels by viewModel.labels.collectAsState()
-            val voiceDestination by viewModel.voiceDestination.collectAsState()
             val speedMps by viewModel.speedMps.collectAsStateWithLifecycle()
             val screen by viewModel.screen.collectAsStateWithLifecycle()
             val settings by viewModel.settings.collectAsStateWithLifecycle()
@@ -173,8 +170,6 @@ class MainActivity : ComponentActivity() {
                         onCalibrationSaved = viewModel::setCalibration,
                         navigationState = navigationState,
                         onToggleNavigationPause = viewModel::toggleNavigationPause,
-                        voiceDestination = voiceDestination,
-                        onVoiceDestinationHandled = viewModel::clearVoiceDestination,
                         onStartSpeechRecognition = viewModel::startSpeechRecognition,
                         adminPasswordStore = adminPasswordStore,
                         labels = labels,

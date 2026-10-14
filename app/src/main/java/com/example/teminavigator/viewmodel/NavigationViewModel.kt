@@ -26,6 +26,7 @@ import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.domain.Screen
 import com.example.teminavigator.domain.SpeedCalibration
 import com.example.teminavigator.domain.match
+import com.example.teminavigator.domain.isPauseNavigationCommand
 import com.example.teminavigator.ui.langs.AppStrings
 import com.example.teminavigator.ui.sound.SoundPlayer
 import kotlinx.coroutines.Dispatchers
@@ -62,9 +63,6 @@ class NavigationViewModel(
 
     private val _navState = MutableStateFlow<NavigationState>(NavigationState.Idle)
     val navState : StateFlow<NavigationState> = _navState.asStateFlow()
-
-    private val _voiceDestination = MutableStateFlow<Destination?>(null)
-    val voiceDestination: StateFlow<Destination?> = _voiceDestination.asStateFlow()
 
     private val _readyState = MutableStateFlow(true)
     val readyState : StateFlow<Boolean> = _readyState.asStateFlow()
@@ -161,15 +159,14 @@ class NavigationViewModel(
         viewModelScope.launch { labelRepo.reset(id) }
     }
 
-    fun clearVoiceDestination() {
-        _voiceDestination.value = null
-    }
-
     fun startSpeechRecognition() {
+        Log.i("ViewModel", "recognition")
+        _screen.value = Screen.Home // switch to Homescreen
         if (settings.value.voiceInputEnabled) startSpeechConversation()
     }
 
     private fun startSpeechConversation() {
+        Log.i("ViewModel", "conversation")
         if (!settings.value.voiceInputEnabled) return
         robot.startSpeechRecognition(strings.locationQuery, settings.value.voiceOutputEnabled)
     }
@@ -283,18 +280,21 @@ class NavigationViewModel(
         speak(strings.spokenStarting(destination.displayName))
     }
     fun toggleNavigationPause() {
-        val dest = currentDestination ?: return
         when (_navState.value) {
-            is NavigationState.Guiding -> {
-                _navState.value = NavigationState.Paused(dest)
-                robot.stop()
-            }
+            is NavigationState.Guiding -> pauseNavigation()
             is NavigationState.Paused -> {
+                val dest = currentDestination ?: return
                 _navState.value = NavigationState.Guiding(dest)
                 robot.goTo(dest.id)
             }
             else -> Unit
         }
+    }
+
+    private fun pauseNavigation() {
+        val dest = (_navState.value as? NavigationState.Guiding)?.target ?: return
+        _navState.value = NavigationState.Paused(dest)
+        robot.stop()
     }
 
     fun confirmDestination(destination: Destination) {
@@ -347,10 +347,14 @@ class NavigationViewModel(
             // When speech recognition successfully -> try and match destination
             is RobotEvent.SpeechRecognised -> {
                 if (!settings.value.voiceInputEnabled) return
+                if (event.text.isPauseNavigationCommand()) {
+                    pauseNavigation()
+                    return
+                }
                 val destination = destinations.value.match(event.text)
                 if (destination != null) {
                     startGuidance(destination)
-                    _voiceDestination.value = destination
+                    _screen.value = Screen.Navigation(destination)
                 } else {
                     speak(strings.spokenUnknownDestination)
                 }
