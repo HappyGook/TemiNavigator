@@ -8,7 +8,9 @@ import com.robotemi.sdk.SttLanguage
 import com.robotemi.sdk.TtsRequest
 import com.robotemi.sdk.listeners.OnDetectionStateChangedListener
 import com.robotemi.sdk.listeners.OnGoToLocationStatusChangedListener
+import com.robotemi.sdk.listeners.OnGoToNavPathChangedListener
 import com.robotemi.sdk.listeners.OnRobotReadyListener
+import com.robotemi.sdk.map.LayerPose
 import com.robotemi.sdk.navigation.listener.OnCurrentPositionChangedListener
 import com.robotemi.sdk.navigation.model.Position
 import com.robotemi.sdk.navigation.model.SpeedLevel
@@ -25,6 +27,7 @@ object TemiRobot: RobotController,
     OnRequestPermissionResultListener,
     OnCurrentPositionChangedListener,
     OnDetectionStateChangedListener,
+    OnGoToNavPathChangedListener,
     Robot.AsrListener,
     Robot.WakeupWordListener {
 
@@ -55,6 +58,7 @@ object TemiRobot: RobotController,
         robot.addAsrListener(this)
         robot.addWakeupWordListener(this)
         robot.addOnDetectionStateChangedListener(this)
+        robot.addOnGoToNavPathChangedListener(this)
     }
 
     override fun detach(){
@@ -64,6 +68,7 @@ object TemiRobot: RobotController,
         robot.removeAsrListener(this)
         robot.removeWakeupWordListener(this)
         robot.removeOnDetectionStateChangedListener(this)
+        robot.removeOnGoToNavPathChangedListener(this)
     }
 
     override fun goTo(locationId: String) = robot.goTo(locationId)
@@ -181,6 +186,7 @@ object TemiRobot: RobotController,
         // emit positionChanged to get starting coordinates of the robot
         _events.tryEmit(RobotEvent.PositionChanged(x,y,yaw))
         robot.setDetectionModeOn(true,1.5f)
+        robot.hideTopBar()
     }
 
     override fun onCurrentPositionChanged(position: Position) {
@@ -212,5 +218,9 @@ object TemiRobot: RobotController,
             else -> RobotEvent.DetectionState.Idle
         }
         _events.tryEmit(RobotEvent.DetectionStatusChanged(mapped))
+    }
+
+    override fun onGoToNavPathChanged(path: List<LayerPose>) {
+        Log.i("Temi_NavPath","Neuer path berechnet: $path")
     }
 }
