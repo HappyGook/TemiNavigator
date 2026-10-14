@@ -167,7 +167,7 @@ fun InteractiveMap(
         )
 
         Canvas(Modifier.fillMaxSize()) {
-            val pinR = 14.dp.toPx()
+            val pinR = 22.dp.toPx()
             val width = imageBitmap.width
             val height = imageBitmap.height
             // internal redeclaration to pass less params (since most stay the same)
@@ -206,9 +206,9 @@ fun InteractiveMap(
             FloatingActionButton(
                 onClick = { scale = (scale + 0.3f).coerceIn(minScale, maxScale) },
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(96.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Zoom in", Modifier.size(40.dp))
+                Icon(Icons.Default.Add, contentDescription = "Zoom in", Modifier.size(72.dp))
             }
             FloatingActionButton(
                 onClick = {
@@ -216,9 +216,9 @@ fun InteractiveMap(
                     if (scale == minScale) offset = Offset.Zero
                 },
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(96.dp)
             ) {
-                Icon(Icons.Default.Remove, contentDescription = "Zoom out", Modifier.size(40.dp))
+                Icon(Icons.Default.Remove, contentDescription = "Zoom out", Modifier.size(72.dp))
             }
         }
 

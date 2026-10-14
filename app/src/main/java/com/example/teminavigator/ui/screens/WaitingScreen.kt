@@ -53,7 +53,7 @@ fun WaitingScreen(
         Text(
             strings.locationQuery,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray,
+            color = Color.DarkGray,
             fontSize = 36.sp
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -83,8 +83,8 @@ fun WaitingScreen(
                 Text(
                     strings.returningHomeIn(seconds),
                     style = MaterialTheme.typography.titleLarge,
-                    fontSize = 32.sp,
-                    color = Color.Gray
+                    fontSize = 36.sp,
+                    color = Color.DarkGray
                 )
             }
         }
@@ -103,7 +103,7 @@ fun WaitingScreen(
             Spacer(modifier = Modifier.width(2.dp))
             Text(
                 strings.speechNotice,
-                fontSize = 32.sp,
+                fontSize = 36.sp,
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.DarkGray
             )
@@ -122,9 +122,9 @@ fun AppButton(
     Button(onClick = onClick, modifier = modifier, colors = colors) {
 
         /* Inside button body */
-        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(32.dp))
+        Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(36.dp))
         Spacer(modifier = Modifier.width(4.dp))
-        Text(text, fontSize = 28.sp)
+        Text(text, fontSize = 36.sp, lineHeight = 36.sp)
     }
 }
 
