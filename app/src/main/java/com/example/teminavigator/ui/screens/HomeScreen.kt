@@ -62,12 +62,15 @@ import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 @Composable
 fun HomeScreen(
     destinations: List<Destination>,
+    selectedId: String?,
+    onSelect: (Destination) -> Unit,
+    onDeselect: (Destination) -> Unit,
+    path: List<Offset>?,
     robotPose: () -> RobotPose?,
     onDestinationConfirmed: (Destination) -> Unit,
     onOpenSettings: () -> Unit,
     onStartSpeechRecognition: () -> Unit
 ) {
-    var selectedId by rememberSaveable{mutableStateOf<String?>(null)}
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val selected = destinations.find{it.id==selectedId}
     val strings = LocalStrings.current
@@ -98,7 +101,7 @@ fun HomeScreen(
                 if (selected != null) {
                     DestinationDetail(
                         destination = selected,
-                        onBack = { selectedId = null },
+                        onBack = { onDeselect(selected) },
                         onConfirm = { onDestinationConfirmed(selected) }
                     )
                 } else {
@@ -130,7 +133,7 @@ fun HomeScreen(
                     LocationsList(
                         filteredDestinations,
                         selectedId = selectedId,
-                        onSelect = { selectedId = it.id }
+                        onSelect = { onSelect(it) }
                     )
                 }
             }
@@ -144,7 +147,8 @@ fun HomeScreen(
                 InteractiveMap(
                     destinations = destinations,
                     selectedId = selectedId,
-                    onSelectDestination = { selectedId = it.id },
+                    onSelectDestination = { onSelect(it) },
+                    path = path,
                     robotPose = robotPose,
                     modifier = Modifier.padding(8.dp)
                 ){
@@ -296,10 +300,14 @@ fun HSPreview(){
         CompositionLocalProvider(LocalStrings provides germanStrings) {
         HomeScreen(
             listOf(mockDest),
-            robotPose = { RobotPose(481f,1181f,0f) },
+            robotPose = { RobotPose(481f, 1181f, 0f) },
             onDestinationConfirmed = {},
             onOpenSettings = { },
-            onStartSpeechRecognition = { }
+            onStartSpeechRecognition = { },
+            selectedId = "mock stuff",
+            onSelect = {},
+            onDeselect = {},
+            path = listOf(Offset(1150f,1100f), Offset(1050f,1000f), Offset(1000f,1100f))
         )
         }
     }

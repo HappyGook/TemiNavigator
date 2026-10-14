@@ -133,6 +133,44 @@ class NavigationViewModel(
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    // selected Destination logic for the preview of the path
+    private val _selected = MutableStateFlow<Destination?>(null)
+    val selected: StateFlow<Destination?> = _selected.asStateFlow()
+
+    private var previewing = false
+    private var previewJob: Job? = null
+
+    fun selectDestination(dest: Destination?) {
+        stopPreview()
+        rawPath.value = emptyList()
+        _selected.value = dest
+        if (dest != null) startPreview(dest)
+    }
+
+    fun deselectDestination(dest: Destination?) {
+        stopPreview()
+        robot.stop()
+        rawPath.value = emptyList()
+        _selected.value = null
+    }
+
+    private fun startPreview(dest: Destination) {
+        if (_navState.value !is NavigationState.Idle) return   // never preview during real guidance
+        previewing = true
+        robot.goTo(dest.id)
+        previewJob = viewModelScope.launch {
+            delay(3_000.milliseconds)                                       // TODO: fallback: no path arrived -> unreachable?
+            stopPreview()
+        }
+    }
+
+    private fun stopPreview() {
+        if (!previewing) return
+        previewing = false
+        previewJob?.cancel()
+        robot.stop()
+    }
+
     fun setLanguage(language: AppLanguage){
         _language.value = language
         robot.setSpeechLanguage(language.code)
@@ -275,6 +313,7 @@ class NavigationViewModel(
     }
 
     fun confirmDestination(destination: Destination) {
+        stopPreview()
         arrivalJob?.cancel()
         startGuidance(destination)
         _screen.value = Screen.Navigation(destination)
@@ -295,8 +334,10 @@ class NavigationViewModel(
     private fun handleEvent(event: RobotEvent){
         when (event){
             is RobotEvent.GoToCancelled -> {
+                if (currentDestination == null) return          // preview stop, keep the path
                 if (_navState.value !is NavigationState.Paused) {
                     _navState.value = NavigationState.Idle
+                    rawPath.value = emptyList()
                 }
             }
             is RobotEvent.GoToFinished -> currentDestination?.let { dest ->
@@ -326,8 +367,9 @@ class NavigationViewModel(
                 if (event.status == RobotEvent.DetectionState.Detected) greetIfAppropriate()
             }
 
-            is RobotEvent.PathChanged -> {
-                if (currentDestination != null) rawPath.value = event.path
+            is RobotEvent.PathChanged -> when {
+                previewing -> { rawPath.value = event.path; stopPreview() }   // preview the path, then stop
+                currentDestination != null -> rawPath.value = event.path      // real guidance (re-routing)
             }
         }
     }

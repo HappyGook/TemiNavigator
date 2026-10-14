@@ -8,9 +8,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
@@ -59,6 +59,10 @@ fun TemiApp(
     onVoiceDestinationHandled: () -> Unit,
     onStartSpeechRecognition: () -> Unit,
     adminPasswordStore: AdminPasswordStore,
+    selected: Destination?,
+    onSelect: (Destination) -> Unit,
+    onDeselect: (Destination) -> Unit,
+    path: List<Offset>?
 ){
 /*
     when (screen) {
@@ -77,7 +81,11 @@ fun TemiApp(
             robotPose = robotPose,
             onDestinationConfirmed = onDestinationConfirmed,
             onOpenSettings = onOpenSettings,
-            onStartSpeechRecognition = onStartSpeechRecognition
+            onStartSpeechRecognition = onStartSpeechRecognition,
+            selectedId = selected?.id,
+            onSelect = onSelect,
+            onDeselect = onDeselect,
+            path = path
         )
         Screen.Settings -> SettingsScreen(
             currentLanguage = language,
@@ -105,7 +113,8 @@ fun TemiApp(
             pxPerMeter = calibration.pxPerMeter,
             navigationState = navigationState,
             onTogglePause = onToggleNavigationPause,
-            onAbort = onAbort
+            onAbort = onAbort,
+            path = path
         )
     }
 }
@@ -139,6 +148,8 @@ class MainActivity : ComponentActivity() {
             val screen by viewModel.screen.collectAsStateWithLifecycle()
             val settings by viewModel.settings.collectAsStateWithLifecycle()
             val returnCountdown by viewModel.returnCountdown.collectAsStateWithLifecycle()
+            val selected by viewModel.selected.collectAsStateWithLifecycle()
+            val path by viewModel.path.collectAsStateWithLifecycle()
             /*
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
@@ -176,7 +187,11 @@ class MainActivity : ComponentActivity() {
                         onLeaveWaiting = viewModel::leaveWaiting,
                         returnHomeDelaySec = settings.returnHomeDelaySec,
                         onReturnHomeDelayChanged = viewModel::setReturnHomeDelay,
-                        returnCountdown = returnCountdown
+                        returnCountdown = returnCountdown,
+                        selected = selected,
+                        onSelect = viewModel::selectDestination,
+                        onDeselect = viewModel::deselectDestination,
+                        path = path,
                     )
                 }
             }
