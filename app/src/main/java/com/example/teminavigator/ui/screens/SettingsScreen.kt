@@ -75,6 +75,14 @@ fun SettingsScreen(
     onLabelsReset: (String) -> Unit,
     returnHomeDelaySec: Int,
     onReturnHomeDelayChanged: (Int) -> Unit,
+    soundsEnabled: Boolean,
+    onSoundsEnabledChanged: (Boolean) -> Unit,
+    voiceOutputEnabled: Boolean,
+    onVoiceOutputEnabledChanged: (Boolean) -> Unit,
+    voiceInputEnabled: Boolean,
+    onVoiceInputEnabledChanged: (Boolean) -> Unit,
+    autoReturnEnabled: Boolean,
+    onAutoReturnEnabledChanged: (Boolean) -> Unit,
 ){
     val strings = LocalStrings.current
     val scope = rememberCoroutineScope()
@@ -140,7 +148,15 @@ fun SettingsScreen(
             if (isUnlocked) {
                 SettingsColumn(
                     returnHomeDelaySec = returnHomeDelaySec,
-                    onReturnHomeDelayChanged = onReturnHomeDelayChanged
+                    onReturnHomeDelayChanged = onReturnHomeDelayChanged,
+                    soundsEnabled = soundsEnabled,
+                    onSoundsEnabledChanged = onSoundsEnabledChanged,
+                    voiceOutputEnabled = voiceOutputEnabled,
+                    onVoiceOutputEnabledChanged = onVoiceOutputEnabledChanged,
+                    voiceInputEnabled = voiceInputEnabled,
+                    onVoiceInputEnabledChanged = onVoiceInputEnabledChanged,
+                    autoReturnEnabled = autoReturnEnabled,
+                    onAutoReturnEnabledChanged = onAutoReturnEnabledChanged,
                 )
                 CalibrationSection(                        // UI block for map calibration part
                     calibration = calibration,
@@ -292,20 +308,22 @@ data class SettingItem(
 
 /**
  * Function for the whole column of settings that have a switch to turn on/off
- * todo: add states to viewmodel so settings are saved
  */
 @Composable
 fun SettingsColumn(
     modifier: Modifier = Modifier,
     returnHomeDelaySec: Int,
     onReturnHomeDelayChanged: (Int) -> Unit,
+    soundsEnabled: Boolean,
+    onSoundsEnabledChanged: (Boolean) -> Unit,
+    voiceOutputEnabled: Boolean,
+    onVoiceOutputEnabledChanged: (Boolean) -> Unit,
+    voiceInputEnabled: Boolean,
+    onVoiceInputEnabledChanged: (Boolean) -> Unit,
+    autoReturnEnabled: Boolean,
+    onAutoReturnEnabledChanged: (Boolean) -> Unit,
 ) {
     val strings = LocalStrings.current
-
-    val soundsEnabled = rememberSaveable { mutableStateOf(true) }
-    val voiceOutputEnabled = rememberSaveable { mutableStateOf(true) }
-    val voiceInputEnabled = rememberSaveable { mutableStateOf(true) }
-    val autoReturnEnabled = rememberSaveable { mutableStateOf(true) }
 
     Column(
         modifier = modifier
@@ -318,8 +336,8 @@ fun SettingsColumn(
             icon = Icons.Default.SurroundSound,
             title = strings.sounds,
             description = strings.descriptionSounds,
-            checked = soundsEnabled.value,
-            onCheckedChange = { soundsEnabled.value = it }
+            checked = soundsEnabled,
+            onCheckedChange = onSoundsEnabledChanged
         )
 
         // Voice Output setting
@@ -327,8 +345,8 @@ fun SettingsColumn(
             icon = Icons.Default.Speaker,
             title = strings.voiceOutput,
             description = strings.descriptionVoiceOutput,
-            checked = voiceOutputEnabled.value,
-            onCheckedChange = { voiceOutputEnabled.value = it }
+            checked = voiceOutputEnabled,
+            onCheckedChange = onVoiceOutputEnabledChanged
         )
 
         // Voice input setting
@@ -336,8 +354,8 @@ fun SettingsColumn(
             icon = Icons.Default.Mic,
             title = strings.voiceInput,
             description = strings.descriptionVoiceInput,
-            checked = voiceInputEnabled.value,
-            onCheckedChange = { voiceInputEnabled.value = it }
+            checked = voiceInputEnabled,
+            onCheckedChange = onVoiceInputEnabledChanged
         )
 
         // Auto return to home location setting
@@ -345,8 +363,8 @@ fun SettingsColumn(
             icon = Icons.Default.Home,
             title = strings.autoReturn,
             description = strings.descriptionAutoReturn,
-            checked = autoReturnEnabled.value,
-            onCheckedChange = { autoReturnEnabled.value = it }
+            checked = autoReturnEnabled,
+            onCheckedChange = onAutoReturnEnabledChanged
         )
 
         Row(
@@ -356,13 +374,13 @@ fun SettingsColumn(
             Text(strings.returnHomeAfter, fontSize = 24.sp, modifier = Modifier.weight(1f))
             Button(
                 onClick = { onReturnHomeDelayChanged(returnHomeDelaySec - 1) },
-                enabled = autoReturnEnabled.value,
+                enabled = autoReturnEnabled,
                 modifier = Modifier.height(40.dp)
             ) { Text("−") }
             Text("$returnHomeDelaySec s", fontSize = 24.sp, modifier = Modifier.padding(horizontal = 16.dp))
             Button(
                 onClick = { onReturnHomeDelayChanged(returnHomeDelaySec + 1) },
-                enabled = autoReturnEnabled.value,
+                enabled = autoReturnEnabled,
                 modifier = Modifier.height(40.dp)
             ) { Text("+", fontSize = 24.sp) }
         }
@@ -613,4 +631,3 @@ private fun DestinationLabelRow(
         }
     }
 }
-
