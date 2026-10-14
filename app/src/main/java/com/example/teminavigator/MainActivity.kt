@@ -8,8 +8,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
@@ -30,6 +41,7 @@ import com.example.teminavigator.ui.screens.SettingsScreen
 import com.example.teminavigator.ui.screens.WaitingScreen
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
+import com.example.teminavigator.viewmodel.SpeechNotice
 
 @Composable
 fun TemiApp(
@@ -55,6 +67,8 @@ fun TemiApp(
     returnHomeDelaySec: Int,
     onReturnHomeDelayChanged: (Int) -> Unit,
     returnCountdown: Int?,
+    speechNotice: SpeechNotice?,
+    onSpeechNoticeShown: (Long) -> Unit,
     onStartSpeechRecognition: () -> Unit,
     adminPasswordStore: AdminPasswordStore,
     settings: AppSettings,
@@ -63,7 +77,18 @@ fun TemiApp(
     onVoiceInputEnabledChanged: (Boolean) -> Unit,
     onAutoReturnEnabledChanged: (Boolean) -> Unit,
 ){
-/*
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(speechNotice?.id) {
+        val notice = speechNotice ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(
+            message = notice.message,
+            duration = SnackbarDuration.Short
+        )
+        onSpeechNoticeShown(notice.id)
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        /*
     when (screen) {
         Screen.Home -> HomeScreen(
     LaunchedEffect(voiceDestination) {
@@ -73,51 +98,58 @@ fun TemiApp(
             onVoiceDestinationHandled()
         }
     }
-*/
-    when (screen) {
-        Screen.Home -> HomeScreen(
-            destinations = destinations,
-            robotPose = robotPose,
-            onDestinationConfirmed = onDestinationConfirmed,
-            onOpenSettings = onOpenSettings,
-            onStartSpeechRecognition = onStartSpeechRecognition,
-            voiceInputEnabled = settings.voiceInputEnabled,
-        )
-        Screen.Settings -> SettingsScreen(
-            currentLanguage = language,
-            onLanguageChanged = onLanguageSelected,
-            onBack = onCloseSettings,
-            calibration = calibration,
-            onCalibrationSaved = onCalibrationSaved,
-            labels = labels,
-            onDisplayNameChanged = onDisplayNameChanged,
-            onAliasesChanged = onAliasesChanged,
-            onLabelsReset = onLabelsReset,
-            destinations = destinations,
-            returnHomeDelaySec = returnHomeDelaySec,
-            onReturnHomeDelayChanged = onReturnHomeDelayChanged,
-            adminPasswordStore = adminPasswordStore,
-            soundsEnabled = settings.soundsEnabled,
-            onSoundsEnabledChanged = onSoundsEnabledChanged,
-            voiceOutputEnabled = settings.voiceOutputEnabled,
-            onVoiceOutputEnabledChanged = onVoiceOutputEnabledChanged,
-            voiceInputEnabled = settings.voiceInputEnabled,
-            onVoiceInputEnabledChanged = onVoiceInputEnabledChanged,
-            autoReturnEnabled = settings.autoReturnEnabled,
-            onAutoReturnEnabledChanged = onAutoReturnEnabledChanged,
-        )
-        Screen.Waiting -> WaitingScreen(
-            onLeaveWaiting = onLeaveWaiting,
-            returnCountdown = returnCountdown,
-        )
-        is Screen.Navigation -> NavigationScreen(
-            destination = screen.destination,
-            robotPose = robotPose,
-            currentSpeed = currentSpeed,
-            pxPerMeter = calibration.pxPerMeter,
-            navigationState = navigationState,
-            onTogglePause = onToggleNavigationPause,
-            onAbort = onAbort
+    */
+        when (screen) {
+            Screen.Home -> HomeScreen(
+                destinations = destinations,
+                robotPose = robotPose,
+                onDestinationConfirmed = onDestinationConfirmed,
+                onOpenSettings = onOpenSettings,
+                onStartSpeechRecognition = onStartSpeechRecognition,
+                voiceInputEnabled = settings.voiceInputEnabled,
+            )
+            Screen.Settings -> SettingsScreen(
+                currentLanguage = language,
+                onLanguageChanged = onLanguageSelected,
+                onBack = onCloseSettings,
+                calibration = calibration,
+                onCalibrationSaved = onCalibrationSaved,
+                labels = labels,
+                onDisplayNameChanged = onDisplayNameChanged,
+                onAliasesChanged = onAliasesChanged,
+                onLabelsReset = onLabelsReset,
+                destinations = destinations,
+                returnHomeDelaySec = returnHomeDelaySec,
+                onReturnHomeDelayChanged = onReturnHomeDelayChanged,
+                adminPasswordStore = adminPasswordStore,
+                soundsEnabled = settings.soundsEnabled,
+                onSoundsEnabledChanged = onSoundsEnabledChanged,
+                voiceOutputEnabled = settings.voiceOutputEnabled,
+                onVoiceOutputEnabledChanged = onVoiceOutputEnabledChanged,
+                voiceInputEnabled = settings.voiceInputEnabled,
+                onVoiceInputEnabledChanged = onVoiceInputEnabledChanged,
+                autoReturnEnabled = settings.autoReturnEnabled,
+                onAutoReturnEnabledChanged = onAutoReturnEnabledChanged,
+            )
+            Screen.Waiting -> WaitingScreen(
+                onLeaveWaiting = onLeaveWaiting,
+                returnCountdown = returnCountdown,
+            )
+            is Screen.Navigation -> NavigationScreen(
+                destination = screen.destination,
+                robotPose = robotPose,
+                currentSpeed = currentSpeed,
+                pxPerMeter = calibration.pxPerMeter,
+                navigationState = navigationState,
+                onTogglePause = onToggleNavigationPause,
+                onAbort = onAbort
+            )
+        }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
         )
     }
 }
@@ -149,6 +181,7 @@ class MainActivity : ComponentActivity() {
             val screen by viewModel.screen.collectAsStateWithLifecycle()
             val settings by viewModel.settings.collectAsStateWithLifecycle()
             val returnCountdown by viewModel.returnCountdown.collectAsStateWithLifecycle()
+            val speechNotice by viewModel.speechNotice.collectAsStateWithLifecycle()
             /*
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
@@ -185,6 +218,8 @@ class MainActivity : ComponentActivity() {
                         returnHomeDelaySec = settings.returnHomeDelaySec,
                         onReturnHomeDelayChanged = viewModel::setReturnHomeDelay,
                         returnCountdown = returnCountdown,
+                        speechNotice = speechNotice,
+                        onSpeechNoticeShown = viewModel::clearSpeechNotice,
                         settings = settings,
                         onSoundsEnabledChanged = viewModel::setSoundsEnabled,
                         onVoiceOutputEnabledChanged = viewModel::setVoiceOutputEnabled,

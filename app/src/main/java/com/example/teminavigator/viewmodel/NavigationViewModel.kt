@@ -47,6 +47,8 @@ private const val HOME_LOCATION = "home base"
 private const val HOME_RADIUS_M = 0.4
 private const val GREETING_COOLDOWN_MS = 10 * 1000
 
+data class SpeechNotice(val id: Long, val message: String)
+
 class NavigationViewModel(
     app: Application,
     private val robot: RobotController
@@ -66,6 +68,10 @@ class NavigationViewModel(
 
     private val _readyState = MutableStateFlow(true)
     val readyState : StateFlow<Boolean> = _readyState.asStateFlow()
+
+    private val _speechNotice = MutableStateFlow<SpeechNotice?>(null)
+    val speechNotice: StateFlow<SpeechNotice?> = _speechNotice.asStateFlow()
+    private var speechNoticeId = 0L
 
     private var currentDestination : Destination? = null
 
@@ -153,6 +159,10 @@ class NavigationViewModel(
 
     fun setAliases(id: String, aliases: List<String>) {
         viewModelScope.launch { labelRepo.setAliases(id, aliases) }
+    }
+
+    fun clearSpeechNotice(id: Long) {
+        if (_speechNotice.value?.id == id) _speechNotice.value = null
     }
 
     fun resetLabels(id: String) {
@@ -357,6 +367,10 @@ class NavigationViewModel(
                     _screen.value = Screen.Navigation(destination)
                 } else {
                     speak(strings.spokenUnknownDestination)
+                    _speechNotice.value = SpeechNotice(
+                        id = ++speechNoticeId,
+                        message = strings.spokenUnknownDestination
+                    )
                 }
             }
 
