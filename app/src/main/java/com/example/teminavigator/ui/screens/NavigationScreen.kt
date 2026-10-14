@@ -1,4 +1,6 @@
 package com.example.teminavigator.ui.screens
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,7 +64,7 @@ fun NavigationScreen(
     onAbort: () -> Unit,
 ) {
     val strings = LocalStrings.current
-
+    val paused = navigationState is NavigationState.Paused
     var startPose by remember(destination) { mutableStateOf<RobotPose?>(null) }
 
     // take a start pose once on launch of the screen for further calculations
@@ -104,7 +106,15 @@ fun NavigationScreen(
         }
     }
 
-    Row(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onTogglePause)
+    ) {
 
         /** Left side of the screen */
         Column(
@@ -157,7 +167,9 @@ fun NavigationScreen(
             // Element 4 - Progress bar
             LinearProgressIndicator(
                 progress = { progress },
-                modifier = Modifier.fillMaxWidth().height(10.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -175,15 +187,19 @@ fun NavigationScreen(
                     } else {
                         Icons.Filled.Pause
                     },
-                    onClick = onTogglePause
+                    onClick = onTogglePause,
+                    Modifier.height(144.dp)
                 )
 
-                // Abort Navigation
-                AppButton(
-                    strings.abortNavigation,
-                    Icons.Filled.StopCircle,
-                    onClick =  onAbort
-                )
+                if(paused){
+                    // Abort Navigation
+                    AppButton(
+                        strings.abortNavigation,
+                        Icons.Filled.StopCircle,
+                        onClick =  onAbort,
+                        Modifier.height(144.dp)
+                    )
+                }
             }
         }
 

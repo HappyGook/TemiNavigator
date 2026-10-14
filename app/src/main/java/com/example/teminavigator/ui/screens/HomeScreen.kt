@@ -8,23 +8,25 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme.colorScheme
@@ -67,7 +69,6 @@ fun HomeScreen(
     voiceInputEnabled: Boolean,
 ) {
     var selectedId by rememberSaveable{mutableStateOf<String?>(null)}
-    var showConfirmationDialog by rememberSaveable {mutableStateOf(false)}
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val selected = destinations.find{it.id==selectedId}
     val strings = LocalStrings.current
@@ -95,33 +96,41 @@ fun HomeScreen(
                     .fillMaxWidth(0.3f)
                     .fillMaxHeight()
             ) {
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Search input -> bound to searchQuery state
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = {
-                                searchQuery = it        // update search text
-                            },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            textStyle = TextStyle(fontSize = 28.sp),
-                            placeholder = { Text(strings.searchDestinations, fontSize = 28.sp) }
-                        )
-
-                        // Microphone button -> starts voice input
-                        IconButton(
-                            enabled = voiceInputEnabled,
-                            onClick = {
-                                onStartSpeechRecognition()
-                            }
+                if (selected != null) {
+                    DestinationDetail(
+                        destination = selected,
+                        onBack = { selectedId = null },
+                        onConfirm = { onDestinationConfirmed(selected) }
+                    )
+                } else {
+                    Column {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Filled.Mic, contentDescription = strings.voiceInput, Modifier.size(72.dp))
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                textStyle = TextStyle(fontSize = 28.sp),
+                                placeholder = { Text(strings.searchDestinations, fontSize = 28.sp) }
+                            )
+                            // Microphone button -> starts voice input
+                            IconButton(
+                                enabled = voiseInputEnabled,
+                                onClick = {
+                                    onStartSpeechRecognition
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Filled.Mic,
+                                    contentDescription = strings.voiceInput,
+                                    Modifier.size(72.dp)
+                                )
+                            }
                         }
                     }
                     // Filtered list of destinations (filtered by search query)
@@ -151,43 +160,11 @@ fun HomeScreen(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(16.dp)
-                            .size(56.dp)
-                    ) { Icon(Icons.Default.Settings, contentDescription = "Settings", Modifier.size(40.dp)) }
-
-                    FloatingActionButton(
-                        onClick = { showConfirmationDialog = true },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(16.dp)
-                            .height(72.dp)
-                            .widthIn(min=240.dp)
-                    ) { Text(strings.acceptButton, fontSize = 28.sp) }
+                            .size(96.dp)
+                    ) { Icon(Icons.Default.Settings, contentDescription = "Settings", Modifier.size(72.dp)) }
                 }
             }
         }
-    }
-    if(showConfirmationDialog && selected!=null){
-        AlertDialog(
-            onDismissRequest = { showConfirmationDialog = false },
-            title = { Text(strings.confirmTitle(selected.displayName), fontSize = 36.sp) },
-            confirmButton ={
-                TextButton(
-                    modifier = Modifier.height(72.dp),
-                    onClick = {
-                        showConfirmationDialog = false
-                        onDestinationConfirmed(selected) // to ViewModel
-                    }
-                ) { Text(strings.confirmYes, fontSize = 28.sp)}
-            },
-            dismissButton = {
-                TextButton(
-                    modifier = Modifier.height(72.dp),
-                    onClick = {
-                        showConfirmationDialog = false
-                    }
-                ) { Text(strings.confirmNo, fontSize = 28.sp)}
-            }
-        )
     }
 }
 
@@ -205,6 +182,57 @@ fun LocationsList(
                 onClick = onSelect
             )
         }
+    }
+}
+
+@Composable
+fun DestinationDetail(
+    destination: Destination,
+    onBack: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val strings = LocalStrings.current
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Back to the list
+        TextButton(onClick = onBack, modifier = Modifier.height(72.dp)) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(strings.selectLocation, fontSize = 36.sp)
+        }
+
+        Text(
+            text = strings.confirmTitle(destination.displayName),
+            fontSize = 48.sp,
+            lineHeight = 48.sp,
+            fontWeight = FontWeight.Bold,
+            color = colorScheme.onSurface
+        )
+
+        if (destination.aliases.isNotEmpty()) {
+            Text(
+                text = destination.aliases.joinToString(", "),
+                fontSize = 24.sp,
+                color = colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(88.dp)
+        ) { Text(strings.confirmYes, fontSize = 32.sp) }
     }
 }
 
