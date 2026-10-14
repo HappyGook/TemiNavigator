@@ -243,5 +243,6 @@ object TemiRobot: RobotController,
 
     override fun onGoToNavPathChanged(path: List<LayerPose>) {
         Log.i("Temi_NavPath","Neuer path berechnet: $path")
+        _events.tryEmit(RobotEvent.PathChanged(path.map { RobotEvent.MapPoint(it.x,it.y) }))
     }
 }

@@ -14,4 +14,7 @@ sealed interface RobotEvent {
 
     enum class DetectionState { Idle, Lost, Detected }
     data class DetectionStatusChanged(val status: DetectionState) : RobotEvent
+
+    data class MapPoint(val x: Float, val y: Float)
+    data class PathChanged(val path: List<MapPoint>) : RobotEvent
 }

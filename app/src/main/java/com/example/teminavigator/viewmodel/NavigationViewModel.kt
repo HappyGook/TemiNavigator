@@ -107,6 +107,14 @@ class NavigationViewModel(
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    // path transformation
+    private val rawPath = MutableStateFlow<List<RobotEvent.MapPoint>>(emptyList())
+
+    val path: StateFlow<List<Offset>> =
+        combine(rawPath, calibration) { raw, cal ->
+            raw.map { cal.robotToImagePx(it.x, it.y) }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     fun setCalibration(c: MapCalibration) {
         viewModelScope.launch { calibrationRepo.save(c) }
     }
@@ -380,6 +388,10 @@ class NavigationViewModel(
 
             is RobotEvent.DetectionStatusChanged -> {
                 if (event.status == RobotEvent.DetectionState.Detected) greetIfAppropriate()
+            }
+
+            is RobotEvent.PathChanged -> {
+                if (currentDestination != null) rawPath.value = event.path
             }
         }
     }
