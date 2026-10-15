@@ -18,6 +18,8 @@ val PinColor = Color(0xFF6135E5)
 
 val SelectedPinColor = Color(0xFFBE2CB7)
 
+val RouteColor = Color(0xFF0A7DE5)
+
 val ColorScheme.locationBackground: Color
     get() = RobotPinBackgroundBlue
 
@@ -29,3 +31,6 @@ val ColorScheme.pinColor: Color
 
 val ColorScheme.selectedPinColor: Color
     get() = SelectedPinColor
+
+val ColorScheme.routeColor: Color
+    get() = RouteColor

@@ -44,7 +44,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 // constants
 private const val HOME_LOCATION = "home base"
-private const val HOME_RADIUS_M = 0.4
+private const val HOME_RADIUS = 2
 private const val GREETING_COOLDOWN_MS = 10 * 1000
 
 data class SpeechNotice(val id: Long, val message: String)
@@ -142,6 +142,51 @@ class NavigationViewModel(
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    // selected Destination logic for the preview of the path
+    private val _selected = MutableStateFlow<Destination?>(null)
+    val selected: StateFlow<Destination?> = _selected.asStateFlow()
+
+    // failedDestination in case temi fails to reach the destination
+    private val _failedDestination = MutableStateFlow<Destination?>(null)
+    val failedDestination: StateFlow<Destination?> = _failedDestination.asStateFlow()
+    private var failureJob: Job? = null
+
+    private var stopRequested = false
+
+    private var previewing = false
+    private var previewJob: Job? = null
+
+    fun selectDestination(dest: Destination?) {
+        stopPreview()
+        rawPath.value = emptyList()
+        _selected.value = dest
+        if (dest != null) startPreview(dest)
+    }
+
+    fun deselectDestination(dest: Destination?) {
+        stopPreview()
+        stopRobot()
+        rawPath.value = emptyList()
+        _selected.value = null
+    }
+
+    private fun startPreview(dest: Destination) {
+        if (_navState.value !is NavigationState.Idle) return   // never preview during real guidance
+        previewing = true
+        startGoingTo(dest.id)
+        previewJob = viewModelScope.launch {
+            delay(10_000.milliseconds)
+            stopPreview()
+        }
+    }
+
+    private fun stopPreview() {
+        if (!previewing) return
+        previewing = false
+        previewJob?.cancel()
+        stopRobot()
+    }
+
     fun setLanguage(language: AppLanguage){
         _language.value = language
         robot.setSpeechLanguage(language.code)
@@ -199,6 +244,7 @@ class NavigationViewModel(
     fun closeSettings() { _screen.value = Screen.Home }
     fun leaveWaiting() {
         robot.stopSpeaking()
+        dismissFailure()
         _screen.value = Screen.Home
     }
 
@@ -226,7 +272,8 @@ class NavigationViewModel(
     private fun isAtHome(): Boolean {
         val pose = pose.value ?: return false
         val home = destinations.value.find { it.id == HOME_LOCATION } ?: return false
-        val isAtHome = hypot(pose.xPx - (home.imagePx?.x ?: 0f), pose.yPx - (home.imagePx?.y ?: 0f)) < HOME_RADIUS_M
+        val radiusMeter = HOME_RADIUS*calibration.value.pxPerMeter // multiply radius with pxPerMeter to get real metres
+        val isAtHome = hypot(pose.xPx - (home.imagePx?.x ?: 0f), pose.yPx - (home.imagePx?.y ?: 0f)) < radiusMeter
         Log.i("ViewModel","HomeCheck called, result: $isAtHome")
         return isAtHome
     }
@@ -241,9 +288,14 @@ class NavigationViewModel(
                 delay(1_000.milliseconds)
                 left--
             }
+
+            val home = destinations.value.find { it.id == HOME_LOCATION }
+                ?: return@launch // if home location not available - stay on waiting screen
+
             _returnCountdown.value = null
-            currentDestination = null
-            robot.goTo(HOME_LOCATION)
+            currentDestination = home
+            startGoingTo(home.id)
+            _screen.value = Screen.Navigation(home) // show navigation screen when going home
         }
     }
 
@@ -294,16 +346,20 @@ class NavigationViewModel(
 
     fun startGuidance(destination: Destination){
         currentDestination = destination
-        robot.goTo(destination.id)
+        startGoingTo(destination.id)
         speak(strings.spokenStarting(destination.displayName))
     }
+
     fun toggleNavigationPause() {
+        val dest = currentDestination ?: return
         when (_navState.value) {
-            is NavigationState.Guiding -> pauseNavigation()
+            is NavigationState.Guiding -> {
+                _navState.value = NavigationState.Paused(dest)
+                stopRobot()
+            }
             is NavigationState.Paused -> {
-                val dest = currentDestination ?: return
                 _navState.value = NavigationState.Guiding(dest)
-                robot.goTo(dest.id)
+                startGoingTo(dest.id)
             }
             else -> Unit
         }
@@ -316,6 +372,7 @@ class NavigationViewModel(
     }
 
     fun confirmDestination(destination: Destination) {
+        stopPreview()
         arrivalJob?.cancel()
         startGuidance(destination)
         _screen.value = Screen.Navigation(destination)
@@ -325,12 +382,47 @@ class NavigationViewModel(
         arrivalJob?.cancel()
         _navState.value = NavigationState.Idle
         _screen.value = Screen.Home
-        robot.stop()
+        stopRobot()
         speak(strings.spokenAbort)
     }
 
     fun speak(text: String) {
         if (settings.value.voiceOutputEnabled) robot.speak(text, _language.value.code)
+    }
+
+    fun stopRobot(){
+        stopRequested = true
+        robot.stop()
+    }
+
+    fun startGoingTo(id: String){
+        stopRequested = false
+        robot.goTo(id)
+    }
+
+    // handler for when the guidance is failed
+    private fun onGuidanceFailed(dest: Destination) {
+        arrivalJob?.cancel()
+        currentDestination = null
+        rawPath.value = emptyList()
+        _navState.value = NavigationState.Idle
+
+        // failed trip home needs no dialog, the return timer tries again later
+        if (dest.id != HOME_LOCATION) {
+            _failedDestination.value = dest
+            speak("Unreachable!: "+(dest.displayName)) // TODO: add to language pack + make a dialog in UI
+            failureJob?.cancel()
+            failureJob = viewModelScope.launch {
+                delay(10_000.milliseconds)         // auto-dismiss; TODO: configurable in settings?
+                _failedDestination.value = null
+            }
+        }
+        _screen.value = Screen.Waiting
+    }
+
+    fun dismissFailure() {
+        failureJob?.cancel()
+        _failedDestination.value = null
     }
 
     private fun handleEvent(event: RobotEvent){
@@ -339,6 +431,20 @@ class NavigationViewModel(
                 playSoundIfEnabled { playError() }
                 if (_navState.value !is NavigationState.Paused) {
                     _navState.value = NavigationState.Idle
+                }
+                when {
+                    stopRequested -> {
+                        stopRequested = false
+                        if (currentDestination != null && _navState.value !is NavigationState.Paused) {
+                            _navState.value = NavigationState.Idle
+                            rawPath.value = emptyList()
+                        }
+                    }
+                    currentDestination != null -> onGuidanceFailed(currentDestination!!)   // Temi gave up on its own
+                    previewing -> {
+                        _selected.value?.let { _failedDestination.value = it }
+                        stopPreview()
+                    }
                 }
             }
             is RobotEvent.GoToFinished -> {
@@ -390,8 +496,9 @@ class NavigationViewModel(
                 if (event.status == RobotEvent.DetectionState.Detected) greetIfAppropriate()
             }
 
-            is RobotEvent.PathChanged -> {
-                if (currentDestination != null) rawPath.value = event.path
+            is RobotEvent.PathChanged -> when {
+                previewing -> { rawPath.value = event.path; stopPreview() }   // preview the path, then stop
+                currentDestination != null -> rawPath.value = event.path      // real guidance (re-routing)
             }
         }
     }

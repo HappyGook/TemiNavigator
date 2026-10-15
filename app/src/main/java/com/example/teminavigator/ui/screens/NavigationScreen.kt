@@ -62,6 +62,7 @@ fun NavigationScreen(
     navigationState: NavigationState,
     onTogglePause: () -> Unit,
     onAbort: () -> Unit,
+    path: List<Offset>?
 ) {
     val strings = LocalStrings.current
     val paused = navigationState is NavigationState.Paused
@@ -212,7 +213,8 @@ fun NavigationScreen(
             InteractiveMap(
                 destinations = listOf(destination),
                 selectedId = destination.id,
-                robotPose = robotPose
+                robotPose = robotPose,
+                path = path
             )
         }
     }
@@ -237,7 +239,8 @@ fun NavigationScreenPreview() {
                 pxPerMeter = 42f,
                 navigationState = NavigationState.Paused(mockDest),
                 onTogglePause = {},
-                onAbort = {}
+                onAbort = {},
+                path = listOf(Offset(1150f,1100f), Offset(1050f,1000f), Offset(1000f,1100f))
             )
         }
     }

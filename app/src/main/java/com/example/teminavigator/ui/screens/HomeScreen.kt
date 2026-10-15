@@ -1,6 +1,5 @@
 package com.example.teminavigator.ui.screens
 import android.annotation.SuppressLint
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,16 +20,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -63,6 +62,10 @@ import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 @Composable
 fun HomeScreen(
     destinations: List<Destination>,
+    selectedId: String?,
+    onSelect: (Destination) -> Unit,
+    onDeselect: (Destination) -> Unit,
+    path: List<Offset>?,
     robotPose: () -> RobotPose?,
     onDestinationConfirmed: (Destination) -> Unit,
     onOpenSettings: () -> Unit,
@@ -100,7 +103,7 @@ fun HomeScreen(
                 if (selected != null) {
                     DestinationDetail(
                         destination = selected,
-                        onBack = { selectedId = null },
+                        onBack = { onDeselect(selected) },
                         onConfirm = { onDestinationConfirmed(selected) }
                     )
                 } else {
@@ -138,7 +141,7 @@ fun HomeScreen(
                     LocationsList(
                         filteredDestinations,
                         selectedId = selectedId,
-                        onSelect = { selectedId = it.id }
+                        onSelect = { onSelect(it) }
                     )
                 }
             }
@@ -152,7 +155,8 @@ fun HomeScreen(
                 InteractiveMap(
                     destinations = destinations,
                     selectedId = selectedId,
-                    onSelectDestination = { selectedId = it.id },
+                    onSelectDestination = { onSelect(it) },
+                    path = path,
                     robotPose = robotPose,
                     modifier = Modifier.padding(8.dp)
                 ){
@@ -304,11 +308,15 @@ fun HSPreview(){
         CompositionLocalProvider(LocalStrings provides germanStrings) {
         HomeScreen(
             listOf(mockDest),
-            robotPose = { RobotPose(481f,1181f,0f) },
+            robotPose = { RobotPose(481f, 1181f, 0f) },
             onDestinationConfirmed = {},
             onOpenSettings = { },
             onStartSpeechRecognition = { },
             voiceInputEnabled = true,
+            selectedId = "mock stuff",
+            onSelect = {},
+            onDeselect = {},
+            path = listOf(Offset(1150f,1100f), Offset(1050f,1000f), Offset(1000f,1100f))
         )
         }
     }
