@@ -159,7 +159,7 @@ class NavigationViewModel(
         previewing = true
         robot.goTo(dest.id)
         previewJob = viewModelScope.launch {
-            delay(3_000.milliseconds)                                       // TODO: fallback: no path arrived -> unreachable?
+            delay(20_000.milliseconds)                                       // TODO: fallback: no path arrived -> unreachable?
             stopPreview()
         }
     }
@@ -244,9 +244,14 @@ class NavigationViewModel(
                 delay(1_000.milliseconds)
                 left--
             }
+
+            val home = destinations.value.find { it.id == HOME_LOCATION }
+                ?: return@launch // if home location not available - stay on waiting screen
+
             _returnCountdown.value = null
-            currentDestination = null
-            robot.goTo(HOME_LOCATION)
+            currentDestination = home
+            robot.goTo(home.id)
+            _screen.value = Screen.Navigation(home) // show navigation screen when going home
         }
     }
 
