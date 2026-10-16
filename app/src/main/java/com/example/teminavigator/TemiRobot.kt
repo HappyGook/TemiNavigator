@@ -39,7 +39,7 @@ object TemiRobot: RobotController,
     private var _ready = MutableStateFlow(false)
 
     // public on demand var
-    var ready : StateFlow<Boolean> = _ready
+    override var ready : StateFlow<Boolean> = _ready
 
     private var _events = MutableSharedFlow<RobotEvent>(extraBufferCapacity = 10)
     override var events = _events
@@ -57,6 +57,7 @@ object TemiRobot: RobotController,
         robot.addOnRequestPermissionResultListener(this)
         robot.addAsrListener(this)
         robot.addWakeupWordListener(this)
+        robot.addOnCurrentPositionChangedListener(this)
         robot.addOnDetectionStateChangedListener(this)
         robot.addOnGoToNavPathChangedListener(this)
     }
@@ -67,6 +68,7 @@ object TemiRobot: RobotController,
         robot.removeOnRequestPermissionResultListener(this)
         robot.removeAsrListener(this)
         robot.removeWakeupWordListener(this)
+        robot.removeOnCurrentPositionChangedListener(this)
         robot.removeOnDetectionStateChangedListener(this)
         robot.removeOnGoToNavPathChangedListener(this)
     }
@@ -151,7 +153,7 @@ object TemiRobot: RobotController,
             "abort" -> _events.tryEmit(RobotEvent.GoToCancelled(locationId=location, reason = description))
             "complete" -> _events.tryEmit(RobotEvent.GoToFinished(locationId=location))
         }
-        val (x,y,yaw,tilt) = robot.getPosition()
+        val (x,y,yaw,_) = robot.getPosition()
         Log.i("Temi","Location Status changed: $status")
         _events.tryEmit(RobotEvent.PositionChanged(x,y,yaw))
     }
@@ -179,6 +181,7 @@ object TemiRobot: RobotController,
             return
         }
         // Permissions were already granted
+        _ready.value = true
         _events.tryEmit(RobotEvent.Ready(isReady))
         Log.i("Temi","Robot ready state: $isReady")
         val (x,y,yaw,tilt) = robot.getPosition()

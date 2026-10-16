@@ -61,8 +61,8 @@ class NavigationViewModel(
     private val _voiceDestination = MutableStateFlow<Destination?>(null)
     val voiceDestination: StateFlow<Destination?> = _voiceDestination.asStateFlow()
 
-    private val _readyState = MutableStateFlow(true)
-    val readyState : StateFlow<Boolean> = _readyState.asStateFlow()
+    private val _readyState = MutableStateFlow(false)
+    val readyState : StateFlow<Boolean> = robot.ready
 
     private var currentDestination : Destination? = null
 
@@ -289,10 +289,6 @@ class NavigationViewModel(
         robot.attach()
         viewModelScope.launch {
             robot.events.collect {event -> handleEvent(event)}
-        }
-        viewModelScope.launch { speed.collect { robot.setSpeed(it) } }
-        viewModelScope.launch {
-            screen.collect { if (it is Screen.Waiting) startReturnTimer() else cancelReturnTimer() }
         }
         viewModelScope.launch { speed.collect { robot.setSpeed(it) } }
         viewModelScope.launch {
