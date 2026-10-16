@@ -6,11 +6,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
@@ -62,7 +66,9 @@ fun TemiApp(
     selected: Destination?,
     onSelect: (Destination) -> Unit,
     onDeselect: (Destination) -> Unit,
-    path: List<Offset>?
+    path: List<Offset>?,
+    failed: Destination?,
+    dismissFailure: ()-> Unit
 ){
 /*
     when (screen) {
@@ -75,6 +81,18 @@ fun TemiApp(
         }
     }
 */
+    // If destination failed, dialog shows screen-independent
+    val strings = LocalStrings.current
+
+    failed?.let { dest ->
+        AlertDialog(
+            onDismissRequest = dismissFailure,
+            title = { Text("strings.unreachableTitle") }, // TODO: language pack strings
+            text = { Text("strings.unreachableText"+(dest.displayName), fontSize = 36.sp) },
+            confirmButton = { Button(onClick = dismissFailure) { Text(strings.backToNavigation, fontSize = 36.sp) } }
+        )
+    }
+
     when (screen) {
         Screen.Home -> HomeScreen(
             destinations = destinations,
@@ -150,6 +168,7 @@ class MainActivity : ComponentActivity() {
             val returnCountdown by viewModel.returnCountdown.collectAsStateWithLifecycle()
             val selected by viewModel.selected.collectAsStateWithLifecycle()
             val path by viewModel.path.collectAsStateWithLifecycle()
+            val failed by viewModel.failedDestination.collectAsState()
             /*
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
@@ -192,6 +211,8 @@ class MainActivity : ComponentActivity() {
                         onSelect = viewModel::selectDestination,
                         onDeselect = viewModel::deselectDestination,
                         path = path,
+                        failed = failed,
+                        dismissFailure = viewModel::dismissFailure
                     )
                 }
             }
