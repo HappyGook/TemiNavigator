@@ -101,12 +101,28 @@ object TemiRobot: RobotController,
         val request = SttRequest(languages = listOf(speechLanguage))
         if (speakPrompt) {
             robot.askQuestion(
-                TtsRequest.create(question, false, ttsLanguage(speechLanguageCode)),
+                TtsRequest.create(question, true, ttsLanguage(speechLanguageCode)),
                 request
             )
         } else {
             robot.wakeup(request)
         }
+    }
+
+    // Is called when speech recognition is done and spoken phrase is converted to string
+    override fun onAsrResult(asrResult: String, sttLanguage: SttLanguage) {
+        robot.finishConversation()   // stops Temi's default NLP/answer
+        if (asrResult.isNotBlank()) {
+            _events.tryEmit(RobotEvent.SpeechRecognised(asrResult))
+        }
+    }
+
+    override fun onWakeupWord(
+        wakeupWord: String,
+        direction: Int,
+        origin: WakeupOrigin
+    ) {
+        _events.tryEmit(RobotEvent.WakeupWordDetected)
     }
 
     private fun ttsLanguage(languageCode: String): TtsRequest.Language = when (
@@ -173,22 +189,6 @@ object TemiRobot: RobotController,
         val (x,y,yaw,tilt) = robot.getPosition()
         Log.i("Temi","Location Status changed: $status")
         _events.tryEmit(RobotEvent.PositionChanged(x,y,yaw))
-    }
-
-    // Is called when speech recognition is done and spoken phrase is converted to string
-    override fun onAsrResult(asrResult: String, sttLanguage: SttLanguage) {
-        robot.finishConversation()   // stops Temi's default NLP/answer
-        if (asrResult.isNotBlank()) {
-            _events.tryEmit(RobotEvent.SpeechRecognised(asrResult))
-        }
-    }
-
-    override fun onWakeupWord(
-        wakeupWord: String,
-        direction: Int,
-        origin: WakeupOrigin
-    ) {
-        _events.tryEmit(RobotEvent.WakeupWordDetected)
     }
 
     override fun onRobotReady(isReady: Boolean) {
