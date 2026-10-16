@@ -111,6 +111,7 @@ object TemiRobot: RobotController,
 
     // Is called when speech recognition is done and spoken phrase is converted to string
     override fun onAsrResult(asrResult: String, sttLanguage: SttLanguage) {
+        Log.i("TemiVoice", "ASR result: '$asrResult' (language=$sttLanguage)")
         robot.finishConversation()   // stops Temi's default NLP/answer
         if (asrResult.isNotBlank()) {
             _events.tryEmit(RobotEvent.SpeechRecognised(asrResult))
@@ -122,6 +123,7 @@ object TemiRobot: RobotController,
         direction: Int,
         origin: WakeupOrigin
     ) {
+        Log.i("TemiVoice", "Wakeup word detected: '$wakeupWord' (origin=$origin)")
         _events.tryEmit(RobotEvent.WakeupWordDetected)
     }
 

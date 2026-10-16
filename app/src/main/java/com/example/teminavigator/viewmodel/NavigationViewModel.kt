@@ -366,9 +366,13 @@ class NavigationViewModel(
     }
 
     private fun pauseNavigation() {
-        val dest = (_navState.value as? NavigationState.Guiding)?.target ?: return
+        val dest = (_navState.value as? NavigationState.Guiding)?.target ?: run {
+            Log.i("VoiceCommand", "Pause ignored; navigation state is ${_navState.value}")
+            return
+        }
         _navState.value = NavigationState.Paused(dest)
-        robot.stop()
+        Log.i("VoiceCommand", "Pausing navigation to ${dest.id}")
+        stopRobot()
     }
 
     fun confirmDestination(destination: Destination) {
@@ -470,8 +474,10 @@ class NavigationViewModel(
 
             // When speech recognition successfully -> try and match destination
             is RobotEvent.SpeechRecognised -> {
+                val isPauseCommand = event.text.isPauseNavigationCommand()
+                Log.i("VoiceCommand", "Recognized '${event.text}'; pause=$isPauseCommand, " + "state=${_navState.value}, voiceInput=${settings.value.voiceInputEnabled}")
                 if (!settings.value.voiceInputEnabled) return
-                if (event.text.isPauseNavigationCommand()) {
+                if (isPauseCommand) {
                     pauseNavigation()
                     return
                 }
