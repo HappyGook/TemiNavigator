@@ -18,9 +18,9 @@ class SoundPlayer(context: Context) {
 
     private val sampleId = soundPool.load(context, R.raw.sample_sound, 1)
     // todo: add other sounds
-    //private val startId = soundPool.load(context, R.raw.start_sound, 1)
-    //private val arrivedId = soundPool.load(context, R.raw.arrived_sound, 1)
-    //private val errorId = soundPool.load(context, R.raw.error_sound, 1)
+    private val startId = soundPool.load(context, R.raw.start_sound, 1)
+    private val arrivedId = soundPool.load(context, R.raw.arrived_sound, 1)
+    private val errorId = soundPool.load(context, R.raw.error_sound, 1)
 
     private var sampleLoaded = false
 
@@ -30,17 +30,16 @@ class SoundPlayer(context: Context) {
         }
     }
 
-    // todo: swap out sounds with different ones, which will lead to an amazing user experience!!!
     fun playStart() {
-        play(sampleId)
+        play(startId)
     }
 
     fun playArrival() {
-        play(sampleId)
+        play(arrivedId)
     }
 
     fun playError() {
-        play(sampleId)
+        play(errorId)
     }
 
     private fun play(soundId: Int) {
