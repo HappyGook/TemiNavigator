@@ -101,7 +101,7 @@ object TemiRobot: RobotController,
         val request = SttRequest(languages = listOf(speechLanguage))
         if (speakPrompt) {
             robot.askQuestion(
-                TtsRequest.create(question, true, ttsLanguage(speechLanguageCode)),
+                TtsRequest.create(question, false, ttsLanguage(speechLanguageCode)),
                 request
             )
         } else {

@@ -72,9 +72,8 @@ fun HomeScreen(
     onStartSpeechRecognition: () -> Unit,
     voiceInputEnabled: Boolean,
 ) {
-    var selectedId by rememberSaveable{mutableStateOf<String?>(null)}
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    val selected = destinations.find{it.id==selectedId}
+    val selected = destinations.find { it.id == selectedId }
     val strings = LocalStrings.current
 
     // List of destinations - filtered by the current search query
