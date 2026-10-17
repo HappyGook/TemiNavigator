@@ -4,6 +4,7 @@ import com.example.teminavigator.domain.NavSpeed
 import com.example.teminavigator.domain.RobotController
 import com.example.teminavigator.domain.RobotEvent
 import com.robotemi.sdk.Robot
+import com.robotemi.sdk.SttRequest
 import com.robotemi.sdk.SttLanguage
 import com.robotemi.sdk.TtsRequest
 import com.robotemi.sdk.listeners.OnDetectionStateChangedListener
@@ -45,6 +46,7 @@ object TemiRobot: RobotController,
     override var events = _events
 
     private var speechLanguage = SttLanguage.SYSTEM
+    private var speechLanguageCode = ""
 
     override val availableLocations: List<String>
         get() = robot.locations
@@ -76,20 +78,19 @@ object TemiRobot: RobotController,
     override fun goTo(locationId: String) = robot.goTo(locationId)
     override fun stop() = robot.stopMovement()
     override fun speak(text: String, languageCode: String) {
-        val ttsLang = when (languageCode) {
-            "de" -> TtsRequest.Language.DE_DE
-            "en" -> TtsRequest.Language.EN_US
-            "ru" -> TtsRequest.Language.RU_RU
-            else -> TtsRequest.Language.SYSTEM
-        }
-        robot.speak(TtsRequest.create(text, false, ttsLang))
+        robot.speak(TtsRequest.create(text, false, ttsLanguage(languageCode)))
     }
 
     override fun stopSpeaking() {
         robot.cancelAllTtsRequests()
     }
 
+    override fun stopSpeechRecognition() {
+        robot.finishConversation()
+    }
+
     override fun setSpeechLanguage(languageCode: String) {
+        speechLanguageCode = languageCode
         speechLanguage = when (languageCode.substringBefore('-').lowercase()) {
             "de" -> SttLanguage.DE_DE
             "en" -> SttLanguage.EN_US
@@ -97,8 +98,44 @@ object TemiRobot: RobotController,
         }
     }
 
-    override fun startSpeechRecognition() {
-        robot.wakeup(listOf(speechLanguage))
+    override fun startSpeechRecognition(question: String, speakPrompt: Boolean) {
+        Log.i("Temi", "Starting speech conversation")
+        val request = SttRequest(languages = listOf(speechLanguage))
+        if (speakPrompt) {
+            robot.askQuestion(
+                TtsRequest.create(question, false, ttsLanguage(speechLanguageCode)),
+                request
+            )
+        } else {
+            robot.wakeup(request)
+        }
+    }
+
+    // Is called when speech recognition is done and spoken phrase is converted to string
+    override fun onAsrResult(asrResult: String, sttLanguage: SttLanguage) {
+        Log.i("TemiVoice", "ASR result: '$asrResult' (language=$sttLanguage)")
+        robot.finishConversation()   // stops Temi's default NLP/answer
+        if (asrResult.isNotBlank()) {
+            _events.tryEmit(RobotEvent.SpeechRecognised(asrResult))
+        }
+    }
+
+    override fun onWakeupWord(
+        wakeupWord: String,
+        direction: Int,
+        origin: WakeupOrigin
+    ) {
+        Log.i("TemiVoice", "Wakeup word detected: '$wakeupWord' (origin=$origin)")
+        _events.tryEmit(RobotEvent.WakeupWordDetected)
+    }
+
+    private fun ttsLanguage(languageCode: String): TtsRequest.Language = when (
+        languageCode.substringBefore('-').lowercase()
+    ) {
+        "de" -> TtsRequest.Language.DE_DE
+        "en" -> TtsRequest.Language.EN_US
+        "ru" -> TtsRequest.Language.RU_RU
+        else -> TtsRequest.Language.SYSTEM
     }
 
     override fun locationPoses(): Map<String, Triple<Double, Double, Double>> {
@@ -156,20 +193,6 @@ object TemiRobot: RobotController,
         val (x,y,yaw,_) = robot.getPosition()
         Log.i("Temi","Location Status changed: $status")
         _events.tryEmit(RobotEvent.PositionChanged(x,y,yaw))
-    }
-
-    override fun onAsrResult(asrResult: String, sttLanguage: SttLanguage) {
-        if (asrResult.isNotBlank()) {
-            _events.tryEmit(RobotEvent.SpeechRecognised(asrResult))
-        }
-    }
-
-    override fun onWakeupWord(
-        wakeupWord: String,
-        direction: Int,
-        origin: WakeupOrigin
-    ) {
-        startSpeechRecognition()
     }
 
     override fun onRobotReady(isReady: Boolean) {

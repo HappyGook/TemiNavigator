@@ -13,6 +13,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
@@ -20,6 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.data.AdminPasswordStore
+import com.example.teminavigator.data.AppSettings
 import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
@@ -34,6 +46,7 @@ import com.example.teminavigator.ui.screens.SettingsScreen
 import com.example.teminavigator.ui.screens.WaitingScreen
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
+import com.example.teminavigator.viewmodel.SpeechNotice
 
 @Composable
 fun TemiApp(
@@ -59,8 +72,8 @@ fun TemiApp(
     returnHomeDelaySec: Int,
     onReturnHomeDelayChanged: (Int) -> Unit,
     returnCountdown: Int?,
-    voiceDestination: Destination?,
-    onVoiceDestinationHandled: () -> Unit,
+    speechNotice: SpeechNotice?,
+    onSpeechNoticeShown: (Long) -> Unit,
     onStartSpeechRecognition: () -> Unit,
     adminPasswordStore: AdminPasswordStore,
     selected: Destination?,
@@ -68,9 +81,25 @@ fun TemiApp(
     onDeselect: (Destination) -> Unit,
     path: List<Offset>?,
     failed: Destination?,
-    dismissFailure: ()-> Unit
+    dismissFailure: ()-> Unit,
+    settings: AppSettings,
+    onSoundsEnabledChanged: (Boolean) -> Unit,
+    onVoiceOutputEnabledChanged: (Boolean) -> Unit,
+    onVoiceInputEnabledChanged: (Boolean) -> Unit,
+    onAutoReturnEnabledChanged: (Boolean) -> Unit,
 ){
-/*
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(speechNotice?.id) {
+        val notice = speechNotice ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(
+            message = notice.message,
+            duration = SnackbarDuration.Short
+        )
+        onSpeechNoticeShown(notice.id)
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        /*
     when (screen) {
         Screen.Home -> HomeScreen(
     LaunchedEffect(voiceDestination) {
@@ -100,6 +129,7 @@ fun TemiApp(
             onDestinationConfirmed = onDestinationConfirmed,
             onOpenSettings = onOpenSettings,
             onStartSpeechRecognition = onStartSpeechRecognition,
+            voiceInputEnabled = settings.voiceInputEnabled,
             selectedId = selected?.id,
             onSelect = onSelect,
             onDeselect = onDeselect,
@@ -119,6 +149,14 @@ fun TemiApp(
             returnHomeDelaySec = returnHomeDelaySec,
             onReturnHomeDelayChanged = onReturnHomeDelayChanged,
             adminPasswordStore = adminPasswordStore,
+            soundsEnabled = settings.soundsEnabled,
+            onSoundsEnabledChanged = onSoundsEnabledChanged,
+            voiceOutputEnabled = settings.voiceOutputEnabled,
+            onVoiceOutputEnabledChanged = onVoiceOutputEnabledChanged,
+            voiceInputEnabled = settings.voiceInputEnabled,
+            onVoiceInputEnabledChanged = onVoiceInputEnabledChanged,
+            autoReturnEnabled = settings.autoReturnEnabled,
+            onAutoReturnEnabledChanged = onAutoReturnEnabledChanged
         )
         Screen.Waiting -> WaitingScreen(
             onLeaveWaiting = onLeaveWaiting,
@@ -133,6 +171,13 @@ fun TemiApp(
             onTogglePause = onToggleNavigationPause,
             onAbort = onAbort,
             path = path
+        )
+    }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
         )
     }
 }
@@ -161,11 +206,11 @@ class MainActivity : ComponentActivity() {
             val calibration by viewModel.calibration.collectAsState()
             val navigationState by viewModel.navState.collectAsState()
             val labels by viewModel.labels.collectAsState()
-            val voiceDestination by viewModel.voiceDestination.collectAsState()
             val speedMps by viewModel.speedMps.collectAsStateWithLifecycle()
             val screen by viewModel.screen.collectAsStateWithLifecycle()
             val settings by viewModel.settings.collectAsStateWithLifecycle()
             val returnCountdown by viewModel.returnCountdown.collectAsStateWithLifecycle()
+            val speechNotice by viewModel.speechNotice.collectAsStateWithLifecycle()
             val selected by viewModel.selected.collectAsStateWithLifecycle()
             val path by viewModel.path.collectAsStateWithLifecycle()
             val failed by viewModel.failedDestination.collectAsState()
@@ -190,8 +235,6 @@ class MainActivity : ComponentActivity() {
                         onCalibrationSaved = viewModel::setCalibration,
                         navigationState = navigationState,
                         onToggleNavigationPause = viewModel::toggleNavigationPause,
-                        voiceDestination = voiceDestination,
-                        onVoiceDestinationHandled = viewModel::clearVoiceDestination,
                         onStartSpeechRecognition = viewModel::startSpeechRecognition,
                         adminPasswordStore = adminPasswordStore,
                         labels = labels,
@@ -207,6 +250,13 @@ class MainActivity : ComponentActivity() {
                         returnHomeDelaySec = settings.returnHomeDelaySec,
                         onReturnHomeDelayChanged = viewModel::setReturnHomeDelay,
                         returnCountdown = returnCountdown,
+                        speechNotice = speechNotice,
+                        onSpeechNoticeShown = viewModel::clearSpeechNotice,
+                        settings = settings,
+                        onSoundsEnabledChanged = viewModel::setSoundsEnabled,
+                        onVoiceOutputEnabledChanged = viewModel::setVoiceOutputEnabled,
+                        onVoiceInputEnabledChanged = viewModel::setVoiceInputEnabled,
+                        onAutoReturnEnabledChanged = viewModel::setAutoReturnEnabled,
                         selected = selected,
                         onSelect = viewModel::selectDestination,
                         onDeselect = viewModel::deselectDestination,

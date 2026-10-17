@@ -26,12 +26,17 @@ import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.domain.Screen
 import com.example.teminavigator.domain.SpeedCalibration
 import com.example.teminavigator.domain.match
+import com.example.teminavigator.domain.isPauseNavigationCommand
 import com.example.teminavigator.ui.langs.AppStrings
+import com.example.teminavigator.ui.sound.SoundPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -43,10 +48,14 @@ private const val HOME_LOCATION = "home base"
 private const val HOME_RADIUS = 2
 private const val GREETING_COOLDOWN_MS = 10 * 1000
 
+data class SpeechNotice(val id: Long, val message: String)
+
 class NavigationViewModel(
     app: Application,
     private val robot: RobotController
 ) : AndroidViewModel(app){
+    private val soundPlayer = SoundPlayer(app)
+
     // language setup
     private val prefs = app.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
@@ -58,11 +67,12 @@ class NavigationViewModel(
     private val _navState = MutableStateFlow<NavigationState>(NavigationState.Idle)
     val navState : StateFlow<NavigationState> = _navState.asStateFlow()
 
-    private val _voiceDestination = MutableStateFlow<Destination?>(null)
-    val voiceDestination: StateFlow<Destination?> = _voiceDestination.asStateFlow()
-
     private val _readyState = MutableStateFlow(false)
     val readyState : StateFlow<Boolean> = robot.ready
+
+    private val _speechNotice = MutableStateFlow<SpeechNotice?>(null)
+    val speechNotice: StateFlow<SpeechNotice?> = _speechNotice.asStateFlow()
+    private var speechNoticeId = 0L
 
     private var currentDestination : Destination? = null
 
@@ -205,16 +215,24 @@ class NavigationViewModel(
         viewModelScope.launch { labelRepo.setAliases(id, aliases) }
     }
 
+    fun clearSpeechNotice(id: Long) {
+        if (_speechNotice.value?.id == id) _speechNotice.value = null
+    }
+
     fun resetLabels(id: String) {
         viewModelScope.launch { labelRepo.reset(id) }
     }
 
-    fun clearVoiceDestination() {
-        _voiceDestination.value = null
+    fun startSpeechRecognition() {
+        Log.i("ViewModel", "recognition")
+        _screen.value = Screen.Home // switch to Homescreen
+        if (settings.value.voiceInputEnabled) startSpeechConversation()
     }
 
-    fun startSpeechRecognition() {
-        robot.startSpeechRecognition()
+    private fun startSpeechConversation() {
+        Log.i("ViewModel", "conversation")
+        if (!settings.value.voiceInputEnabled) return
+        robot.startSpeechRecognition(strings.locationQuery, settings.value.voiceOutputEnabled)
     }
 
     // screen logic
@@ -233,6 +251,24 @@ class NavigationViewModel(
 
     fun setReturnHomeDelay(sec: Int) {
         viewModelScope.launch { settingsRepo.setReturnHomeDelay(sec) }
+    }
+
+    fun setSoundsEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepo.setSoundsEnabled(enabled) }
+    }
+
+    fun setVoiceOutputEnabled(enabled: Boolean) {
+        if (!enabled) robot.stopSpeaking()
+        viewModelScope.launch { settingsRepo.setVoiceOutputEnabled(enabled) }
+    }
+
+    fun setVoiceInputEnabled(enabled: Boolean) {
+        if (!enabled) robot.stopSpeechRecognition()
+        viewModelScope.launch { settingsRepo.setVoiceInputEnabled(enabled) }
+    }
+
+    fun setAutoReturnEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepo.setAutoReturnEnabled(enabled) }
     }
     private fun isAtHome(): Boolean {
         val pose = pose.value ?: return false
@@ -294,10 +330,21 @@ class NavigationViewModel(
         viewModelScope.launch {
             screen.collect { if (it is Screen.Waiting) startReturnTimer() else cancelReturnTimer() }
         }
+        viewModelScope.launch {
+            combine(
+                screen,
+                settings.map { it.autoReturnEnabled to it.returnHomeDelaySec }.distinctUntilChanged()
+            ) { currentScreen, (autoReturnEnabled, _) ->
+                currentScreen is Screen.Waiting && autoReturnEnabled
+            }.collect { shouldRunTimer ->
+                if (shouldRunTimer) startReturnTimer() else cancelReturnTimer()
+            }
+        }
     }
 
     override fun onCleared() {
         robot.detach()
+        soundPlayer.release()
         super.onCleared()
     }
 
@@ -322,6 +369,16 @@ class NavigationViewModel(
         }
     }
 
+    private fun pauseNavigation() {
+        val dest = (_navState.value as? NavigationState.Guiding)?.target ?: run {
+            Log.i("VoiceCommand", "Pause ignored; navigation state is ${_navState.value}")
+            return
+        }
+        _navState.value = NavigationState.Paused(dest)
+        Log.i("VoiceCommand", "Pausing navigation to ${dest.id}")
+        stopRobot()
+    }
+
     fun confirmDestination(destination: Destination) {
         stopPreview()
         arrivalJob?.cancel()
@@ -338,7 +395,7 @@ class NavigationViewModel(
     }
 
     fun speak(text: String) {
-        robot.speak(text, _language.value.code)
+        if (settings.value.voiceOutputEnabled) robot.speak(text, _language.value.code)
     }
 
     fun stopRobot(){
@@ -379,6 +436,10 @@ class NavigationViewModel(
     private fun handleEvent(event: RobotEvent){
         when (event){
             is RobotEvent.GoToCancelled -> {
+                playSoundIfEnabled { playError() }
+                if (_navState.value !is NavigationState.Paused) {
+                    _navState.value = NavigationState.Idle
+                }
                 when {
                     stopRequested -> {
                         stopRequested = false
@@ -394,27 +455,51 @@ class NavigationViewModel(
                     }
                 }
             }
-            is RobotEvent.GoToFinished -> currentDestination?.let { dest ->
-                _navState.value = NavigationState.Arrived(dest)
-                arrivalJob?.cancel()
-                arrivalJob = viewModelScope.launch { // TODO: delay e.g. 3_000L, so the user sees "arrived"
-                    _navState.value = NavigationState.Idle
-                    _screen.value = Screen.Waiting
+            is RobotEvent.GoToFinished -> {
+                playSoundIfEnabled { playArrival() }
+                currentDestination?.let { dest ->
+                    _navState.value = NavigationState.Arrived(dest)
+                    arrivalJob?.cancel()
+                    arrivalJob = viewModelScope.launch { // TODO: delay e.g. 3_000L, so the user sees "arrived"
+                        _navState.value = NavigationState.Idle
+                        _screen.value = Screen.Waiting
+                    }
                 }
             }
-            is RobotEvent.GoToStarted -> currentDestination?.let {
-                _navState.value = NavigationState.Guiding(it)
+            is RobotEvent.GoToStarted -> {
+                playSoundIfEnabled { playStart() }
+                currentDestination?.let { _navState.value = NavigationState.Guiding(it) }
             }
             is RobotEvent.PositionChanged -> {
                 Log.i("ViewModel","Viewmodel received a positionChanged event: X=${event.x}, Y=${event.y} ")
                 rawPose.value = RawPose(event.x, event.y, event.yaw)
             }
             is RobotEvent.Ready -> _readyState.value = event.isReady
+
+            // When speech recognition successfully -> try and match destination
             is RobotEvent.SpeechRecognised -> {
-                destinations.value.match(event.text)?.let { destination ->
-                    startGuidance(destination)
-                    _voiceDestination.value = destination
+                val isPauseCommand = event.text.isPauseNavigationCommand()
+                Log.i("VoiceCommand", "Recognized '${event.text}'; pause=$isPauseCommand, " + "state=${_navState.value}, voiceInput=${settings.value.voiceInputEnabled}")
+                if (!settings.value.voiceInputEnabled) return
+                if (isPauseCommand) {
+                    pauseNavigation()
+                    return
                 }
+                val destination = destinations.value.match(event.text)
+                if (destination != null) {
+                    startGuidance(destination)
+                    _screen.value = Screen.Navigation(destination)
+                } else {
+                    speak(strings.spokenUnknownDestination)
+                    _speechNotice.value = SpeechNotice(
+                        id = ++speechNoticeId,
+                        message = strings.spokenUnknownDestination
+                    )
+                }
+            }
+
+            RobotEvent.WakeupWordDetected -> {
+                if (settings.value.voiceInputEnabled) startSpeechConversation()
             }
 
             is RobotEvent.DetectionStatusChanged -> {
@@ -426,6 +511,10 @@ class NavigationViewModel(
                 currentDestination != null -> rawPath.value = event.path      // real guidance (re-routing)
             }
         }
+    }
+
+    private inline fun playSoundIfEnabled(play: SoundPlayer.() -> Unit) {
+        if (settings.value.soundsEnabled) soundPlayer.play()
     }
 
 }

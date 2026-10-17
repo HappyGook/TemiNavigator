@@ -20,16 +20,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -69,10 +69,11 @@ fun HomeScreen(
     robotPose: () -> RobotPose?,
     onDestinationConfirmed: (Destination) -> Unit,
     onOpenSettings: () -> Unit,
-    onStartSpeechRecognition: () -> Unit
+    onStartSpeechRecognition: () -> Unit,
+    voiceInputEnabled: Boolean,
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    val selected = destinations.find{it.id==selectedId}
+    val selected = destinations.find { it.id == selectedId }
     val strings = LocalStrings.current
 
     // List of destinations - filtered by the current search query
@@ -120,7 +121,13 @@ fun HomeScreen(
                                 textStyle = TextStyle(fontSize = 28.sp),
                                 placeholder = { Text(strings.searchDestinations, fontSize = 28.sp) }
                             )
-                            IconButton(onClick = onStartSpeechRecognition) {
+                            // Microphone button -> starts voice input
+                            IconButton(
+                                enabled = voiceInputEnabled,
+                                onClick = {
+                                    onStartSpeechRecognition()
+                                }
+                            ) {
                                 Icon(
                                     Icons.Filled.Mic,
                                     contentDescription = strings.voiceInput,
@@ -304,6 +311,7 @@ fun HSPreview(){
             onDestinationConfirmed = {},
             onOpenSettings = { },
             onStartSpeechRecognition = { },
+            voiceInputEnabled = true,
             selectedId = "mock stuff",
             onSelect = {},
             onDeselect = {},
