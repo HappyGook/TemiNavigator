@@ -16,6 +16,8 @@ data class AppStrings (
     val selectLocation: String,
     val backToNavigation: String,
     val speechNotice: String,
+    val returningHomeIn: (Int) -> String,
+    val returnHomeAfter: String,
 
     // Navigation screen
     val goingTo: String,
@@ -61,10 +63,19 @@ data class AppStrings (
     val pxPerMeterWarning: String,
     val anchorYawText: String,
     val saveCalibrationButton: String,
+    val destinationHeader: String,
+    val destinationDisplayName: String,
+    val destinationAliases: String,
+    val destinationButtonSave: String,
+    val destinationButtonReset: String,
+
 
 
 
     // Spoken by the robot
     val spokenArrived: (destination: String) -> String,
+    val spokenStarting: (destination: String) -> String,
+    val spokenAbort: String,
     val spokenUnknownDestination: String,
-    )
+    val greetings: List<String>
+)

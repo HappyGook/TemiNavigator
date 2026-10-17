@@ -26,6 +26,8 @@ val englishStrings = AppStrings(
     adminPasswordChanged = "Administrator password changed.",
     languageLabel = "Language",
     spokenArrived = { name -> "We have arrived at $name." },
+    spokenStarting = { name -> "Starting guidance to $name" },
+    spokenAbort = "Stopping guidance",
     spokenUnknownDestination = "Sorry, I don't know that destination.",
     greeting = "Hello, nice to see you!",
     locationQuery = "Where can I get you?",
@@ -52,5 +54,16 @@ val englishStrings = AppStrings(
     pxPerMeterText = "Pixels per meter",
     pxPerMeterWarning = "Must be a number > 0",
     anchorYawText = "Anchor yaw (radians)",
-    saveCalibrationButton = "Save calibration"
+    saveCalibrationButton = "Save calibration",
+    destinationHeader = "Destinations",
+    destinationDisplayName = "Display name",
+    destinationAliases = "Aliases (comma separated)",
+    destinationButtonSave = "Save",
+    destinationButtonReset = "Reset",
+    returningHomeIn = {s->"Returning home in $s s"},
+    returnHomeAfter = "return Home after",
+    greetings = listOf(
+        "Hallo! Ich kann dir den Weg zu Räumen im zweiten Stock zeigen. Tippe einfach auf den Bildschirm oder sag mir, wohin du möchtest.",
+        "Hi! Suchst du einen Raum? Sag mir einfach, wohin du willst, dann bringe ich dich hin."
+    )
 )

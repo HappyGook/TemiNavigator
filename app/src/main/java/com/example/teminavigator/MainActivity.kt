@@ -2,27 +2,30 @@ package com.example.teminavigator
 
 import android.app.Application
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.teminavigator.data.AdminPasswordStore
+import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
 import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotPose
+import com.example.teminavigator.domain.Screen
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.screens.HomeScreen
@@ -32,18 +35,9 @@ import com.example.teminavigator.ui.screens.WaitingScreen
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
 
-// Screen types
-// TODO: Screen type should be controlled by viewModel ?
-sealed class Screen {
-    object HomeScreen : Screen()
-    data class NavigationScreen(val destination: Destination) : Screen()
-    object WaitingScreen : Screen()
-    object SettingsScreen : Screen()
-
-}
-
 @Composable
 fun TemiApp(
+    screen: Screen,
     language: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
     destinations: List<Destination>,
@@ -51,17 +45,34 @@ fun TemiApp(
     calibration: MapCalibration,
     onCalibrationSaved: (MapCalibration) -> Unit,
     navigationState: NavigationState,
+    onToggleNavigationPause: () -> Unit,
+    labels: Map<String, DestinationLabels>,
+    onDisplayNameChanged: (String, String) -> Unit,
+    onAliasesChanged: (String, List<String>) -> Unit,
+    onLabelsReset: (String) -> Unit,
+    onAbort: () -> Unit,
+    currentSpeed: () -> Float,
+    onDestinationConfirmed: (Destination) -> Unit,
+    onOpenSettings: () -> Unit,
+    onCloseSettings: () -> Unit,
+    onLeaveWaiting: () -> Unit,
+    returnHomeDelaySec: Int,
+    onReturnHomeDelayChanged: (Int) -> Unit,
+    returnCountdown: Int?,
     voiceDestination: Destination?,
-    onToggleNavigationPause: (Destination) -> Unit,
     onVoiceDestinationHandled: () -> Unit,
     onStartSpeechRecognition: () -> Unit,
     adminPasswordStore: AdminPasswordStore,
+    selected: Destination?,
+    onSelect: (Destination) -> Unit,
+    onDeselect: (Destination) -> Unit,
+    path: List<Offset>?,
+    failed: Destination?,
+    dismissFailure: ()-> Unit
 ){
-    var selectedDestination by remember { mutableStateOf<Destination?>(null) }
-    var currentScreen by remember {
-        mutableStateOf<Screen>(Screen.HomeScreen)
-    }
-
+/*
+    when (screen) {
+        Screen.Home -> HomeScreen(
     LaunchedEffect(voiceDestination) {
         voiceDestination?.let { destination ->
             selectedDestination = destination
@@ -69,40 +80,59 @@ fun TemiApp(
             onVoiceDestinationHandled()
         }
     }
+*/
+    // If destination failed, dialog shows screen-independent
+    val strings = LocalStrings.current
 
-    when (val screen = currentScreen) {
-        Screen.HomeScreen -> HomeScreen(
+    failed?.let { dest ->
+        AlertDialog(
+            onDismissRequest = dismissFailure,
+            title = { Text("strings.unreachableTitle") }, // TODO: language pack strings
+            text = { Text("strings.unreachableText"+(dest.displayName), fontSize = 36.sp) },
+            confirmButton = { Button(onClick = dismissFailure) { Text(strings.backToNavigation, fontSize = 36.sp) } }
+        )
+    }
+
+    when (screen) {
+        Screen.Home -> HomeScreen(
             destinations = destinations,
             robotPose = robotPose,
-            onDestinationConfirmed = { destination ->
-                selectedDestination = destination
-                currentScreen = Screen.NavigationScreen(destination)
-                Log.i("Info", "Destination Confirmed")
-            },
-            onOpenSettings = { currentScreen = Screen.SettingsScreen },
-            onStartSpeechRecognition = onStartSpeechRecognition
+            onDestinationConfirmed = onDestinationConfirmed,
+            onOpenSettings = onOpenSettings,
+            onStartSpeechRecognition = onStartSpeechRecognition,
+            selectedId = selected?.id,
+            onSelect = onSelect,
+            onDeselect = onDeselect,
+            path = path
         )
-        Screen.SettingsScreen -> SettingsScreen(
+        Screen.Settings -> SettingsScreen(
             currentLanguage = language,
             onLanguageChanged = onLanguageSelected,
-            onBack = {currentScreen = Screen.HomeScreen},
+            onBack = onCloseSettings,
             calibration = calibration,
             onCalibrationSaved = onCalibrationSaved,
+            labels = labels,
+            onDisplayNameChanged = onDisplayNameChanged,
+            onAliasesChanged = onAliasesChanged,
+            onLabelsReset = onLabelsReset,
+            destinations = destinations,
+            returnHomeDelaySec = returnHomeDelaySec,
+            onReturnHomeDelayChanged = onReturnHomeDelayChanged,
             adminPasswordStore = adminPasswordStore,
         )
-        Screen.WaitingScreen -> WaitingScreen(
-            onSelectLocation = {currentScreen = Screen.HomeScreen},
-            onBackToNavigation = {
-                selectedDestination?.let { destination ->
-                    currentScreen = Screen.NavigationScreen(destination)
-                }
-            }
+        Screen.Waiting -> WaitingScreen(
+            onLeaveWaiting = onLeaveWaiting,
+            returnCountdown = returnCountdown
         )
-        is Screen.NavigationScreen -> NavigationScreen(
+        is Screen.Navigation -> NavigationScreen(
             destination = screen.destination,
+            robotPose = robotPose,
+            currentSpeed = currentSpeed,
+            pxPerMeter = calibration.pxPerMeter,
             navigationState = navigationState,
-            onTogglePause = { onToggleNavigationPause(screen.destination) },
-            onAbort = {currentScreen = Screen.HomeScreen}
+            onTogglePause = onToggleNavigationPause,
+            onAbort = onAbort,
+            path = path
         )
     }
 }
@@ -130,21 +160,32 @@ class MainActivity : ComponentActivity() {
             val pose = viewModel.pose.collectAsState()
             val calibration by viewModel.calibration.collectAsState()
             val navigationState by viewModel.navState.collectAsState()
+            val labels by viewModel.labels.collectAsState()
             val voiceDestination by viewModel.voiceDestination.collectAsState()
+            val speedMps by viewModel.speedMps.collectAsStateWithLifecycle()
+            val screen by viewModel.screen.collectAsStateWithLifecycle()
+            val settings by viewModel.settings.collectAsStateWithLifecycle()
+            val returnCountdown by viewModel.returnCountdown.collectAsStateWithLifecycle()
+            val selected by viewModel.selected.collectAsStateWithLifecycle()
+            val path by viewModel.path.collectAsStateWithLifecycle()
+            val failed by viewModel.failedDestination.collectAsState()
+            /*
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
                     "")
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
                     "")
+             */
 
             CompositionLocalProvider(LocalStrings provides language.strings) {
                 TemiNavigatorTheme {
                     TemiApp(
+                        screen = screen,
                         language = language,
                         onLanguageSelected = viewModel::setLanguage,
                         destinations = destinations,
-                        robotPose = {pose.value},
+                        robotPose = { pose.value },
                         calibration = calibration,
                         onCalibrationSaved = viewModel::setCalibration,
                         navigationState = navigationState,
@@ -152,7 +193,26 @@ class MainActivity : ComponentActivity() {
                         voiceDestination = voiceDestination,
                         onVoiceDestinationHandled = viewModel::clearVoiceDestination,
                         onStartSpeechRecognition = viewModel::startSpeechRecognition,
-                        adminPasswordStore = adminPasswordStore
+                        adminPasswordStore = adminPasswordStore,
+                        labels = labels,
+                        onDisplayNameChanged = viewModel::setDisplayName,
+                        onAliasesChanged = viewModel::setAliases,
+                        onLabelsReset = viewModel::resetLabels,
+                        onAbort = viewModel::cancelGuidance,
+                        currentSpeed = { speedMps },
+                        onDestinationConfirmed = viewModel::confirmDestination,
+                        onOpenSettings = viewModel::openSettings,
+                        onCloseSettings = viewModel::closeSettings,
+                        onLeaveWaiting = viewModel::leaveWaiting,
+                        returnHomeDelaySec = settings.returnHomeDelaySec,
+                        onReturnHomeDelayChanged = viewModel::setReturnHomeDelay,
+                        returnCountdown = returnCountdown,
+                        selected = selected,
+                        onSelect = viewModel::selectDestination,
+                        onDeselect = viewModel::deselectDestination,
+                        path = path,
+                        failed = failed,
+                        dismissFailure = viewModel::dismissFailure
                     )
                 }
             }

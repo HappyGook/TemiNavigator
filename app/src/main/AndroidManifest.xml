@@ -14,7 +14,11 @@
 
         <meta-data
             android:name="com.robotemi.sdk.metadata.PERMISSIONS"
-            android:value="com.robotemi.permission.map" />
+            android:value="com.robotemi.permission.map,com.robotemi.permission.settings" />
+
+        <meta-data
+            android:name="com.robotemi.sdk.metadata.SKILL"
+            android:value="@string/app_name" />
 
         <activity
             android:name=".MainActivity"

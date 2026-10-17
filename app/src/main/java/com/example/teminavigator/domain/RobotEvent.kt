@@ -10,4 +10,10 @@ sealed interface RobotEvent {
     data class GoToCancelled(val locationId: String, val reason: String?) : RobotEvent
     data class SpeechRecognised(val text: String) : RobotEvent
     data class PositionChanged(val x:Float, val y:Float, val yaw: Float) : RobotEvent
+
+    enum class DetectionState { Idle, Lost, Detected }
+    data class DetectionStatusChanged(val status: DetectionState) : RobotEvent
+
+    data class MapPoint(val x: Float, val y: Float)
+    data class PathChanged(val path: List<MapPoint>) : RobotEvent
 }

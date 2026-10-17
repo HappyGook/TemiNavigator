@@ -1,5 +1,6 @@
 package com.example.teminavigator.domain
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 /*
 * Abstraction, on which ViewModel and UI will depend, so they don't interact with Temi SDK directly
@@ -11,14 +12,18 @@ interface RobotController {
     val availableLocations: List<String>
     val events: Flow<RobotEvent> // flow allows collecting events as they arise, like a stream of returns
 
+    var ready: StateFlow<Boolean>
+
     fun locationPoses(): Map<String, Triple<Double, Double, Double>>
 
     fun attach()
     fun detach()
     fun goTo(locationId: String)
     fun stop()
-    fun speak(text: String)
-    fun goHome()
+    fun speak(text: String, languageCode: String)
+    fun stopSpeaking()
     fun setSpeechLanguage(languageCode: String)
     fun startSpeechRecognition()
+    fun getSpeed(): NavSpeed
+    fun setSpeed(speed: NavSpeed)
 }

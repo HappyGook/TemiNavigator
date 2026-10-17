@@ -1,15 +1,14 @@
 package com.example.teminavigator.ui.map
 
-import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
-import com.example.teminavigator.ui.theme.locationBackground
 
 
 fun imageToScreen(
@@ -58,3 +57,20 @@ fun DrawScope.drawRobot(center: Offset, yawDeg: Float, radius: Float, pinBackgro
             drawPath(arrow, pinForeground)
         }
     }
+
+fun DrawScope.drawRoute(points: List<Offset>, color: Color, width: Float) {
+    if (points.size < 2) return
+    val line = Path().apply {
+        moveTo(points.first().x, points.first().y)
+        for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
+    }
+    // white outline first so the route stays readable
+    drawPath(
+        line, Color.White,
+        style = Stroke(width * 1.6f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    )
+    drawPath(
+        line, color,
+        style = Stroke(width, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    )
+}

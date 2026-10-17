@@ -1,5 +1,4 @@
 package com.example.teminavigator.domain
-import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import kotlin.math.PI
 import kotlin.math.cos
@@ -15,17 +14,21 @@ data class MapCalibration (
     private val sine = sin(alpha)
 
     fun robotToImagePx(x: Float, y: Float): Offset{
+        /*
         Log.i("MapCalibration",
             "robot-to-Image called: \n" +
                     "originPx-X = ${originPx.x}, originPx-Y = ${originPx.y}, " +
                     "pxPerMeter=${pxPerMeter}, anchorYaw = $anchorYaw, alpha = ${alpha} ")
+         */
         val xi = cosine * x - sine * y
         val yi = sine * x + cosine * y
         val offset = Offset(originPx.x + pxPerMeter*xi,
             originPx.y - pxPerMeter*yi)
+        /*
         Log.i("MapCalibration",
             "robot-to-Image called: \n x=${x}, y=${y};\n " +
                     "transformed: x=${offset.x}, y=${offset.y}")
+         */
         return offset
     }
 
