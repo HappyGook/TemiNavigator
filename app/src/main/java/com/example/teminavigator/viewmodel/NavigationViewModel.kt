@@ -42,11 +42,6 @@ import kotlinx.coroutines.withContext
 import kotlin.math.hypot
 import kotlin.time.Duration.Companion.milliseconds
 
-// constants
-private const val HOME_LOCATION = "home base"
-private const val HOME_RADIUS = 2
-private const val GREETING_COOLDOWN_MS = 10 * 1000
-
 data class SpeechNotice(val id: Long, val message: String)
 
 class NavigationViewModel(
@@ -269,10 +264,27 @@ class NavigationViewModel(
     fun setAutoReturnEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsRepo.setAutoReturnEnabled(enabled) }
     }
+
+    fun setHomeLocationId(newId: String){
+        viewModelScope.launch {settingsRepo.setHomeLocationName(newId)}
+    }
+
+    fun setHomeRadius(pixels: Float) {
+        viewModelScope.launch {settingsRepo.setHomeRadius(pixels)}
+    }
+
+    fun setGreetingsEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepo.setGreetingsEnabled(enabled) }
+    }
+
+    fun setGreetingsCooldown(ms: Int) {
+        viewModelScope.launch { settingsRepo.setGreetingsCooldown(ms) }
+    }
+
     private fun isAtHome(): Boolean {
         val pose = pose.value ?: return false
-        val home = destinations.value.find { it.id == HOME_LOCATION } ?: return false
-        val radiusMeter = HOME_RADIUS*calibration.value.pxPerMeter // multiply radius with pxPerMeter to get real metres
+        val home = destinations.value.find { it.id == settings.value.homeLocationId } ?: return false
+        val radiusMeter = settings.value.homeRadius*calibration.value.pxPerMeter // multiply radius with pxPerMeter to get real metres
         val isAtHome = hypot(pose.xPx - (home.imagePx?.x ?: 0f), pose.yPx - (home.imagePx?.y ?: 0f)) < radiusMeter
         Log.i("ViewModel","HomeCheck called, result: $isAtHome")
         return isAtHome
@@ -289,7 +301,7 @@ class NavigationViewModel(
                 left--
             }
 
-            val home = destinations.value.find { it.id == HOME_LOCATION }
+            val home = destinations.value.find { it.id == settings.value.homeLocationId }
                 ?: return@launch // if home location not available - stay on waiting screen
 
             _returnCountdown.value = null
@@ -312,7 +324,7 @@ class NavigationViewModel(
         if (_screen.value !is Screen.Waiting) return
         if (_navState.value !is NavigationState.Idle) return
         val now = SystemClock.elapsedRealtime()
-        if (now - lastGreetingAt < GREETING_COOLDOWN_MS) return
+        if (now - lastGreetingAt < settings.value.greetingsCoolDown) return
         lastGreetingAt = now
         // rotating phrases
         speak(strings.greetings[greetingIndex++ % strings.greetings.size])
@@ -412,7 +424,7 @@ class NavigationViewModel(
         _navState.value = NavigationState.Idle
 
         // failed trip home needs no dialog, the return timer tries again later
-        if (dest.id != HOME_LOCATION) {
+        if (dest.id != settings.value.homeLocationId) {
             _failedDestination.value = dest
             speak("Unreachable!: "+(dest.displayName)) // TODO: add to language pack + make a dialog in UI
             failureJob?.cancel()

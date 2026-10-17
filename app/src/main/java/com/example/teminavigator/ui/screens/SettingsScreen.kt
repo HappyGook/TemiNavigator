@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.SurroundSound
 import androidx.compose.material3.Button
@@ -40,9 +41,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -83,6 +86,14 @@ fun SettingsScreen(
     onVoiceInputEnabledChanged: (Boolean) -> Unit,
     autoReturnEnabled: Boolean,
     onAutoReturnEnabledChanged: (Boolean) -> Unit,
+    homeLocationId: String,
+    homeRadius: Float,
+    greetingsEnabled: Boolean,
+    greetingsCooldownMs: Int,
+    onHomeLocationIdChanged:(String) -> Unit,
+    onHomeRadiusChanged:(Float) -> Unit,
+    onGreetingsEnabled:(Boolean) -> Unit,
+    onGreetingsCooldownChanged:(Int) -> Unit
 ){
     val strings = LocalStrings.current
     val scope = rememberCoroutineScope()
@@ -157,6 +168,15 @@ fun SettingsScreen(
                     onVoiceInputEnabledChanged = onVoiceInputEnabledChanged,
                     autoReturnEnabled = autoReturnEnabled,
                     onAutoReturnEnabledChanged = onAutoReturnEnabledChanged,
+                    destinations = destinations,
+                    homeLocationId = homeLocationId,
+                    onHomeLocationIdChanged = onHomeLocationIdChanged,
+                    homeRadius = homeRadius,
+                    onHomeRadiusChanged = onHomeRadiusChanged,
+                    greetingsEnabled = greetingsEnabled,
+                    onGreetingsEnabledChanged = onGreetingsEnabled,
+                    greetingsCooldownMs = greetingsCooldownMs,
+                    onGreetingsCooldownChanged = onGreetingsCooldownChanged,
                 )
                 CalibrationSection(                        // UI block for map calibration part
                     calibration = calibration,
@@ -322,6 +342,15 @@ fun SettingsColumn(
     onVoiceInputEnabledChanged: (Boolean) -> Unit,
     autoReturnEnabled: Boolean,
     onAutoReturnEnabledChanged: (Boolean) -> Unit,
+    destinations: List<Destination>,
+    homeLocationId: String,
+    onHomeLocationIdChanged: (String) -> Unit,
+    homeRadius: Float,
+    onHomeRadiusChanged: (Float) -> Unit,
+    greetingsEnabled: Boolean,
+    onGreetingsEnabledChanged: (Boolean) -> Unit,
+    greetingsCooldownMs: Int,
+    onGreetingsCooldownChanged: (Int) -> Unit,
 ) {
     val strings = LocalStrings.current
 
@@ -367,23 +396,49 @@ fun SettingsColumn(
             onCheckedChange = onAutoReturnEnabledChanged
         )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(strings.returnHomeAfter, fontSize = 24.sp, modifier = Modifier.weight(1f))
-            Button(
-                onClick = { onReturnHomeDelayChanged(returnHomeDelaySec - 1) },
-                enabled = autoReturnEnabled,
-                modifier = Modifier.height(40.dp)
-            ) { Text("−") }
-            Text("$returnHomeDelaySec s", fontSize = 24.sp, modifier = Modifier.padding(horizontal = 16.dp))
-            Button(
-                onClick = { onReturnHomeDelayChanged(returnHomeDelaySec + 1) },
-                enabled = autoReturnEnabled,
-                modifier = Modifier.height(40.dp)
-            ) { Text("+", fontSize = 24.sp) }
-        }
+        // Return delay (only active when auto return is on)
+        SettingStepperRow(
+            label = strings.returnHomeAfter,
+            valueText = "$returnHomeDelaySec s",
+            enabled = autoReturnEnabled,
+            onMinus = { onReturnHomeDelayChanged(returnHomeDelaySec - 1) },
+            onPlus = { onReturnHomeDelayChanged(returnHomeDelaySec + 1) }
+        )
+
+        // Which Temi location is the waiting position
+        HomeLocationRow(
+            label = strings.homeLocation,
+            selectedId = homeLocationId,
+            enabled = autoReturnEnabled,
+            onSelected = onHomeLocationIdChanged
+        )
+
+        // "At home" tolerance radius in meters
+        SettingStepperRow(
+            label = strings.homeRadius,
+            valueText = "%.1f m".format(homeRadius),
+            enabled = autoReturnEnabled,
+            onMinus = { onHomeRadiusChanged(homeRadius - 0.5f) },
+            onPlus = { onHomeRadiusChanged(homeRadius + 0.5f) }
+        )
+
+        // Greetings on/off
+        SettingRow(
+            icon = Icons.Default.RecordVoiceOver,
+            title = strings.greetingsSetting,
+            description = strings.descriptionGreetings,
+            checked = greetingsEnabled,
+            onCheckedChange = onGreetingsEnabledChanged
+        )
+
+        // Pause between greetings (only active when greetings are on), shown in seconds
+        SettingStepperRow(
+            label = strings.greetingsCooldown,
+            valueText = "${greetingsCooldownMs / 1000} s",
+            enabled = greetingsEnabled,
+            onMinus = { onGreetingsCooldownChanged(greetingsCooldownMs - 1_000) },
+            onPlus = { onGreetingsCooldownChanged(greetingsCooldownMs + 1_000) }
+        )
     }
 }
 
@@ -432,6 +487,79 @@ fun SettingRow(
             checked = checked,
             onCheckedChange = onCheckedChange,
             modifier = Modifier.size(40.dp)
+        )
+    }
+}
+
+
+/**
+ * Label on the left, "−  value  +" on the right. Used for all numeric settings.
+ */
+@Composable
+private fun SettingStepperRow(
+    label: String,
+    valueText: String,
+    enabled: Boolean,
+    onMinus: () -> Unit,
+    onPlus: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, fontSize = 24.sp, modifier = Modifier.weight(1f))
+        Button(
+            onClick = onMinus,
+            enabled = enabled,
+            modifier = Modifier.height(40.dp)
+        ) { Text("−", fontSize = 24.sp) }
+        Text(valueText, fontSize = 24.sp, modifier = Modifier.padding(horizontal = 16.dp))
+        Button(
+            onClick = onPlus,
+            enabled = enabled,
+            modifier = Modifier.height(40.dp)
+        ) { Text("+", fontSize = 24.sp) }
+    }
+}
+
+/**
+ * Label on the left, dropdown with all Temi locations on the right.
+ */
+@Composable
+private fun HomeLocationRow(
+    label: String,
+    selectedId: String,
+    enabled: Boolean,
+    onSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val focusManager = LocalFocusManager.current
+    var text by rememberSaveable(selectedId) { mutableStateOf(selectedId) }
+
+    fun save() {
+        if (text.isNotBlank() && text.trim() != selectedId) onSelected(text)
+    }
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, fontSize = 24.sp, modifier = Modifier.weight(1f))
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            enabled = enabled,
+            singleLine = true,
+            textStyle = TextStyle(fontSize = 24.sp),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = {
+                save()
+                focusManager.clearFocus()
+            }),
+            modifier = Modifier
+                .weight(1f)
+                .onFocusChanged { if (!it.isFocused) save() }
         )
     }
 }

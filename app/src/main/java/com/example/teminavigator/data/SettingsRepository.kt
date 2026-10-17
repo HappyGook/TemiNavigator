@@ -17,7 +17,7 @@ data class AppSettings(
     val voiceOutputEnabled: Boolean = true,
     val voiceInputEnabled: Boolean = true,
     val autoReturnEnabled: Boolean = true,
-    val homeLocationName: String = "home base",
+    val homeLocationId: String = "home base",
     val homeRadius: Float = 2f, // radius in pixels (later multiplied by pxPerMeter)
     val greetingsEnabled: Boolean = true,
     val greetingsCoolDown: Int = 10*1000 // in ms
@@ -47,7 +47,7 @@ class SettingsRepository(private val context: Context) {
             voiceInputEnabled = p[Keys.VOICE_INPUT_ENABLED] ?: d.voiceInputEnabled,
             autoReturnEnabled = p[Keys.AUTO_RETURN_ENABLED] ?: d.autoReturnEnabled,
 
-            homeLocationName = p[Keys.HOME_LOCATION_NAME] ?: d.homeLocationName,
+            homeLocationId = p[Keys.HOME_LOCATION_NAME] ?: d.homeLocationId,
             homeRadius = p[Keys.HOME_RADIUS] ?: d.homeRadius,
 
             greetingsEnabled = p[Keys.GREETINGS_ENABLED] ?: d.greetingsEnabled,
@@ -79,8 +79,8 @@ class SettingsRepository(private val context: Context) {
         context.settingsStore.edit { it[Keys.HOME_LOCATION_NAME] = name.trim() }
     }
 
-    suspend fun setHomeRadius(meters: Float) {
-        context.settingsStore.edit { it[Keys.HOME_RADIUS] = meters.coerceIn(0.5f, 10f) }
+    suspend fun setHomeRadius(pixels: Float) {
+        context.settingsStore.edit { it[Keys.HOME_RADIUS] = pixels.coerceIn(0.5f, 10f) }
     }
 
     suspend fun setGreetingsEnabled(enabled: Boolean) {

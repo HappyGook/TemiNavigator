@@ -87,6 +87,14 @@ fun TemiApp(
     onVoiceOutputEnabledChanged: (Boolean) -> Unit,
     onVoiceInputEnabledChanged: (Boolean) -> Unit,
     onAutoReturnEnabledChanged: (Boolean) -> Unit,
+    homeLocationId: String,
+    homeRadius: Float,
+    greetingsEnabled: Boolean,
+    greetingsCooldownMs: Int,
+    onHomeLocationIdChanged:(String) -> Unit,
+    onHomeRadiusChanged:(Float) -> Unit,
+    onGreetingsEnabled:(Boolean) -> Unit,
+    onGreetingsCooldownChanged:(Int) -> Unit
 ){
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(speechNotice?.id) {
@@ -156,7 +164,15 @@ fun TemiApp(
             voiceInputEnabled = settings.voiceInputEnabled,
             onVoiceInputEnabledChanged = onVoiceInputEnabledChanged,
             autoReturnEnabled = settings.autoReturnEnabled,
-            onAutoReturnEnabledChanged = onAutoReturnEnabledChanged
+            onAutoReturnEnabledChanged = onAutoReturnEnabledChanged,
+            onHomeLocationIdChanged = onHomeLocationIdChanged,
+            onHomeRadiusChanged = onHomeRadiusChanged,
+            onGreetingsEnabled = onGreetingsEnabled,
+            onGreetingsCooldownChanged = onGreetingsCooldownChanged,
+            homeLocationId = homeLocationId,
+            homeRadius = homeRadius,
+            greetingsEnabled = greetingsEnabled,
+            greetingsCooldownMs = greetingsCooldownMs
         )
         Screen.Waiting -> WaitingScreen(
             onLeaveWaiting = onLeaveWaiting,
@@ -262,7 +278,15 @@ class MainActivity : ComponentActivity() {
                         onDeselect = viewModel::deselectDestination,
                         path = path,
                         failed = failed,
-                        dismissFailure = viewModel::dismissFailure
+                        dismissFailure = viewModel::dismissFailure,
+                        onHomeLocationIdChanged = viewModel::setHomeLocationId,
+                        onHomeRadiusChanged = viewModel::setHomeRadius,
+                        onGreetingsEnabled = viewModel::setGreetingsEnabled,
+                        onGreetingsCooldownChanged = viewModel::setGreetingsCooldown,
+                        homeLocationId = settings.homeLocationId,
+                        homeRadius = settings.homeRadius,
+                        greetingsEnabled = settings.greetingsEnabled,
+                        greetingsCooldownMs = settings.greetingsCoolDown
                     )
                 }
             }

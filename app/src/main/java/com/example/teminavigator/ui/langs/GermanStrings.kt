@@ -65,5 +65,10 @@ val germanStrings = AppStrings(
     greetings = listOf(
         "Hallo! Ich kann dir den Weg zu Räumen im zweiten Stock zeigen. Tippe einfach auf den Bildschirm oder sag mir, wohin du möchtest.",
         "Hi! Suchst du einen Raum? Sag mir einfach, wohin du willst, dann bringe ich dich hin."
-    )
+    ),
+    homeLocation = "Warteposition",
+    homeRadius = "Toleranzradius an der Warteposition",
+    greetingsSetting = "Ansprechen",
+    descriptionGreetings = "Temi spricht vorbeigehende Personen an",
+    greetingsCooldown = "Pause zwischen Ansprachen",
 )
