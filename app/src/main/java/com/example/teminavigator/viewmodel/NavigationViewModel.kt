@@ -33,7 +33,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -327,9 +326,6 @@ class NavigationViewModel(
             robot.events.collect {event -> handleEvent(event)}
         }
         viewModelScope.launch { speed.collect { robot.setSpeed(it) } }
-        viewModelScope.launch {
-            screen.collect { if (it is Screen.Waiting) startReturnTimer() else cancelReturnTimer() }
-        }
         viewModelScope.launch {
             combine(
                 screen,
