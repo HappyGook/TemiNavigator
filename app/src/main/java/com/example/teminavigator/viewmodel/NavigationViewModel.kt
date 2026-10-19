@@ -26,7 +26,6 @@ import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.domain.Screen
 import com.example.teminavigator.domain.SpeedCalibration
 import com.example.teminavigator.domain.match
-import com.example.teminavigator.domain.isPauseNavigationCommand
 import com.example.teminavigator.ui.langs.AppStrings
 import com.example.teminavigator.ui.sound.SoundPlayer
 import kotlinx.coroutines.Dispatchers
@@ -378,12 +377,6 @@ class NavigationViewModel(
     }
 
     private fun pauseNavigation() {
-        val dest = (_navState.value as? NavigationState.Guiding)?.target ?: run {
-            Log.i("VoiceCommand", "Pause ignored; navigation state is ${_navState.value}")
-            return
-        }
-        _navState.value = NavigationState.Paused(dest)
-        Log.i("VoiceCommand", "Pausing navigation to ${dest.id}")
         stopRobot()
     }
 
@@ -486,13 +479,6 @@ class NavigationViewModel(
 
             // When speech recognition successfully -> try and match destination
             is RobotEvent.SpeechRecognised -> {
-                val isPauseCommand = event.text.isPauseNavigationCommand()
-                Log.i("VoiceCommand", "Recognized '${event.text}'; pause=$isPauseCommand, " + "state=${_navState.value}, voiceInput=${settings.value.voiceInputEnabled}")
-                if (!settings.value.voiceInputEnabled) return
-                if (isPauseCommand) {
-                    pauseNavigation()
-                    return
-                }
                 val destination = destinations.value.match(event.text)
                 if (destination != null) {
                     startGuidance(destination)
@@ -524,5 +510,4 @@ class NavigationViewModel(
     private inline fun playSoundIfEnabled(play: SoundPlayer.() -> Unit) {
         if (settings.value.soundsEnabled) soundPlayer.play()
     }
-
 }
