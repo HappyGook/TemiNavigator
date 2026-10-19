@@ -71,4 +71,6 @@ val pirateStrings = AppStrings(
     greetingsSetting = "Hails",
     descriptionGreetings = "Temi hails landlubbers walkin' by",
     greetingsCooldown = "Breather between hails",
+    unreachableTitle = "Arrr, Destination Unreachable",
+    unreachableText = { name -> "Arrr, couldn't reach the destination $name" },
 )

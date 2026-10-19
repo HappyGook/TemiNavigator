@@ -71,4 +71,6 @@ val germanStrings = AppStrings(
     greetingsSetting = "Ansprechen",
     descriptionGreetings = "Temi spricht vorbeigehende Personen an",
     greetingsCooldown = "Pause zwischen Ansprachen",
+    unreachableTitle = "Ziel nicht erreichbar",
+    unreachableText = { name -> "Das Ziel $name konnte nicht erreicht werden" },
 )
