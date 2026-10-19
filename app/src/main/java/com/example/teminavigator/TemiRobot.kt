@@ -18,6 +18,7 @@ import com.robotemi.sdk.navigation.model.SpeedLevel
 import com.robotemi.sdk.permission.OnRequestPermissionResultListener
 import com.robotemi.sdk.permission.Permission
 import com.robotemi.sdk.voice.WakeupOrigin
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,7 +43,7 @@ object TemiRobot: RobotController,
     // public on demand var
     override var ready : StateFlow<Boolean> = _ready
 
-    private var _events = MutableSharedFlow<RobotEvent>(extraBufferCapacity = 10)
+    private var _events = MutableSharedFlow<RobotEvent>(extraBufferCapacity = 10, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     override var events = _events
 
     private var speechLanguage = SttLanguage.SYSTEM

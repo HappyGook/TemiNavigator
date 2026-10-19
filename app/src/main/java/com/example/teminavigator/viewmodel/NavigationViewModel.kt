@@ -146,10 +146,10 @@ class NavigationViewModel(
     val failedDestination: StateFlow<Destination?> = _failedDestination.asStateFlow()
     private var failureJob: Job? = null
 
-    private var stopRequested = false
-
     private var previewing = false
     private var previewJob: Job? = null
+    private var activeGoTo = false
+    private var pendingAborts = 0
 
     fun selectDestination(dest: Destination?) {
         stopPreview()
@@ -292,6 +292,8 @@ class NavigationViewModel(
 
     private fun startReturnTimer() {
         returnJob?.cancel()
+        _returnCountdown.value = null
+        if (previewing || _navState.value !is NavigationState.Idle) return
         returnJob = viewModelScope.launch {
             if (isAtHome()) return@launch
             var left = settings.value.returnHomeDelaySec
@@ -394,11 +396,17 @@ class NavigationViewModel(
         _screen.value = Screen.Navigation(destination)
     }
 
-    fun cancelGuidance(){
+    private fun resetNavigationSession() {
         arrivalJob?.cancel()
+        currentDestination = null
+        rawPath.value = emptyList()
         _navState.value = NavigationState.Idle
-        _screen.value = Screen.Home
+    }
+
+    fun cancelGuidance(){
         stopRobot()
+        resetNavigationSession()
+        _screen.value = Screen.Waiting       // return timer only runs here
         speak(strings.spokenAbort)
     }
 
@@ -407,26 +415,26 @@ class NavigationViewModel(
     }
 
     fun stopRobot(){
-        stopRequested = true
+        if (!activeGoTo) return              // nothing moving -> no abort will come
+        activeGoTo = false
+        pendingAborts++
         robot.stop()
     }
 
     fun startGoingTo(id: String){
-        stopRequested = false
+        if (activeGoTo) pendingAborts++      // new goTo aborts the running one
+        activeGoTo = true                      // TODO: verify in logs
         robot.goTo(id)
     }
 
     // handler for when the guidance is failed
     private fun onGuidanceFailed(dest: Destination) {
-        arrivalJob?.cancel()
-        currentDestination = null
-        rawPath.value = emptyList()
-        _navState.value = NavigationState.Idle
+        resetNavigationSession()
 
         // failed trip home needs no dialog, the return timer tries again later
         if (dest.id != settings.value.homeLocationId) {
             _failedDestination.value = dest
-            speak("Unreachable!: "+(dest.displayName)) // TODO: add to language pack + make a dialog in UI
+            speak(strings.unreachableText(dest.displayName))
             failureJob?.cancel()
             failureJob = viewModelScope.launch {
                 delay(10_000.milliseconds)         // auto-dismiss; TODO: configurable in settings?
@@ -444,39 +452,38 @@ class NavigationViewModel(
     private fun handleEvent(event: RobotEvent){
         when (event){
             is RobotEvent.GoToCancelled -> {
-                playSoundIfEnabled { playError() }
-                if (_navState.value !is NavigationState.Paused) {
-                    _navState.value = NavigationState.Idle
-                }
+                if (pendingAborts > 0) { pendingAborts--; return }   // expected, caused by user/system
+                activeGoTo = false
                 when {
-                    stopRequested -> {
-                        stopRequested = false
-                        if (currentDestination != null && _navState.value !is NavigationState.Paused) {
-                            _navState.value = NavigationState.Idle
-                            rawPath.value = emptyList()
-                        }
-                    }
-                    currentDestination != null -> onGuidanceFailed(currentDestination!!)   // Temi gave up on its own
-                    previewing -> {
+                    previewing -> {                                  // check preview first
                         _selected.value?.let { _failedDestination.value = it }
                         stopPreview()
+                    }
+                    currentDestination != null && _navState.value !is NavigationState.Paused -> { // not preview & not expected -> failure
+                        playSoundIfEnabled { playError() }
+                        onGuidanceFailed(currentDestination!!)
                     }
                 }
             }
             is RobotEvent.GoToFinished -> {
-                playSoundIfEnabled { playArrival() }
+                activeGoTo = false
+                if (previewing) { stopPreview(); return }
                 currentDestination?.let { dest ->
+                    playSoundIfEnabled { playArrival() }
                     _navState.value = NavigationState.Arrived(dest)
                     arrivalJob?.cancel()
-                    arrivalJob = viewModelScope.launch { // TODO: delay e.g. 3_000L, so the user sees "arrived"
-                        _navState.value = NavigationState.Idle
+                    arrivalJob = viewModelScope.launch {
+                        delay(3_000.milliseconds)
+                        resetNavigationSession()
                         _screen.value = Screen.Waiting
                     }
                 }
             }
             is RobotEvent.GoToStarted -> {
                 playSoundIfEnabled { playStart() }
-                currentDestination?.let { _navState.value = NavigationState.Guiding(it) }
+                currentDestination?.let {
+                    if(!previewing) _navState.value = NavigationState.Guiding(it)
+                }
             }
             is RobotEvent.PositionChanged -> {
                 Log.i("ViewModel","Viewmodel received a positionChanged event: X=${event.x}, Y=${event.y} ")
@@ -495,8 +502,7 @@ class NavigationViewModel(
                 }
                 val destination = destinations.value.match(event.text)
                 if (destination != null) {
-                    startGuidance(destination)
-                    _screen.value = Screen.Navigation(destination)
+                    confirmDestination(destination)
                 } else {
                     speak(strings.spokenUnknownDestination)
                     _speechNotice.value = SpeechNotice(
