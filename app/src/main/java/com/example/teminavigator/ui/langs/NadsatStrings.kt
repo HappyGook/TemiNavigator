@@ -71,4 +71,6 @@ val nadsatStrings = AppStrings(
     greetingsSetting = "Privets",
     descriptionGreetings = "Temi says privet to malchicks and devotchkas passing by",
     greetingsCooldown = "Pause between privets",
+    unreachableTitle = "Starry, O My",
+    unreachableText = { name -> "Couldn't get to mesto $name, droog" },
 )

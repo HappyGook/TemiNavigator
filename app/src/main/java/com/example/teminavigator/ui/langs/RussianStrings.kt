@@ -71,4 +71,6 @@ val russianStrings = AppStrings(
     greetingsSetting = "Приветствия",
     descriptionGreetings = "Теми обращается к проходящим людям",
     greetingsCooldown = "Пауза между приветствиями",
+    unreachableTitle = "Цель недостижима",
+    unreachableText = { name -> "Не удалось добраться до пункта назначения $name" },
 )

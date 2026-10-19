@@ -124,8 +124,8 @@ fun TemiApp(
     failed?.let { dest ->
         AlertDialog(
             onDismissRequest = dismissFailure,
-            title = { Text("strings.unreachableTitle") }, // TODO: language pack strings
-            text = { Text("strings.unreachableText"+(dest.displayName), fontSize = 36.sp) },
+            title = { Text(strings.unreachableTitle) },
+            text = { Text(strings.unreachableText(dest.displayName), fontSize = 36.sp, lineHeight = 36.sp) },
             confirmButton = { Button(onClick = dismissFailure) { Text(strings.backToNavigation, fontSize = 36.sp) } }
         )
     }

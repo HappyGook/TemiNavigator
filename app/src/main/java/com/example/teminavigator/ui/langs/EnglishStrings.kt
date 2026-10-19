@@ -36,8 +36,8 @@ val englishStrings = AppStrings(
     speechNotice = "You can also say \"Hey Temi!\" to start speech recognition",
     goingTo = "GOING TO",
     minutes = "minutes",
-    pauseNavigation =  "Pause",
-    resumeNavigation =  "Continue",
+    pauseNavigation = "Pause",
+    resumeNavigation = "Continue",
     abortNavigation = "Abort navigation",
     simulateArrival = "Simulate arrival",
     sounds = "Sounds",
@@ -60,7 +60,7 @@ val englishStrings = AppStrings(
     destinationAliases = "Aliases (comma separated)",
     destinationButtonSave = "Save",
     destinationButtonReset = "Reset",
-    returningHomeIn = {s->"Returning home in $s s"},
+    returningHomeIn = { s -> "Returning home in $s s" },
     returnHomeAfter = "return Home after",
     greetings = listOf(
         "Hallo! Ich kann dir den Weg zu Räumen im zweiten Stock zeigen. Tippe einfach auf den Bildschirm oder sag mir, wohin du möchtest.",
@@ -71,4 +71,6 @@ val englishStrings = AppStrings(
     greetingsSetting = "Greetings",
     descriptionGreetings = "Temi addresses people who walk by",
     greetingsCooldown = "Pause between greetings",
+    unreachableTitle = "Unreachable Destination",
+    unreachableText = { name -> "Destination $name couldn't be reached" },
 )

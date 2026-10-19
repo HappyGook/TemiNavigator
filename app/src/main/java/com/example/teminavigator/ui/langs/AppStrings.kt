@@ -26,6 +26,8 @@ data class AppStrings (
     val resumeNavigation: String,
     val abortNavigation: String,
     val simulateArrival: String,
+    val unreachableTitle: String,
+    val unreachableText: (String) -> String,
 
     // Content descriptions
     val cdMap: String,
