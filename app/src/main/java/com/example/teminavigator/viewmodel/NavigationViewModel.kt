@@ -225,7 +225,7 @@ class NavigationViewModel(
     private fun startSpeechConversation() {
         Log.i("ViewModel", "conversation")
         if (!settings.value.voiceInputEnabled) return
-        robot.startSpeechRecognition(strings.locationQuery, settings.value.voiceOutputEnabled)
+        robot.startSpeechRecognition()
     }
 
     // screen logic

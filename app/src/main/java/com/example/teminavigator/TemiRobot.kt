@@ -98,17 +98,10 @@ object TemiRobot: RobotController,
         }
     }
 
-    override fun startSpeechRecognition(question: String, speakPrompt: Boolean) {
-        Log.i("Temi", "Starting speech conversation")
+    override fun startSpeechRecognition() {
+        Log.i("Temi", "Starting speech recognition")
         val request = SttRequest(languages = listOf(speechLanguage))
-        if (speakPrompt) {
-            robot.askQuestion(
-                TtsRequest.create(question, false, ttsLanguage(speechLanguageCode)),
-                request
-            )
-        } else {
-            robot.wakeup(request)
-        }
+        robot.wakeup(request)
     }
 
     // Is called when speech recognition is done and spoken phrase is converted to string
