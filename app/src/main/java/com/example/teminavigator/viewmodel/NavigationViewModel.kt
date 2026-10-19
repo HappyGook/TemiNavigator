@@ -385,6 +385,7 @@ class NavigationViewModel(
     fun confirmDestination(destination: Destination) {
         stopPreview()
         arrivalJob?.cancel()
+        playSoundIfEnabled { playStart() }
         startGuidance(destination)
         _screen.value = Screen.Navigation(destination)
     }
@@ -397,6 +398,9 @@ class NavigationViewModel(
     }
 
     fun cancelGuidance(){
+        val isActiveNavigation = !previewing && currentDestination != null &&
+            (activeGoTo || _navState.value is NavigationState.Guiding || _navState.value is NavigationState.Paused)
+        if (isActiveNavigation) playSoundIfEnabled { playError() }
         stopRobot()
         resetNavigationSession()
         _screen.value = Screen.Waiting       // return timer only runs here
@@ -473,7 +477,6 @@ class NavigationViewModel(
                 }
             }
             is RobotEvent.GoToStarted -> {
-                playSoundIfEnabled { playStart() }
                 currentDestination?.let {
                     if(!previewing) _navState.value = NavigationState.Guiding(it)
                 }
