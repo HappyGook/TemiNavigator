@@ -1,6 +1,7 @@
 package com.example.teminavigator
 
 import android.app.Application
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -97,7 +98,9 @@ fun TemiApp(
     onHomeRadiusChanged:(Float) -> Unit,
     onGreetingsEnabled:(Boolean) -> Unit,
     onGreetingsCooldownChanged:(Int) -> Unit,
-    map: ImageBitmap?
+    map: ImageBitmap?,
+    onMapReset: () -> Unit,
+    onNewMapPicked: (Uri) -> Unit
 ){
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(speechNotice?.id) {
@@ -176,7 +179,10 @@ fun TemiApp(
             homeLocationId = homeLocationId,
             homeRadius = homeRadius,
             greetingsEnabled = greetingsEnabled,
-            greetingsCooldownMs = greetingsCooldownMs
+            greetingsCooldownMs = greetingsCooldownMs,
+            map = map,
+            onMapReset = onMapReset,
+            onNewMapPicked = onNewMapPicked
         )
         Screen.Waiting -> WaitingScreen(
             onLeaveWaiting = onLeaveWaiting,
@@ -293,7 +299,9 @@ class MainActivity : ComponentActivity() {
                         homeRadius = settings.homeRadius,
                         greetingsEnabled = settings.greetingsEnabled,
                         greetingsCooldownMs = settings.greetingsCoolDown,
-                        map = map
+                        map = map,
+                        onMapReset = viewModel::resetMap,
+                        onNewMapPicked = viewModel::pickMap
                     )
                 }
             }

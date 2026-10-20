@@ -73,4 +73,11 @@ val englishStrings = AppStrings(
     greetingsCooldown = "Pause between greetings",
     unreachableTitle = "Unreachable Destination",
     unreachableText = { name -> "Destination $name couldn't be reached" },
+    mapSectionTitle = "Map",
+    mapSectionHint = "View the currently used map or choose a new one here.",
+    mapChooseButton = "Choose map",
+    mapResetButton = "Reset",
+    mapResetTitle = "Reset map?",
+    mapResetMessage = "Do you want to reset the map to the default map?",
+    mapConfirm = "Reset",
 )

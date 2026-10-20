@@ -1,5 +1,10 @@
 package com.example.teminavigator.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,6 +27,8 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.SurroundSound
+import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -32,6 +40,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,7 +52,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -93,7 +104,10 @@ fun SettingsScreen(
     onHomeLocationIdChanged:(String) -> Unit,
     onHomeRadiusChanged:(Float) -> Unit,
     onGreetingsEnabled:(Boolean) -> Unit,
-    onGreetingsCooldownChanged:(Int) -> Unit
+    onGreetingsCooldownChanged:(Int) -> Unit,
+    map: ImageBitmap?,
+    onMapReset: () -> Unit,
+    onNewMapPicked: (Uri) -> Unit
 ){
     val strings = LocalStrings.current
     val scope = rememberCoroutineScope()
@@ -182,6 +196,8 @@ fun SettingsScreen(
                     calibration = calibration,
                     onSave = onCalibrationSaved
                 )
+
+                MapSection(map = map, onMapReset = onMapReset, onNewMapPicked = onNewMapPicked)
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -681,6 +697,82 @@ fun CalibrationSection(
     }
 }
 
+@Composable
+fun MapSection(
+    map: ImageBitmap?,
+    onMapReset: () -> Unit,
+    onNewMapPicked: (Uri) -> Unit
+) {
+    val strings = LocalStrings.current
+    var showResetDialog by remember { mutableStateOf(false) }
+
+    // Opens the system file picker. returns null if the user cancels
+    val picker = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let(onNewMapPicked)
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(strings.mapSectionTitle, style = MaterialTheme.typography.titleLarge, fontSize = 32.sp)
+
+        // Preview of the map currently in use
+        if (map != null) {
+            Image(
+                bitmap = map,
+                contentDescription = strings.mapSectionTitle,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 240.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.outline)
+            )
+            Text("${map.width} × ${map.height} px", fontSize = 20.sp)
+        } else {
+            CircularProgressIndicator()
+        }
+
+        Text(strings.mapSectionHint, fontSize = 20.sp)
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(
+                onClick = { picker.launch("image/png") },
+                modifier = Modifier.height(64.dp)
+            ) {
+                Icon(Icons.Default.Upload, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(strings.mapChooseButton, fontSize = 24.sp)
+            }
+            OutlinedButton(
+                onClick = { showResetDialog = true },
+                modifier = Modifier.height(64.dp)
+            ) {
+                Text(strings.mapResetButton, fontSize = 24.sp)
+            }
+        }
+    }
+
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            title = { Text(strings.mapResetTitle, fontSize = 28.sp) },
+            text = { Text(strings.mapResetMessage, fontSize = 22.sp) },
+            confirmButton = {
+                TextButton(onClick = { showResetDialog = false; onMapReset() }) {
+                    Text(strings.mapConfirm, fontSize = 22.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) {
+                    Text(strings.confirmNo, fontSize = 22.sp)
+                }
+            }
+        )
+    }
+}
 
 @Composable
 fun DestinationLabelSection(
