@@ -497,6 +497,7 @@ class NavigationViewModel(
                 if (previewing) { stopPreview(); return }
                 currentDestination?.let { dest ->
                     playSoundIfEnabled { playArrival() }
+                    speak(strings.spokenArrived(dest.displayName))
                     _navState.value = NavigationState.Arrived(dest)
                     arrivalJob?.cancel()
                     arrivalJob = viewModelScope.launch {
@@ -508,6 +509,7 @@ class NavigationViewModel(
             }
             is RobotEvent.GoToStarted -> {
                 playSoundIfEnabled { playStart() }
+                robot.stopSpeaking()
                 currentDestination?.let {
                     if(!previewing) _navState.value = NavigationState.Guiding(it)
                 }

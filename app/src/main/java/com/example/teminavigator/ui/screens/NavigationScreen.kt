@@ -1,4 +1,5 @@
 package com.example.teminavigator.ui.screens
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Route
@@ -21,6 +24,7 @@ import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -69,6 +73,7 @@ fun NavigationScreen(
     val strings = LocalStrings.current
     val paused = navigationState is NavigationState.Paused
     var startPose by remember(destination) { mutableStateOf<RobotPose?>(null) }
+    val arrived = navigationState as? NavigationState.Arrived
 
     // take a start pose once on launch of the screen for further calculations
     LaunchedEffect(destination) {
@@ -219,6 +224,28 @@ fun NavigationScreen(
                 path = path,
                 imageBitmap = map
             )
+        }
+    }
+    if (arrived != null && arrived.target == destination) {
+        ArrivalOverlay(name = destination.displayName)
+    }
+}
+
+@Composable
+private fun ArrivalOverlay(name: String) {
+    val strings = LocalStrings.current
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(shape = RoundedCornerShape(24.dp), tonalElevation = 6.dp) {
+            Column(Modifier.padding(48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Filled.CheckCircle, null, Modifier.size(96.dp))
+                Text(strings.spokenArrived(name), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
+                Text(name, style = MaterialTheme.typography.headlineLarge)
+            }
         }
     }
 }
