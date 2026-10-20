@@ -156,6 +156,7 @@ class NavigationViewModel(
 
     fun selectDestination(dest: Destination?) {
         stopPreview()
+        dismissFailure()
         rawPath.value = emptyList()
         _selected.value = dest
         if (dest != null) startPreview(dest)
@@ -391,7 +392,9 @@ class NavigationViewModel(
         failureJob = viewModelScope.launch {
             delay((settings.value.arrivalFailureDelaySec*1000).milliseconds)
             _failedDestination.value = null
-            if (thenWaiting && _screen.value is Screen.Home) _screen.value = Screen.Waiting
+            if (thenWaiting && _screen.value is Screen.Navigation && _navState.value is NavigationState.Idle) {
+                _screen.value = Screen.Waiting
+            }
         }
     }
 
@@ -422,6 +425,7 @@ class NavigationViewModel(
 
     fun confirmDestination(destination: Destination) {
         stopPreview()
+        dismissFailure()
         arrivalJob?.cancel()
         playSoundIfEnabled { playStart() }
         startGuidance(destination)
@@ -471,13 +475,17 @@ class NavigationViewModel(
             _screen.value = Screen.Waiting
             return
         }
-        _screen.value = Screen.Home                 // leave NavigationScreen, dialog shows on top
         showFailure(dest, thenWaiting = true)
     }
 
     fun dismissFailure() {
         failureJob?.cancel()
         _failedDestination.value = null
+    }
+
+    fun dismissFailureDialog() {
+        dismissFailure()
+        if (_screen.value is Screen.Navigation) _screen.value = Screen.Home
     }
 
     private fun handleEvent(event: RobotEvent){
@@ -487,7 +495,7 @@ class NavigationViewModel(
                 activeGoTo = false
                 when {
                     previewing -> {                                  // check preview first
-                        _selected.value?.let { _failedDestination.value = it }
+                        _selected.value?.let { showFailure(it) }
                         stopPreview()
                     }
                     currentDestination != null && _navState.value !is NavigationState.Paused -> { // not preview & not expected -> failure
