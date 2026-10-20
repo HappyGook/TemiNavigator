@@ -18,6 +18,7 @@ import com.robotemi.sdk.navigation.model.SpeedLevel
 import com.robotemi.sdk.permission.OnRequestPermissionResultListener
 import com.robotemi.sdk.permission.Permission
 import com.robotemi.sdk.voice.WakeupOrigin
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,11 +43,13 @@ object TemiRobot: RobotController,
     // public on demand var
     override var ready : StateFlow<Boolean> = _ready
 
-    private var _events = MutableSharedFlow<RobotEvent>(extraBufferCapacity = 10)
+    private var _events = MutableSharedFlow<RobotEvent>(extraBufferCapacity = 10, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     override var events = _events
 
     private var speechLanguage = SttLanguage.SYSTEM
     private var speechLanguageCode = ""
+    private val speechRecognitionLock = Any()
+    private var speechRecognitionActive = false
 
     override val availableLocations: List<String>
         get() = robot.locations
@@ -86,6 +89,9 @@ object TemiRobot: RobotController,
     }
 
     override fun stopSpeechRecognition() {
+        synchronized(speechRecognitionLock) {
+            speechRecognitionActive = false
+        }
         robot.finishConversation()
     }
 
@@ -98,22 +104,38 @@ object TemiRobot: RobotController,
         }
     }
 
-    override fun startSpeechRecognition(question: String, speakPrompt: Boolean) {
-        Log.i("Temi", "Starting speech conversation")
+    override fun startSpeechRecognition() {
         val request = SttRequest(languages = listOf(speechLanguage))
-        if (speakPrompt) {
-            robot.askQuestion(
-                TtsRequest.create(question, false, ttsLanguage(speechLanguageCode)),
-                request
-            )
-        } else {
+        val shouldStart = synchronized(speechRecognitionLock) {
+            if (speechRecognitionActive) {
+                false
+            } else {
+                speechRecognitionActive = true
+                true
+            }
+        }
+        if (!shouldStart) {
+            Log.i("Temi", "Speech recognition is already active")
+            return
+        }
+
+        Log.i("Temi", "Starting speech recognition")
+        try {
             robot.wakeup(request)
+        } catch (exception: RuntimeException) {
+            synchronized(speechRecognitionLock) {
+                speechRecognitionActive = false
+            }
+            throw exception
         }
     }
 
     // Is called when speech recognition is done and spoken phrase is converted to string
     override fun onAsrResult(asrResult: String, sttLanguage: SttLanguage) {
         Log.i("TemiVoice", "ASR result: '$asrResult' (language=$sttLanguage)")
+        synchronized(speechRecognitionLock) {
+            speechRecognitionActive = false
+        }
         robot.finishConversation()   // stops Temi's default NLP/answer
         if (asrResult.isNotBlank()) {
             _events.tryEmit(RobotEvent.SpeechRecognised(asrResult))
@@ -126,6 +148,10 @@ object TemiRobot: RobotController,
         origin: WakeupOrigin
     ) {
         Log.i("TemiVoice", "Wakeup word detected: '$wakeupWord' (origin=$origin)")
+        val shouldEmit = synchronized(speechRecognitionLock) {
+            !speechRecognitionActive
+        }
+        if (!shouldEmit) return
         _events.tryEmit(RobotEvent.WakeupWordDetected)
     }
 

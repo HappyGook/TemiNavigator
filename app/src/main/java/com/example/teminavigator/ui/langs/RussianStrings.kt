@@ -65,5 +65,19 @@ val russianStrings = AppStrings(
     greetings = listOf(
         "Hallo! Ich kann dir den Weg zu Räumen im zweiten Stock zeigen. Tippe einfach auf den Bildschirm oder sag mir, wohin du möchtest.",
         "Hi! Suchst du einen Raum? Sag mir einfach, wohin du willst, dann bringe ich dich hin."
-    )
+    ),
+    homeLocation = "Место ожидания",
+    homeRadius = "Радиус допуска у места ожидания",
+    greetingsSetting = "Приветствия",
+    descriptionGreetings = "Теми обращается к проходящим людям",
+    greetingsCooldown = "Пауза между приветствиями",
+    unreachableTitle = "Цель недостижима",
+    unreachableText = { name -> "Не удалось добраться до пункта назначения $name" },
+    mapSectionTitle = "Карта",
+    mapSectionHint = "Здесь можно посмотреть текущую карту или выбрать новую.",
+    mapChooseButton = "Выбрать карту",
+    mapResetButton = "Сбросить",
+    mapResetTitle = "Сбросить карту?",
+    mapResetMessage = "Вы действительно хотите вернуть карту по умолчанию?",
+    mapConfirm = "Сбросить",
 )

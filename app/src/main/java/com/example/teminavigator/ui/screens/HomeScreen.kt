@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
@@ -71,6 +72,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onStartSpeechRecognition: () -> Unit,
     voiceInputEnabled: Boolean,
+    map: ImageBitmap?
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val selected = destinations.find { it.id == selectedId }
@@ -157,7 +159,8 @@ fun HomeScreen(
                     onSelectDestination = { onSelect(it) },
                     path = path,
                     robotPose = robotPose,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(8.dp),
+                    imageBitmap = map
                 ){
                     FloatingActionButton(
                         onClick = onOpenSettings,
@@ -315,7 +318,8 @@ fun HSPreview(){
             selectedId = "mock stuff",
             onSelect = {},
             onDeselect = {},
-            path = listOf(Offset(1150f,1100f), Offset(1050f,1000f), Offset(1000f,1100f))
+            path = listOf(Offset(1150f,1100f), Offset(1050f,1000f), Offset(1000f,1100f)),
+            map = null
         )
         }
     }

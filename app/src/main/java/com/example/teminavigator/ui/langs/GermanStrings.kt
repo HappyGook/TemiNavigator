@@ -65,5 +65,19 @@ val germanStrings = AppStrings(
     greetings = listOf(
         "Hallo! Ich kann dir den Weg zu Räumen im zweiten Stock zeigen. Tippe einfach auf den Bildschirm oder sag mir, wohin du möchtest.",
         "Hi! Suchst du einen Raum? Sag mir einfach, wohin du willst, dann bringe ich dich hin."
-    )
+    ),
+    homeLocation = "Warteposition",
+    homeRadius = "Toleranzradius an der Warteposition",
+    greetingsSetting = "Ansprechen",
+    descriptionGreetings = "Temi spricht vorbeigehende Personen an",
+    greetingsCooldown = "Pause zwischen Ansprachen",
+    unreachableTitle = "Ziel nicht erreichbar",
+    unreachableText = { name -> "Das Ziel $name konnte nicht erreicht werden" },
+    mapSectionTitle = "Karte",
+    mapSectionHint = "Hier kannst du die aktuell verwendete Karte ansehen oder eine neue Karte auswählen.",
+    mapChooseButton = "Karte auswählen",
+    mapResetButton = "Zurücksetzen",
+    mapResetTitle = "Karte zurücksetzen?",
+    mapResetMessage = "Möchtest du die Karte wirklich auf die Standardkarte zurücksetzen?",
+    mapConfirm = "Zurücksetzen",
 )

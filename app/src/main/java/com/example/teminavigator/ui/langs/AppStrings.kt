@@ -26,6 +26,8 @@ data class AppStrings (
     val resumeNavigation: String,
     val abortNavigation: String,
     val simulateArrival: String,
+    val unreachableTitle: String,
+    val unreachableText: (String) -> String,
 
     // Content descriptions
     val cdMap: String,
@@ -54,9 +56,6 @@ data class AppStrings (
     val voiceInput: String,
     val descriptionVoiceInput: String,
     val descriptionVoiceOutput: String,
-    val autoReturn: String,
-    val descriptionAutoReturn: String,
-    val calibrationHeader: String,
     val originXText: String,
     val originYText: String,
     val pxPerMeterText: String,
@@ -68,9 +67,21 @@ data class AppStrings (
     val destinationAliases: String,
     val destinationButtonSave: String,
     val destinationButtonReset: String,
-
-
-
+    val autoReturn: String,
+    val descriptionAutoReturn: String,
+    val homeLocation: String,
+    val homeRadius: String,
+    val greetingsSetting: String,
+    val descriptionGreetings: String,
+    val greetingsCooldown: String,
+    val calibrationHeader: String,
+    val mapSectionTitle: String,
+    val mapSectionHint: String,
+    val mapChooseButton: String,
+    val mapResetButton: String,
+    val mapResetTitle: String,
+    val mapResetMessage: String,
+    val mapConfirm: String,
 
     // Spoken by the robot
     val spokenArrived: (destination: String) -> String,

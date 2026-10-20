@@ -1,6 +1,7 @@
 package com.example.teminavigator
 
 import android.app.Application
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,6 +49,7 @@ import com.example.teminavigator.ui.screens.WaitingScreen
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
 import com.example.teminavigator.viewmodel.SpeechNotice
+import kotlinx.coroutines.flow.compose
 
 @Composable
 fun TemiApp(
@@ -87,6 +90,17 @@ fun TemiApp(
     onVoiceOutputEnabledChanged: (Boolean) -> Unit,
     onVoiceInputEnabledChanged: (Boolean) -> Unit,
     onAutoReturnEnabledChanged: (Boolean) -> Unit,
+    homeLocationId: String,
+    homeRadius: Float,
+    greetingsEnabled: Boolean,
+    greetingsCooldownMs: Int,
+    onHomeLocationIdChanged:(String) -> Unit,
+    onHomeRadiusChanged:(Float) -> Unit,
+    onGreetingsEnabled:(Boolean) -> Unit,
+    onGreetingsCooldownChanged:(Int) -> Unit,
+    map: ImageBitmap?,
+    onMapReset: () -> Unit,
+    onNewMapPicked: (Uri) -> Unit
 ){
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(speechNotice?.id) {
@@ -116,8 +130,8 @@ fun TemiApp(
     failed?.let { dest ->
         AlertDialog(
             onDismissRequest = dismissFailure,
-            title = { Text("strings.unreachableTitle") }, // TODO: language pack strings
-            text = { Text("strings.unreachableText"+(dest.displayName), fontSize = 36.sp) },
+            title = { Text(strings.unreachableTitle) },
+            text = { Text(strings.unreachableText(dest.displayName), fontSize = 36.sp, lineHeight = 36.sp) },
             confirmButton = { Button(onClick = dismissFailure) { Text(strings.backToNavigation, fontSize = 36.sp) } }
         )
     }
@@ -133,7 +147,8 @@ fun TemiApp(
             selectedId = selected?.id,
             onSelect = onSelect,
             onDeselect = onDeselect,
-            path = path
+            path = path,
+            map = map
         )
         Screen.Settings -> SettingsScreen(
             currentLanguage = language,
@@ -156,7 +171,18 @@ fun TemiApp(
             voiceInputEnabled = settings.voiceInputEnabled,
             onVoiceInputEnabledChanged = onVoiceInputEnabledChanged,
             autoReturnEnabled = settings.autoReturnEnabled,
-            onAutoReturnEnabledChanged = onAutoReturnEnabledChanged
+            onAutoReturnEnabledChanged = onAutoReturnEnabledChanged,
+            onHomeLocationIdChanged = onHomeLocationIdChanged,
+            onHomeRadiusChanged = onHomeRadiusChanged,
+            onGreetingsEnabled = onGreetingsEnabled,
+            onGreetingsCooldownChanged = onGreetingsCooldownChanged,
+            homeLocationId = homeLocationId,
+            homeRadius = homeRadius,
+            greetingsEnabled = greetingsEnabled,
+            greetingsCooldownMs = greetingsCooldownMs,
+            map = map,
+            onMapReset = onMapReset,
+            onNewMapPicked = onNewMapPicked
         )
         Screen.Waiting -> WaitingScreen(
             onLeaveWaiting = onLeaveWaiting,
@@ -170,7 +196,8 @@ fun TemiApp(
             navigationState = navigationState,
             onTogglePause = onToggleNavigationPause,
             onAbort = onAbort,
-            path = path
+            path = path,
+            map = map
         )
     }
         SnackbarHost(
@@ -214,6 +241,7 @@ class MainActivity : ComponentActivity() {
             val selected by viewModel.selected.collectAsStateWithLifecycle()
             val path by viewModel.path.collectAsStateWithLifecycle()
             val failed by viewModel.failedDestination.collectAsState()
+            val map by viewModel.mapImage.collectAsState()
             /*
             Log.i("Main Map Infos","Calibration state in main activity:\n" +
                     "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
@@ -262,7 +290,18 @@ class MainActivity : ComponentActivity() {
                         onDeselect = viewModel::deselectDestination,
                         path = path,
                         failed = failed,
-                        dismissFailure = viewModel::dismissFailure
+                        dismissFailure = viewModel::dismissFailure,
+                        onHomeLocationIdChanged = viewModel::setHomeLocationId,
+                        onHomeRadiusChanged = viewModel::setHomeRadius,
+                        onGreetingsEnabled = viewModel::setGreetingsEnabled,
+                        onGreetingsCooldownChanged = viewModel::setGreetingsCooldown,
+                        homeLocationId = settings.homeLocationId,
+                        homeRadius = settings.homeRadius,
+                        greetingsEnabled = settings.greetingsEnabled,
+                        greetingsCooldownMs = settings.greetingsCoolDown,
+                        map = map,
+                        onMapReset = viewModel::resetMap,
+                        onNewMapPicked = viewModel::pickMap
                     )
                 }
             }

@@ -65,5 +65,19 @@ val nadsatStrings = AppStrings(
     greetings = listOf(
         "Hallo! Ich kann dir den Weg zu Räumen im zweiten Stock zeigen. Tippe einfach auf den Bildschirm oder sag mir, wohin du möchtest.",
         "Hi! Suchst du einen Raum? Sag mir einfach, wohin du willst, dann bringe ich dich hin."
-    )
+    ),
+    homeLocation = "Waiting mesto",
+    homeRadius = "Radius round the mesto",
+    greetingsSetting = "Privets",
+    descriptionGreetings = "Temi says privet to malchicks and devotchkas passing by",
+    greetingsCooldown = "Pause between privets",
+    unreachableTitle = "Starry, O My",
+    unreachableText = { name -> "Couldn't get to mesto $name, droog" },
+    mapSectionTitle = "Kart",
+    mapSectionHint = "Viddy the map in use or pick a horrorshow new one.",
+    mapChooseButton = "Pick a kart",
+    mapResetButton = "Reset it",
+    mapResetTitle = "Reset the kart?",
+    mapResetMessage = "You sure you want the default kart back, droog?",
+    mapConfirm = "Reset it",
 )
