@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -62,7 +63,8 @@ fun NavigationScreen(
     navigationState: NavigationState,
     onTogglePause: () -> Unit,
     onAbort: () -> Unit,
-    path: List<Offset>?
+    path: List<Offset>?,
+    map: ImageBitmap?
 ) {
     val strings = LocalStrings.current
     val paused = navigationState is NavigationState.Paused
@@ -214,7 +216,8 @@ fun NavigationScreen(
                 destinations = listOf(destination),
                 selectedId = destination.id,
                 robotPose = robotPose,
-                path = path
+                path = path,
+                imageBitmap = map
             )
         }
     }
@@ -240,7 +243,8 @@ fun NavigationScreenPreview() {
                 navigationState = NavigationState.Paused(mockDest),
                 onTogglePause = {},
                 onAbort = {},
-                path = listOf(Offset(1150f,1100f), Offset(1050f,1000f), Offset(1000f,1100f))
+                path = listOf(Offset(1150f,1100f), Offset(1050f,1000f), Offset(1000f,1100f)),
+                map = null
             )
         }
     }

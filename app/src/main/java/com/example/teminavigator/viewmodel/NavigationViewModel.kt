@@ -1,9 +1,13 @@
 package com.example.teminavigator.viewmodel
 import android.app.Application
 import android.content.Context
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.SystemClock
 import android.util.Log
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.AndroidViewModel
 import com.example.teminavigator.ui.langs.AppLanguage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +22,7 @@ import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.data.SettingsRepository
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
+import com.example.teminavigator.domain.MapLoader
 import com.example.teminavigator.domain.NavSpeed
 import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotController
@@ -35,10 +40,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import kotlin.math.hypot
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -195,6 +203,25 @@ class NavigationViewModel(
     private val settingsRepo = SettingsRepository(app)
     val settings: StateFlow<AppSettings> =
         settingsRepo.settings.stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
+    private val mapLoader = MapLoader(app)
+
+    val mapImage: StateFlow<ImageBitmap?> = settingsRepo.settings
+        .map { it.mapImagePath }
+        .distinctUntilChanged()
+        .map { mapLoader.load(it) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun pickMap(uri: Uri) = viewModelScope.launch {
+        val old = settings.first().mapImagePath
+        val new = mapLoader.import(uri, old)
+        if (new != null) settingsRepo.setMapImagePath(new) // TODO: else show error msg
+    }
+
+    fun resetMap() = viewModelScope.launch {
+        val old = settings.value.mapImagePath
+        settingsRepo.setMapImagePath(null) // switch to the asset, then delete the file
+        mapLoader.deleteLocal(old)
+    }
 
     private val _returnCountdown = MutableStateFlow<Int?>(null)
     val returnCountdown: StateFlow<Int?> = _returnCountdown.asStateFlow()

@@ -20,7 +20,8 @@ data class AppSettings(
     val homeLocationId: String = "home base",
     val homeRadius: Float = 2f, // radius in pixels (later multiplied by pxPerMeter)
     val greetingsEnabled: Boolean = true,
-    val greetingsCoolDown: Int = 10*1000 // in ms
+    val greetingsCoolDown: Int = 10*1000, // in ms
+    val mapImagePath: String? = null
 )
 
 private val Context.settingsStore by preferencesDataStore("app_settings")
@@ -36,6 +37,7 @@ class SettingsRepository(private val context: Context) {
         val HOME_RADIUS = floatPreferencesKey("home_radius")
         val GREETINGS_ENABLED = booleanPreferencesKey("greetings_enabled")
         val GREETINGS_COOLDOWN = intPreferencesKey("greetings_cooldown")
+        val MAP_IMAGE_PATH = stringPreferencesKey("map_image_path")
     }
 
     val settings: Flow<AppSettings> = context.settingsStore.data.map { p ->
@@ -52,6 +54,8 @@ class SettingsRepository(private val context: Context) {
 
             greetingsEnabled = p[Keys.GREETINGS_ENABLED] ?: d.greetingsEnabled,
             greetingsCoolDown = p[Keys.GREETINGS_COOLDOWN] ?: d.greetingsCoolDown,
+
+            mapImagePath = p[Keys.MAP_IMAGE_PATH] ?: d.mapImagePath
         )
     }
 
@@ -89,5 +93,11 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setGreetingsCooldown(ms: Int) {
         context.settingsStore.edit { it[Keys.GREETINGS_COOLDOWN] = ms.coerceIn(1_000, 300_000) }
+    }
+
+    suspend fun setMapImagePath(path: String?) {
+        context.settingsStore.edit { p ->
+            if (path == null) p.remove(Keys.MAP_IMAGE_PATH) else p[Keys.MAP_IMAGE_PATH] = path
+        }
     }
 }
