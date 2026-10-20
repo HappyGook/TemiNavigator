@@ -1,13 +1,11 @@
 package com.example.teminavigator.viewmodel
 import android.app.Application
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.SystemClock
 import android.util.Log
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.AndroidViewModel
 import com.example.teminavigator.ui.langs.AppLanguage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,12 +39,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import kotlin.math.hypot
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -385,6 +381,16 @@ class NavigationViewModel(
         super.onCleared()
     }
 
+    private fun showFailure(dest: Destination) {
+        _failedDestination.value = dest
+        speak(strings.unreachableText(dest.displayName))
+        failureJob?.cancel()
+        failureJob = viewModelScope.launch {
+            delay(settings.value.returnHomeDelaySec.milliseconds)
+            _failedDestination.value = null
+        }
+    }
+
     fun startGuidance(destination: Destination){
         currentDestination = destination
         startGoingTo(destination.id)
@@ -457,6 +463,7 @@ class NavigationViewModel(
     // handler for when the guidance is failed
     private fun onGuidanceFailed(dest: Destination) {
         resetNavigationSession()
+        showFailure(dest)
 
         // failed trip home needs no dialog, the return timer tries again later
         if (dest.id != settings.value.homeLocationId) {
@@ -464,7 +471,7 @@ class NavigationViewModel(
             speak(strings.unreachableText(dest.displayName))
             failureJob?.cancel()
             failureJob = viewModelScope.launch {
-                delay(10_000.milliseconds)         // auto-dismiss; TODO: configurable in settings?
+                delay(settings.value.returnHomeDelaySec.milliseconds)         // auto-dismiss; TODO: configurable in settings?
                 _failedDestination.value = null
             }
         }
@@ -501,7 +508,7 @@ class NavigationViewModel(
                     _navState.value = NavigationState.Arrived(dest)
                     arrivalJob?.cancel()
                     arrivalJob = viewModelScope.launch {
-                        delay(3_000.milliseconds)
+                        delay(settings.value.returnHomeDelaySec.milliseconds)
                         resetNavigationSession()
                         _screen.value = Screen.Waiting
                     }
