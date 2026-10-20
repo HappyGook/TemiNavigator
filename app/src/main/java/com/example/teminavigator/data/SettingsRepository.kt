@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.map
 // Put all simple settings values here
 data class AppSettings(
     val returnHomeDelaySec: Int = 3,
+    val arrivalFailureDelaySec: Int = 3,
     val soundsEnabled: Boolean = true,
     val voiceOutputEnabled: Boolean = true,
     val voiceInputEnabled: Boolean = true,
@@ -29,6 +30,7 @@ private val Context.settingsStore by preferencesDataStore("app_settings")
 class SettingsRepository(private val context: Context) {
     private object Keys {
         val RETURN_HOME_DELAY = intPreferencesKey("return_home_delay_sec")
+        val ARRIVAL_FAILURE_DELAY = intPreferencesKey("arrival_failure_delay_sec")
         val SOUNDS_ENABLED = booleanPreferencesKey("sounds_enabled")
         val VOICE_OUTPUT_ENABLED = booleanPreferencesKey("voice_output_enabled")
         val VOICE_INPUT_ENABLED = booleanPreferencesKey("voice_input_enabled")
@@ -44,6 +46,7 @@ class SettingsRepository(private val context: Context) {
         val d = AppSettings() // default values
         AppSettings(
             returnHomeDelaySec = p[Keys.RETURN_HOME_DELAY] ?: d.returnHomeDelaySec,
+            arrivalFailureDelaySec = p[Keys.ARRIVAL_FAILURE_DELAY] ?: d.arrivalFailureDelaySec,
             soundsEnabled = p[Keys.SOUNDS_ENABLED] ?: d.soundsEnabled,
             voiceOutputEnabled = p[Keys.VOICE_OUTPUT_ENABLED] ?: d.voiceOutputEnabled,
             voiceInputEnabled = p[Keys.VOICE_INPUT_ENABLED] ?: d.voiceInputEnabled,
@@ -61,6 +64,9 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setReturnHomeDelay(sec: Int) {
         context.settingsStore.edit { it[Keys.RETURN_HOME_DELAY] = sec.coerceIn(1, 120) }
+    }
+    suspend fun setArrivalFailureDelay(sec: Int) {
+        context.settingsStore.edit { it[Keys.ARRIVAL_FAILURE_DELAY] = sec.coerceIn(1, 120) }
     }
 
     suspend fun setSoundsEnabled(enabled: Boolean) {

@@ -270,6 +270,10 @@ class NavigationViewModel(
         viewModelScope.launch { settingsRepo.setReturnHomeDelay(sec) }
     }
 
+    fun setArrivalFailureDelay(sec: Int) {
+        viewModelScope.launch { settingsRepo.setArrivalFailureDelay(sec) }
+    }
+
     fun setSoundsEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsRepo.setSoundsEnabled(enabled) }
     }
@@ -381,13 +385,14 @@ class NavigationViewModel(
         super.onCleared()
     }
 
-    private fun showFailure(dest: Destination) {
+    private fun showFailure(dest: Destination, thenWaiting: Boolean = false) {
         _failedDestination.value = dest
         speak(strings.unreachableText(dest.displayName))
         failureJob?.cancel()
         failureJob = viewModelScope.launch {
-            delay(settings.value.returnHomeDelaySec.milliseconds)
+            delay((settings.value.arrivalFailureDelaySec*1000).milliseconds)
             _failedDestination.value = null
+            if (thenWaiting && _screen.value is Screen.Home) _screen.value = Screen.Waiting
         }
     }
 
@@ -463,19 +468,14 @@ class NavigationViewModel(
     // handler for when the guidance is failed
     private fun onGuidanceFailed(dest: Destination) {
         resetNavigationSession()
-        showFailure(dest)
 
-        // failed trip home needs no dialog, the return timer tries again later
-        if (dest.id != settings.value.homeLocationId) {
-            _failedDestination.value = dest
-            speak(strings.unreachableText(dest.displayName))
-            failureJob?.cancel()
-            failureJob = viewModelScope.launch {
-                delay(settings.value.returnHomeDelaySec.milliseconds)         // auto-dismiss; TODO: configurable in settings?
-                _failedDestination.value = null
-            }
+        if (dest.id == settings.value.homeLocationId) {
+            // failed trip home
+            _screen.value = Screen.Waiting
+            return
         }
-        _screen.value = Screen.Waiting
+        _screen.value = Screen.Home                 // leave NavigationScreen, dialog shows on top
+        showFailure(dest, thenWaiting = true)
     }
 
     fun dismissFailure() {
@@ -508,7 +508,7 @@ class NavigationViewModel(
                     _navState.value = NavigationState.Arrived(dest)
                     arrivalJob?.cancel()
                     arrivalJob = viewModelScope.launch {
-                        delay(settings.value.returnHomeDelaySec.milliseconds)
+                        delay((settings.value.arrivalFailureDelaySec*1000).milliseconds)
                         resetNavigationSession()
                         _screen.value = Screen.Waiting
                     }
@@ -516,7 +516,6 @@ class NavigationViewModel(
             }
             is RobotEvent.GoToStarted -> {
                 playSoundIfEnabled { playStart() }
-                robot.stopSpeaking()
                 currentDestination?.let {
                     if(!previewing) _navState.value = NavigationState.Guiding(it)
                 }
