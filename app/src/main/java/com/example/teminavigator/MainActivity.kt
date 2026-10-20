@@ -290,7 +290,7 @@ class MainActivity : ComponentActivity() {
                         onDeselect = viewModel::deselectDestination,
                         path = path,
                         failed = failed,
-                        dismissFailure = viewModel::dismissFailure,
+                        dismissFailure = viewModel::dismissFailureDialog,
                         onHomeLocationIdChanged = viewModel::setHomeLocationId,
                         onHomeRadiusChanged = viewModel::setHomeRadius,
                         onGreetingsEnabled = viewModel::setGreetingsEnabled,
