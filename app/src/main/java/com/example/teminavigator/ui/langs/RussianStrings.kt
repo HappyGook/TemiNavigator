@@ -73,4 +73,11 @@ val russianStrings = AppStrings(
     greetingsCooldown = "Пауза между приветствиями",
     unreachableTitle = "Цель недостижима",
     unreachableText = { name -> "Не удалось добраться до пункта назначения $name" },
+    mapSectionTitle = "Карта",
+    mapSectionHint = "Здесь можно посмотреть текущую карту или выбрать новую.",
+    mapChooseButton = "Выбрать карту",
+    mapResetButton = "Сбросить",
+    mapResetTitle = "Сбросить карту?",
+    mapResetMessage = "Вы действительно хотите вернуть карту по умолчанию?",
+    mapConfirm = "Сбросить",
 )

@@ -73,4 +73,11 @@ val pirateStrings = AppStrings(
     greetingsCooldown = "Breather between hails",
     unreachableTitle = "Arrr, Destination Unreachable",
     unreachableText = { name -> "Arrr, couldn't reach the destination $name" },
+    mapSectionTitle = "Arrr, map",
+    mapSectionHint = "Spy the map in use, or pick a fresh chart, matey.",
+    mapChooseButton = "Pick a chart",
+    mapResetButton = "Reset the chart",
+    mapResetTitle = "Reset the chart, arrr?",
+    mapResetMessage = "Be ye sure ye want the default chart back?",
+    mapConfirm = "Aye, reset it",
 )

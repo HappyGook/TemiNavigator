@@ -1,9 +1,11 @@
 package com.example.teminavigator.viewmodel
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import android.os.SystemClock
 import android.util.Log
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.AndroidViewModel
 import com.example.teminavigator.ui.langs.AppLanguage
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +20,7 @@ import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.data.SettingsRepository
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
+import com.example.teminavigator.domain.MapLoader
 import com.example.teminavigator.domain.NavSpeed
 import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotController
@@ -34,6 +37,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -194,6 +198,25 @@ class NavigationViewModel(
     private val settingsRepo = SettingsRepository(app)
     val settings: StateFlow<AppSettings> =
         settingsRepo.settings.stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
+    private val mapLoader = MapLoader(app)
+
+    val mapImage: StateFlow<ImageBitmap?> = settingsRepo.settings
+        .map { it.mapImagePath }
+        .distinctUntilChanged()
+        .map { mapLoader.load(it) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun pickMap(uri: Uri) = viewModelScope.launch {
+        val old = settings.first().mapImagePath
+        val new = mapLoader.import(uri, old)
+        if (new != null) settingsRepo.setMapImagePath(new) // TODO: else show error msg
+    }
+
+    fun resetMap() = viewModelScope.launch {
+        val old = settings.value.mapImagePath
+        settingsRepo.setMapImagePath(null) // switch to the asset, then delete the file
+        mapLoader.deleteLocal(old)
+    }
 
     private val _returnCountdown = MutableStateFlow<Int?>(null)
     val returnCountdown: StateFlow<Int?> = _returnCountdown.asStateFlow()
@@ -244,6 +267,10 @@ class NavigationViewModel(
 
     fun setReturnHomeDelay(sec: Int) {
         viewModelScope.launch { settingsRepo.setReturnHomeDelay(sec) }
+    }
+
+    fun setArrivalFailureDelay(sec: Int) {
+        viewModelScope.launch { settingsRepo.setArrivalFailureDelay(sec) }
     }
 
     fun setSoundsEnabled(enabled: Boolean) {
@@ -357,6 +384,17 @@ class NavigationViewModel(
         super.onCleared()
     }
 
+    private fun showFailure(dest: Destination, thenWaiting: Boolean = false) {
+        _failedDestination.value = dest
+        speak(strings.unreachableText(dest.displayName))
+        failureJob?.cancel()
+        failureJob = viewModelScope.launch {
+            delay((settings.value.arrivalFailureDelaySec*1000).milliseconds)
+            _failedDestination.value = null
+            if (thenWaiting && _screen.value is Screen.Home) _screen.value = Screen.Waiting
+        }
+    }
+
     fun startGuidance(destination: Destination){
         currentDestination = destination
         startGoingTo(destination.id)
@@ -428,17 +466,13 @@ class NavigationViewModel(
     private fun onGuidanceFailed(dest: Destination) {
         resetNavigationSession()
 
-        // failed trip home needs no dialog, the return timer tries again later
-        if (dest.id != settings.value.homeLocationId) {
-            _failedDestination.value = dest
-            speak(strings.unreachableText(dest.displayName))
-            failureJob?.cancel()
-            failureJob = viewModelScope.launch {
-                delay(10_000.milliseconds)         // auto-dismiss; TODO: configurable in settings?
-                _failedDestination.value = null
-            }
+        if (dest.id == settings.value.homeLocationId) {
+            // failed trip home
+            _screen.value = Screen.Waiting
+            return
         }
-        _screen.value = Screen.Waiting
+        _screen.value = Screen.Home                 // leave NavigationScreen, dialog shows on top
+        showFailure(dest, thenWaiting = true)
     }
 
     fun dismissFailure() {
@@ -467,10 +501,11 @@ class NavigationViewModel(
                 if (previewing) { stopPreview(); return }
                 currentDestination?.let { dest ->
                     playSoundIfEnabled { playArrival() }
+                    speak(strings.spokenArrived(dest.displayName))
                     _navState.value = NavigationState.Arrived(dest)
                     arrivalJob?.cancel()
                     arrivalJob = viewModelScope.launch {
-                        delay(3_000.milliseconds)
+                        delay((settings.value.arrivalFailureDelaySec*1000).milliseconds)
                         resetNavigationSession()
                         _screen.value = Screen.Waiting
                     }

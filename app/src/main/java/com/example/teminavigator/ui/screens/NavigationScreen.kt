@@ -1,4 +1,5 @@
 package com.example.teminavigator.ui.screens
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Route
@@ -21,6 +24,7 @@ import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -35,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -62,11 +67,13 @@ fun NavigationScreen(
     navigationState: NavigationState,
     onTogglePause: () -> Unit,
     onAbort: () -> Unit,
-    path: List<Offset>?
+    path: List<Offset>?,
+    map: ImageBitmap?
 ) {
     val strings = LocalStrings.current
     val paused = navigationState is NavigationState.Paused
     var startPose by remember(destination) { mutableStateOf<RobotPose?>(null) }
+    val arrived = navigationState as? NavigationState.Arrived
 
     // take a start pose once on launch of the screen for further calculations
     LaunchedEffect(destination) {
@@ -214,8 +221,31 @@ fun NavigationScreen(
                 destinations = listOf(destination),
                 selectedId = destination.id,
                 robotPose = robotPose,
-                path = path
+                path = path,
+                imageBitmap = map
             )
+        }
+    }
+    if (arrived != null && arrived.target == destination) {
+        ArrivalOverlay(name = destination.displayName)
+    }
+}
+
+@Composable
+private fun ArrivalOverlay(name: String) {
+    val strings = LocalStrings.current
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(shape = RoundedCornerShape(24.dp), tonalElevation = 6.dp) {
+            Column(Modifier.padding(48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Filled.CheckCircle, null, Modifier.size(96.dp))
+                Text(strings.spokenArrived(name), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold)
+                Text(name, style = MaterialTheme.typography.headlineLarge)
+            }
         }
     }
 }
@@ -240,7 +270,8 @@ fun NavigationScreenPreview() {
                 navigationState = NavigationState.Paused(mockDest),
                 onTogglePause = {},
                 onAbort = {},
-                path = listOf(Offset(1150f,1100f), Offset(1050f,1000f), Offset(1000f,1100f))
+                path = listOf(Offset(1150f,1100f), Offset(1050f,1000f), Offset(1000f,1100f)),
+                map = null
             )
         }
     }

@@ -73,4 +73,11 @@ val nadsatStrings = AppStrings(
     greetingsCooldown = "Pause between privets",
     unreachableTitle = "Starry, O My",
     unreachableText = { name -> "Couldn't get to mesto $name, droog" },
+    mapSectionTitle = "Kart",
+    mapSectionHint = "Viddy the map in use or pick a horrorshow new one.",
+    mapChooseButton = "Pick a kart",
+    mapResetButton = "Reset it",
+    mapResetTitle = "Reset the kart?",
+    mapResetMessage = "You sure you want the default kart back, droog?",
+    mapConfirm = "Reset it",
 )

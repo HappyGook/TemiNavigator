@@ -75,6 +75,13 @@ data class AppStrings (
     val descriptionGreetings: String,
     val greetingsCooldown: String,
     val calibrationHeader: String,
+    val mapSectionTitle: String,
+    val mapSectionHint: String,
+    val mapChooseButton: String,
+    val mapResetButton: String,
+    val mapResetTitle: String,
+    val mapResetMessage: String,
+    val mapConfirm: String,
 
     // Spoken by the robot
     val spokenArrived: (destination: String) -> String,
