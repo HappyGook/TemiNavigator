@@ -524,7 +524,8 @@ class NavigationViewModel(
                 if (previewing) { stopPreview(); return }
                 currentDestination?.let { dest ->
                     playSoundIfEnabled { playArrival() }
-                    playMusicIfEnabled { stop() }
+                    // playMusicIfEnabled { stop() } TODO
+                    musicPlayer.stop()
                     speak(strings.spokenArrived(dest.displayName))
                     _navState.value = NavigationState.Arrived(dest)
                     arrivalJob?.cancel()
