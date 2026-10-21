@@ -479,7 +479,7 @@ fun SettingsColumn(
         )
 
         SettingStepperRow(
-            label = "ArrivalFailure Delay TODO", // TODO: language pack
+            label = strings.arrivalFailureDelayText,
             valueText = "$arrivalFailureDelaySec s",
             enabled = true,
             onMinus = { onArrivalFailureCooldownChanged(arrivalFailureDelaySec - 1) },
@@ -488,13 +488,13 @@ fun SettingsColumn(
 
         // Navigation speed
         SpeedRow(
-            label = "strings.navigationSpeed", // TODO: language pack
+            label = strings.navigationSpeed,
             selected = navigationSpeed,
             labelFor = {
                 when (it) {
-                    NavSpeed.SLOW -> "strings.speedSlow"
-                    NavSpeed.MEDIUM -> "strings.speedMedium"
-                    NavSpeed.HIGH -> "strings.speedHigh"
+                    NavSpeed.SLOW -> strings.speedSlow
+                    NavSpeed.MEDIUM -> strings.speedMedium
+                    NavSpeed.HIGH -> strings.speedHigh
                 }
             },
             onSelected = onNavigationSpeedChanged

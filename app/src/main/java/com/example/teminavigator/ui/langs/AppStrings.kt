@@ -83,6 +83,12 @@ data class AppStrings (
     val mapResetTitle: String,
     val mapResetMessage: String,
     val mapConfirm: String,
+    val navigationSpeed: String,
+    val speedSlow: String,
+    val speedMedium: String,
+    val speedHigh: String,
+    val arrivalFailureDelayText: String,
+
 
     // Spoken by the robot
     val spokenArrived: (destination: String) -> String,

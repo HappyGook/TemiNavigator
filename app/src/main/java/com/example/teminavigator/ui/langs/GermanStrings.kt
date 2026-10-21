@@ -64,7 +64,10 @@ val germanStrings = AppStrings(
     returnHomeAfter = "Zurück zur Basis fahren",
     greetings = listOf(
         "Hallo! Ich kann dir den Weg zu Räumen im zweiten Stock zeigen. Tippe einfach auf den Bildschirm oder sag mir, wohin du möchtest.",
-        "Hi! Suchst du einen Raum? Sag mir einfach, wohin du willst, dann bringe ich dich hin."
+        "Hi! Suchst du einen Raum? Sag mir einfach, wohin du willst, dann bringe ich dich hin.",
+        "Willkommen! Du suchst einen Raum im zweiten Stock? Ich helfe dir, den richtigen Weg zu finden.",
+        "Hallo! Du kannst mir sagen, welchen Raum du suchst, oder ihn direkt auf dem Bildschirm auswählen.",
+        "Na, wohin soll's gehen? Ich kenne die Räume im zweiten Stock und helfe dir gerne weiter!"
     ),
     homeLocation = "Warteposition",
     homeRadius = "Toleranzradius an der Warteposition",
@@ -81,4 +84,9 @@ val germanStrings = AppStrings(
     mapResetMessage = "Möchtest du die Karte wirklich auf die Standardkarte zurücksetzen?",
     mapConfirm = "Zurücksetzen",
     unreachableInList = "Keine Orte gefunden",
+    navigationSpeed = "Navigationsgeschwindigkeit",
+    speedSlow = "Langsam",
+    speedMedium = "Mittel",
+    speedHigh = "Hoch",
+    arrivalFailureDelayText = "Ankunft / Abbruch - Delay",
 )

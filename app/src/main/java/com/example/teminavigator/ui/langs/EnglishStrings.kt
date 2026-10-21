@@ -63,8 +63,11 @@ val englishStrings = AppStrings(
     returningHomeIn = { s -> "Returning home in $s s" },
     returnHomeAfter = "return Home after",
     greetings = listOf(
-        "Hallo! Ich kann dir den Weg zu Räumen im zweiten Stock zeigen. Tippe einfach auf den Bildschirm oder sag mir, wohin du möchtest.",
-        "Hi! Suchst du einen Raum? Sag mir einfach, wohin du willst, dann bringe ich dich hin."
+        "Hello! I can guide you to rooms on the second floor. Just tap the screen or tell me where you'd like to go.",
+        "Hi! Looking for a room? Tell me where you want to go, and I'll show you the way.",
+        "Welcome! Need to find a room on the second floor? I'll help you get there.",
+        "Hello! You can tell me which room you're looking for or select it directly on the screen.",
+        "So, where are we heading? I know the rooms on the second floor and I'm happy to help!"
     ),
     homeLocation = "Waiting position",
     homeRadius = "Tolerance radius at waiting position",
@@ -81,4 +84,9 @@ val englishStrings = AppStrings(
     mapResetMessage = "Do you want to reset the map to the default map?",
     mapConfirm = "Reset",
     unreachableInList = "No locations found",
+    navigationSpeed = "Navigation Speed",
+    speedSlow = "Slow",
+    speedMedium = "Medium",
+    speedHigh = "High",
+    arrivalFailureDelayText = "Arrival/Failure Delay",
 )
