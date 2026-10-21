@@ -411,12 +411,14 @@ class NavigationViewModel(
         when (_navState.value) {
             is NavigationState.Guiding -> {
                 _navState.value = NavigationState.Paused(dest)
-                playMusicIfEnabled { pause() }
+                //playMusicIfEnabled { pause() } TODO
+                musicPlayer.pause()
                 stopRobot()
             }
             is NavigationState.Paused -> {
                 _navState.value = NavigationState.Guiding(dest)
-                playMusicIfEnabled { resume() }
+                // playMusicIfEnabled { resume() } TODO
+                musicPlayer.resume()
                 startGoingTo(dest.id)
             }
             else -> Unit
@@ -504,7 +506,8 @@ class NavigationViewModel(
                     }
                     currentDestination != null && _navState.value !is NavigationState.Paused -> { // not preview & not expected -> failure
                         playSoundIfEnabled { playError() }
-                        playMusicIfEnabled { stop() }
+                        //playMusicIfEnabled { stop() } TODO
+                        musicPlayer.stop()
                         onGuidanceFailed(currentDestination!!)
                     }
                 }
@@ -528,7 +531,8 @@ class NavigationViewModel(
             is RobotEvent.GoToStarted -> {
                 currentDestination?.let {
                     if(!previewing) _navState.value = NavigationState.Guiding(it)
-                    playMusicIfEnabled { play() }
+                    // playMusicIfEnabled { play() } TODO
+                    musicPlayer.play()
                 }
             }
             is RobotEvent.PositionChanged -> {
