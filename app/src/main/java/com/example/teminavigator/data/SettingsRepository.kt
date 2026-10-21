@@ -7,12 +7,13 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.teminavigator.domain.NavSpeed
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 // Put all simple settings values here
 data class AppSettings(
-    val returnHomeDelaySec: Int = 3,
+    val returnHomeDelaySec: Int = 10,
     val arrivalFailureDelaySec: Int = 3,
     val soundsEnabled: Boolean = true,
     val voiceOutputEnabled: Boolean = true,
@@ -22,7 +23,8 @@ data class AppSettings(
     val homeRadius: Float = 2f, // radius in pixels (later multiplied by pxPerMeter)
     val greetingsEnabled: Boolean = true,
     val greetingsCoolDown: Int = 10*1000, // in ms
-    val mapImagePath: String? = null
+    val mapImagePath: String? = null,
+    val navigationSpeed: NavSpeed = NavSpeed.MEDIUM
 )
 
 private val Context.settingsStore by preferencesDataStore("app_settings")
@@ -40,6 +42,7 @@ class SettingsRepository(private val context: Context) {
         val GREETINGS_ENABLED = booleanPreferencesKey("greetings_enabled")
         val GREETINGS_COOLDOWN = intPreferencesKey("greetings_cooldown")
         val MAP_IMAGE_PATH = stringPreferencesKey("map_image_path")
+        val NAVIGATION_SPEED = stringPreferencesKey("navigation_speed")
     }
 
     val settings: Flow<AppSettings> = context.settingsStore.data.map { p ->
@@ -58,7 +61,10 @@ class SettingsRepository(private val context: Context) {
             greetingsEnabled = p[Keys.GREETINGS_ENABLED] ?: d.greetingsEnabled,
             greetingsCoolDown = p[Keys.GREETINGS_COOLDOWN] ?: d.greetingsCoolDown,
 
-            mapImagePath = p[Keys.MAP_IMAGE_PATH] ?: d.mapImagePath
+            mapImagePath = p[Keys.MAP_IMAGE_PATH] ?: d.mapImagePath,
+            navigationSpeed = p[Keys.NAVIGATION_SPEED]
+                ?.let { runCatching { NavSpeed.valueOf(it) }.getOrNull() }
+                ?: d.navigationSpeed
         )
     }
 
@@ -105,5 +111,9 @@ class SettingsRepository(private val context: Context) {
         context.settingsStore.edit { p ->
             if (path == null) p.remove(Keys.MAP_IMAGE_PATH) else p[Keys.MAP_IMAGE_PATH] = path
         }
+    }
+
+    suspend fun setNavigationSpeed(speed: NavSpeed) {
+        context.settingsStore.edit { it[Keys.NAVIGATION_SPEED] = speed.name }
     }
 }

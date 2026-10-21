@@ -37,6 +37,7 @@ import com.example.teminavigator.data.AppSettings
 import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.domain.MapCalibration
+import com.example.teminavigator.domain.NavSpeed
 import com.example.teminavigator.domain.NavigationState
 import com.example.teminavigator.domain.RobotPose
 import com.example.teminavigator.domain.Screen
@@ -49,7 +50,6 @@ import com.example.teminavigator.ui.screens.WaitingScreen
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
 import com.example.teminavigator.viewmodel.SpeechNotice
-import kotlinx.coroutines.flow.compose
 
 @Composable
 fun TemiApp(
@@ -92,7 +92,6 @@ fun TemiApp(
     onAutoReturnEnabledChanged: (Boolean) -> Unit,
     homeLocationId: String,
     homeRadius: Float,
-    greetingsEnabled: Boolean,
     greetingsCooldownMs: Int,
     onHomeLocationIdChanged:(String) -> Unit,
     onHomeRadiusChanged:(Float) -> Unit,
@@ -100,7 +99,10 @@ fun TemiApp(
     onGreetingsCooldownChanged:(Int) -> Unit,
     map: ImageBitmap?,
     onMapReset: () -> Unit,
-    onNewMapPicked: (Uri) -> Unit
+    onNewMapPicked: (Uri) -> Unit,
+    onArrivalFailureDelayChanged: (Int) -> Unit,
+    onNavigationSpeedChanged: (NavSpeed) -> Unit,
+    arrivalFailureDelaySec: Int
 ){
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(speechNotice?.id) {
@@ -178,11 +180,15 @@ fun TemiApp(
             onGreetingsCooldownChanged = onGreetingsCooldownChanged,
             homeLocationId = homeLocationId,
             homeRadius = homeRadius,
-            greetingsEnabled = greetingsEnabled,
+            greetingsEnabled = settings.greetingsEnabled,
             greetingsCooldownMs = greetingsCooldownMs,
             map = map,
             onMapReset = onMapReset,
-            onNewMapPicked = onNewMapPicked
+            onNewMapPicked = onNewMapPicked,
+            onArrivalFailureCooldownChanged = onArrivalFailureDelayChanged,
+            navigationSpeed = settings.navigationSpeed,
+            arrivalFailureDelaySec = arrivalFailureDelaySec,
+            onNavigationSpeedChanged = onNavigationSpeedChanged
         )
         Screen.Waiting -> WaitingScreen(
             onLeaveWaiting = onLeaveWaiting,
@@ -297,11 +303,13 @@ class MainActivity : ComponentActivity() {
                         onGreetingsCooldownChanged = viewModel::setGreetingsCooldown,
                         homeLocationId = settings.homeLocationId,
                         homeRadius = settings.homeRadius,
-                        greetingsEnabled = settings.greetingsEnabled,
                         greetingsCooldownMs = settings.greetingsCoolDown,
+                        arrivalFailureDelaySec = settings.arrivalFailureDelaySec,
                         map = map,
                         onMapReset = viewModel::resetMap,
-                        onNewMapPicked = viewModel::pickMap
+                        onNewMapPicked = viewModel::pickMap,
+                        onArrivalFailureDelayChanged = viewModel::setArrivalFailureDelay,
+                        onNavigationSpeedChanged = viewModel::setNavigationSpeed
                     )
                 }
             }
