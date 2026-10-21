@@ -30,6 +30,7 @@ import com.example.teminavigator.domain.Screen
 import com.example.teminavigator.domain.SpeedCalibration
 import com.example.teminavigator.domain.match
 import com.example.teminavigator.ui.langs.AppStrings
+import com.example.teminavigator.ui.sound.MusicPlayer
 import com.example.teminavigator.ui.sound.SoundPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -52,6 +53,7 @@ class NavigationViewModel(
     private val robot: RobotController
 ) : AndroidViewModel(app){
     private val soundPlayer = SoundPlayer(app)
+    private val musicPlayer = MusicPlayer(app)
 
     // language setup
     private val prefs = app.getSharedPreferences("settings", Context.MODE_PRIVATE)
@@ -409,10 +411,12 @@ class NavigationViewModel(
         when (_navState.value) {
             is NavigationState.Guiding -> {
                 _navState.value = NavigationState.Paused(dest)
+                playMusicIfEnabled { pause() }
                 stopRobot()
             }
             is NavigationState.Paused -> {
                 _navState.value = NavigationState.Guiding(dest)
+                playMusicIfEnabled { resume() }
                 startGoingTo(dest.id)
             }
             else -> Unit
@@ -500,6 +504,7 @@ class NavigationViewModel(
                     }
                     currentDestination != null && _navState.value !is NavigationState.Paused -> { // not preview & not expected -> failure
                         playSoundIfEnabled { playError() }
+                        playMusicIfEnabled { stop() }
                         onGuidanceFailed(currentDestination!!)
                     }
                 }
@@ -509,6 +514,7 @@ class NavigationViewModel(
                 if (previewing) { stopPreview(); return }
                 currentDestination?.let { dest ->
                     playSoundIfEnabled { playArrival() }
+                    playMusicIfEnabled { stop() }
                     speak(strings.spokenArrived(dest.displayName))
                     _navState.value = NavigationState.Arrived(dest)
                     arrivalJob?.cancel()
@@ -522,6 +528,7 @@ class NavigationViewModel(
             is RobotEvent.GoToStarted -> {
                 currentDestination?.let {
                     if(!previewing) _navState.value = NavigationState.Guiding(it)
+                    playMusicIfEnabled { play() }
                 }
             }
             is RobotEvent.PositionChanged -> {
@@ -561,5 +568,9 @@ class NavigationViewModel(
 
     private inline fun playSoundIfEnabled(play: SoundPlayer.() -> Unit) {
         if (settings.value.soundsEnabled) soundPlayer.play()
+    }
+    private inline fun playMusicIfEnabled(play: MusicPlayer.() -> Unit) {
+        //if (settings.value.musicEnabled) musicPlayer.play() TODO: add music settings
+        if (settings.value.soundsEnabled) musicPlayer.play()
     }
 }
