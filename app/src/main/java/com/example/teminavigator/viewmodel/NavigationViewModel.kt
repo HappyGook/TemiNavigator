@@ -82,14 +82,6 @@ class NavigationViewModel(
     val labels: StateFlow<Map<String, DestinationLabels>> =
         labelRepo.labels.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
-    val speed: StateFlow<NavSpeed> = MutableStateFlow(NavSpeed.MEDIUM)
-
-    val speedCalibration: StateFlow<SpeedCalibration> = MutableStateFlow(SpeedCalibration())
-
-    val speedMps: StateFlow<Float> =
-        combine(speed, speedCalibration) { s, c -> c.mps(s) }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, 0.5f)
-
     val calibration: StateFlow<MapCalibration> =
         calibrationRepo.calibration.stateIn(
             viewModelScope,
@@ -176,7 +168,7 @@ class NavigationViewModel(
         previewing = true
         startGoingTo(dest.id)
         previewJob = viewModelScope.launch {
-            delay(10_000.milliseconds)
+            delay(5_000.milliseconds)
             stopPreview()
         }
     }
@@ -202,6 +194,17 @@ class NavigationViewModel(
     val settings: StateFlow<AppSettings> =
         settingsRepo.settings.stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
     private val mapLoader = MapLoader(app)
+
+    val speed: StateFlow<NavSpeed> = settings
+        .map { it.navigationSpeed }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, NavSpeed.MEDIUM)
+
+    val speedCalibration: StateFlow<SpeedCalibration> = MutableStateFlow(SpeedCalibration())
+
+    val speedMps: StateFlow<Float> =
+        combine(speed, speedCalibration) { s, c -> c.mps(s) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, 0.5f)
 
     val mapImage: StateFlow<ImageBitmap?> = settingsRepo.settings
         .map { it.mapImagePath }
@@ -232,6 +235,10 @@ class NavigationViewModel(
 
     fun setAliases(id: String, aliases: List<String>) {
         viewModelScope.launch { labelRepo.setAliases(id, aliases) }
+    }
+
+    fun setNavigationSpeed(speed: NavSpeed) {
+        viewModelScope.launch { settingsRepo.setNavigationSpeed(speed) }
     }
 
     fun clearSpeechNotice(id: Long) {
@@ -530,9 +537,12 @@ class NavigationViewModel(
             }
             is RobotEvent.GoToStarted -> {
                 currentDestination?.let {
-                    if(!previewing) _navState.value = NavigationState.Guiding(it)
-                    // playMusicIfEnabled { play() } TODO
-                    musicPlayer.play()
+                    if(!previewing) {
+                        _navState.value = NavigationState.Guiding(it)
+                        _selected.value = null
+                        // playMusicIfEnabled { play() } TODO
+                        musicPlayer.play()
+                    }
                 }
             }
             is RobotEvent.PositionChanged -> {
@@ -544,6 +554,9 @@ class NavigationViewModel(
             // When speech recognition successfully -> try and match destination
             is RobotEvent.SpeechRecognised -> {
                 val destination = destinations.value.match(event.text)
+                Log.i("SpeechDebug","PreviewingState: ${previewing}, CurrentDest ${currentDestination}, " +
+                        "\n Dest detected $destination, Path found?: ${path.value.size>1}, Nav state: ${navState.value} \n" +
+                        "Selected value? : ${selected.value} Failed dest: ${failedDestination.value}")
                 if (destination != null) {
                     confirmDestination(destination)
                 } else {

@@ -67,6 +67,7 @@ import com.example.teminavigator.data.DestinationLabels
 import com.example.teminavigator.domain.Destination
 import com.example.teminavigator.data.AdminPasswordStore
 import com.example.teminavigator.domain.MapCalibration
+import com.example.teminavigator.domain.NavSpeed
 import com.example.teminavigator.ui.langs.AppLanguage
 import com.example.teminavigator.ui.langs.LocalStrings
 import kotlinx.coroutines.Dispatchers
@@ -101,10 +102,14 @@ fun SettingsScreen(
     homeRadius: Float,
     greetingsEnabled: Boolean,
     greetingsCooldownMs: Int,
+    arrivalFailureDelaySec: Int,
     onHomeLocationIdChanged:(String) -> Unit,
     onHomeRadiusChanged:(Float) -> Unit,
     onGreetingsEnabled:(Boolean) -> Unit,
     onGreetingsCooldownChanged:(Int) -> Unit,
+    onArrivalFailureCooldownChanged:(Int) -> Unit,
+    navigationSpeed: NavSpeed,
+    onNavigationSpeedChanged: (NavSpeed) -> Unit,
     map: ImageBitmap?,
     onMapReset: () -> Unit,
     onNewMapPicked: (Uri) -> Unit
@@ -145,7 +150,8 @@ fun SettingsScreen(
 
     Scaffold{innerPadding ->
         Column(
-            Modifier.fillMaxSize()
+            Modifier
+                .fillMaxSize()
                 .padding(innerPadding)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
@@ -191,6 +197,10 @@ fun SettingsScreen(
                     onGreetingsEnabledChanged = onGreetingsEnabled,
                     greetingsCooldownMs = greetingsCooldownMs,
                     onGreetingsCooldownChanged = onGreetingsCooldownChanged,
+                    arrivalFailureDelaySec = arrivalFailureDelaySec,
+                    onArrivalFailureCooldownChanged = onArrivalFailureCooldownChanged,
+                    navigationSpeed = navigationSpeed,
+                    onNavigationSpeedChanged = onNavigationSpeedChanged,
                 )
                 CalibrationSection(                        // UI block for map calibration part
                     calibration = calibration,
@@ -209,7 +219,9 @@ fun SettingsScreen(
                     labels = labels, onDisplayNameSave = onDisplayNameChanged, onAliasesSave = onAliasesChanged, onReset = onLabelsReset)
             } else {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(strings.adminPasswordTitle, style = MaterialTheme.typography.titleLarge, fontSize = 32.sp)
@@ -238,7 +250,9 @@ fun SettingsScreen(
                     Button(
                         enabled = password.isNotEmpty() && !isCheckingPassword,
                         onClick = { unlockSettings() },
-                        modifier = Modifier.fillMaxWidth().height(72.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(72.dp)
                     ) {
                         if (isCheckingPassword) {
                             CircularProgressIndicator()
@@ -267,7 +281,9 @@ private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
     val passwordsMatch = newPassword == confirmPassword
 
     Column(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(strings.changeAdminPasswordTitle, style = MaterialTheme.typography.titleLarge, fontSize = 32.sp)
@@ -324,7 +340,9 @@ private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
                     statusMessage = strings.adminPasswordChanged
                 }
             },
-            modifier = Modifier.fillMaxWidth().height(72.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp)
         ) {
             if (isSaving) {
                 CircularProgressIndicator()
@@ -367,6 +385,10 @@ fun SettingsColumn(
     onGreetingsEnabledChanged: (Boolean) -> Unit,
     greetingsCooldownMs: Int,
     onGreetingsCooldownChanged: (Int) -> Unit,
+    arrivalFailureDelaySec: Int,
+    onArrivalFailureCooldownChanged: (Int) -> Unit,
+    navigationSpeed: NavSpeed,
+    onNavigationSpeedChanged: (NavSpeed) -> Unit,
 ) {
     val strings = LocalStrings.current
 
@@ -455,6 +477,28 @@ fun SettingsColumn(
             onMinus = { onGreetingsCooldownChanged(greetingsCooldownMs - 1_000) },
             onPlus = { onGreetingsCooldownChanged(greetingsCooldownMs + 1_000) }
         )
+
+        SettingStepperRow(
+            label = "ArrivalFailure Delay TODO", // TODO: language pack
+            valueText = "$arrivalFailureDelaySec s",
+            enabled = true,
+            onMinus = { onArrivalFailureCooldownChanged(arrivalFailureDelaySec - 1) },
+            onPlus = { onArrivalFailureCooldownChanged(arrivalFailureDelaySec + 1) }
+        )
+
+        // Navigation speed
+        SpeedRow(
+            label = "strings.navigationSpeed", // TODO: language pack
+            selected = navigationSpeed,
+            labelFor = {
+                when (it) {
+                    NavSpeed.SLOW -> "strings.speedSlow"
+                    NavSpeed.MEDIUM -> "strings.speedMedium"
+                    NavSpeed.HIGH -> "strings.speedHigh"
+                }
+            },
+            onSelected = onNavigationSpeedChanged
+        )
     }
 }
 
@@ -507,6 +551,35 @@ fun SettingRow(
     }
 }
 
+
+/**
+ * NavSpeed configuration with 3 buttons
+ */
+@Composable
+private fun SpeedRow(
+    label: String,
+    selected: NavSpeed,
+    labelFor: (NavSpeed) -> String,
+    onSelected: (NavSpeed) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(label, fontSize = 24.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            NavSpeed.entries.forEach { speed ->
+                FilterChip(
+                    selected = speed == selected,
+                    onClick = { onSelected(speed) },
+                    label = { Text(labelFor(speed), fontSize = 24.sp) },
+                    modifier = Modifier.height(56.dp)
+                )
+            }
+        }
+    }
+}
 
 /**
  * Label on the left, "−  value  +" on the right. Used for all numeric settings.
@@ -690,7 +763,9 @@ fun CalibrationSection(
                 originX = ""; originY = ""; pxPerMeter = ""; anchorYaw = ""
                 focusManager.clearFocus()
             },
-            modifier = Modifier.fillMaxWidth().height(72.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp)
         ) {
             Text(strings.saveCalibrationButton, fontSize = 28.sp)
         }
@@ -714,7 +789,9 @@ fun MapSection(
     }
 
     Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(strings.mapSectionTitle, style = MaterialTheme.typography.titleLarge, fontSize = 32.sp)
@@ -785,7 +862,9 @@ fun DestinationLabelSection(
 ){
     val strings = LocalStrings.current
     Column(
-        modifier = modifier.fillMaxWidth().padding(16.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(strings.destinationHeader, style = MaterialTheme.typography.titleLarge, fontSize = 32.sp)
