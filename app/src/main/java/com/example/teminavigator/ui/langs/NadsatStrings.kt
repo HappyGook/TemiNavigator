@@ -80,4 +80,5 @@ val nadsatStrings = AppStrings(
     mapResetTitle = "Reset the kart?",
     mapResetMessage = "You sure you want the default kart back, droog?",
     mapConfirm = "Reset it",
+    unreachableInList = "No mesto found, droog.",
 )

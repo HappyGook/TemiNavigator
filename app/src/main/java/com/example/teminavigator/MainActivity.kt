@@ -81,7 +81,7 @@ fun TemiApp(
     adminPasswordStore: AdminPasswordStore,
     selected: Destination?,
     onSelect: (Destination) -> Unit,
-    onDeselect: (Destination) -> Unit,
+    onDeselect: () -> Unit,
     path: List<Offset>?,
     failed: Destination?,
     dismissFailure: ()-> Unit,

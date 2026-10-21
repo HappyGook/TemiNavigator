@@ -9,6 +9,7 @@ data class AppStrings (
     val confirmNo: String,
     val searchDestinations: String,
     val speechUnavailable: String,
+    val unreachableInList: String,
 
     // Waiting screen
     val greeting: String,

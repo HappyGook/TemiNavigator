@@ -162,7 +162,7 @@ class NavigationViewModel(
         if (dest != null) startPreview(dest)
     }
 
-    fun deselectDestination(dest: Destination?) {
+    fun deselectDestination() {
         stopPreview()
         stopRobot()
         rawPath.value = emptyList()

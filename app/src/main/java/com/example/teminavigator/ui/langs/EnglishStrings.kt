@@ -80,4 +80,5 @@ val englishStrings = AppStrings(
     mapResetTitle = "Reset map?",
     mapResetMessage = "Do you want to reset the map to the default map?",
     mapConfirm = "Reset",
+    unreachableInList = "No locations found",
 )

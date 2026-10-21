@@ -80,4 +80,5 @@ val russianStrings = AppStrings(
     mapResetTitle = "Сбросить карту?",
     mapResetMessage = "Вы действительно хотите вернуть карту по умолчанию?",
     mapConfirm = "Сбросить",
+    unreachableInList = "Места не найдены",
 )

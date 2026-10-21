@@ -80,4 +80,5 @@ val pirateStrings = AppStrings(
     mapResetTitle = "Reset the chart, arrr?",
     mapResetMessage = "Be ye sure ye want the default chart back?",
     mapConfirm = "Aye, reset it",
+    unreachableInList = "Arrr, no places be found!",
 )

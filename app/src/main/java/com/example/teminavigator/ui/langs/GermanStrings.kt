@@ -80,4 +80,5 @@ val germanStrings = AppStrings(
     mapResetTitle = "Karte zurücksetzen?",
     mapResetMessage = "Möchtest du die Karte wirklich auf die Standardkarte zurücksetzen?",
     mapConfirm = "Zurücksetzen",
+    unreachableInList = "Keine Orte gefunden",
 )
