@@ -5,6 +5,7 @@ import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
 import com.example.teminavigator.R
+import com.example.teminavigator.ui.langs.AppLanguage
 
 class MusicPlayer(private val context: Context) {
 
@@ -15,11 +16,11 @@ class MusicPlayer(private val context: Context) {
         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
         .build()
 
-    fun play(loop: Boolean = true) {
+    fun play(language: AppLanguage, loop: Boolean = true) {
         stop()
         player = MediaPlayer.create(
             context,
-            R.raw.song_1,
+            trackFor(language),
             attributes,
             AudioManager.AUDIO_SESSION_ID_GENERATE
         )?.apply {
@@ -43,5 +44,13 @@ class MusicPlayer(private val context: Context) {
     fun stop() {
         player?.release()
         player = null
+    }
+
+    private fun trackFor(language: AppLanguage): Int = when (language) {
+        AppLanguage.GERMAN,
+        AppLanguage.ENGLISH,
+        AppLanguage.PIRATE,
+        AppLanguage.NADSAT,
+        AppLanguage.RUSSIAN -> R.raw.song_1
     }
 }

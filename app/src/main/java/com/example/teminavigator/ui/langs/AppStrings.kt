@@ -53,6 +53,8 @@ data class AppStrings (
     val languageLabel: String,
     val sounds: String,
     val descriptionSounds: String,
+    val music: String,
+    val descriptionMusic: String,
     val voiceOutput: String,
     val voiceInput: String,
     val descriptionVoiceInput: String,

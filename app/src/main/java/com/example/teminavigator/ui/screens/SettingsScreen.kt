@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.SurroundSound
@@ -92,6 +93,8 @@ fun SettingsScreen(
     onReturnHomeDelayChanged: (Int) -> Unit,
     soundsEnabled: Boolean,
     onSoundsEnabledChanged: (Boolean) -> Unit,
+    musicEnabled: Boolean,
+    onMusicEnabledChanged: (Boolean) -> Unit,
     voiceOutputEnabled: Boolean,
     onVoiceOutputEnabledChanged: (Boolean) -> Unit,
     voiceInputEnabled: Boolean,
@@ -182,6 +185,8 @@ fun SettingsScreen(
                     onReturnHomeDelayChanged = onReturnHomeDelayChanged,
                     soundsEnabled = soundsEnabled,
                     onSoundsEnabledChanged = onSoundsEnabledChanged,
+                    musicEnabled = musicEnabled,
+                    onMusicEnabledChanged = onMusicEnabledChanged,
                     voiceOutputEnabled = voiceOutputEnabled,
                     onVoiceOutputEnabledChanged = onVoiceOutputEnabledChanged,
                     voiceInputEnabled = voiceInputEnabled,
@@ -370,6 +375,8 @@ fun SettingsColumn(
     onReturnHomeDelayChanged: (Int) -> Unit,
     soundsEnabled: Boolean,
     onSoundsEnabledChanged: (Boolean) -> Unit,
+    musicEnabled: Boolean,
+    onMusicEnabledChanged: (Boolean) -> Unit,
     voiceOutputEnabled: Boolean,
     onVoiceOutputEnabledChanged: (Boolean) -> Unit,
     voiceInputEnabled: Boolean,
@@ -405,6 +412,14 @@ fun SettingsColumn(
             description = strings.descriptionSounds,
             checked = soundsEnabled,
             onCheckedChange = onSoundsEnabledChanged
+        )
+
+        SettingRow(
+            icon = Icons.Default.MusicNote,
+            title = strings.music,
+            description = strings.descriptionMusic,
+            checked = musicEnabled,
+            onCheckedChange = onMusicEnabledChanged
         )
 
         // Voice Output setting

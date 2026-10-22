@@ -287,6 +287,11 @@ class NavigationViewModel(
         viewModelScope.launch { settingsRepo.setSoundsEnabled(enabled) }
     }
 
+    fun setMusicEnabled(enabled: Boolean) {
+        if (!enabled) musicPlayer.stop()
+        viewModelScope.launch { settingsRepo.setMusicEnabled(enabled) }
+    }
+
     fun setVoiceOutputEnabled(enabled: Boolean) {
         if (!enabled) robot.stopSpeaking()
         viewModelScope.launch { settingsRepo.setVoiceOutputEnabled(enabled) }
@@ -391,6 +396,7 @@ class NavigationViewModel(
     override fun onCleared() {
         robot.detach()
         soundPlayer.release()
+        musicPlayer.stop()
         super.onCleared()
     }
 
@@ -418,14 +424,12 @@ class NavigationViewModel(
         when (_navState.value) {
             is NavigationState.Guiding -> {
                 _navState.value = NavigationState.Paused(dest)
-                //playMusicIfEnabled { pause() } TODO
-                musicPlayer.pause()
+                pauseMusicIfEnabled { pause() }
                 stopRobot()
             }
             is NavigationState.Paused -> {
                 _navState.value = NavigationState.Guiding(dest)
-                // playMusicIfEnabled { resume() } TODO
-                musicPlayer.resume()
+                resumeMusicIfEnabled { resume() }
                 startGoingTo(dest.id)
             }
             else -> Unit
@@ -455,7 +459,10 @@ class NavigationViewModel(
     fun cancelGuidance(){
         val isActiveNavigation = !previewing && currentDestination != null &&
             (activeGoTo || _navState.value is NavigationState.Guiding || _navState.value is NavigationState.Paused)
-        if (isActiveNavigation) playSoundIfEnabled { playError() }
+        if (isActiveNavigation) {
+            playSoundIfEnabled { playError() }
+            stopMusicIfEnabled { stop() }
+        }
         stopRobot()
         resetNavigationSession()
         _screen.value = Screen.Waiting       // return timer only runs here
@@ -513,8 +520,7 @@ class NavigationViewModel(
                     }
                     currentDestination != null && _navState.value !is NavigationState.Paused -> { // not preview & not expected -> failure
                         playSoundIfEnabled { playError() }
-                        //playMusicIfEnabled { stop() } TODO
-                        musicPlayer.stop()
+                        stopMusicIfEnabled { stop() }
                         onGuidanceFailed(currentDestination!!)
                     }
                 }
@@ -524,8 +530,7 @@ class NavigationViewModel(
                 if (previewing) { stopPreview(); return }
                 currentDestination?.let { dest ->
                     playSoundIfEnabled { playArrival() }
-                    // playMusicIfEnabled { stop() } TODO
-                    musicPlayer.stop()
+                    stopMusicIfEnabled { stop() }
                     speak(strings.spokenArrived(dest.displayName))
                     _navState.value = NavigationState.Arrived(dest)
                     arrivalJob?.cancel()
@@ -541,8 +546,7 @@ class NavigationViewModel(
                     if(!previewing) {
                         _navState.value = NavigationState.Guiding(it)
                         _selected.value = null
-                        // playMusicIfEnabled { play() } TODO
-                        musicPlayer.play()
+                        playMusicIfEnabled { play(_language.value) }
                     }
                 }
             }
@@ -585,10 +589,18 @@ class NavigationViewModel(
     }
 
     private inline fun playSoundIfEnabled(play: SoundPlayer.() -> Unit) {
-        if (settings.value.soundsEnabled) soundPlayer.play()
+        if (settings.value.soundsEnabled) play(soundPlayer)
     }
     private inline fun playMusicIfEnabled(play: MusicPlayer.() -> Unit) {
-        //if (settings.value.musicEnabled) musicPlayer.play() TODO: add music settings
-        if (settings.value.soundsEnabled) musicPlayer.play()
+        if (settings.value.musicEnabled) play(musicPlayer)
+    }
+    private inline fun pauseMusicIfEnabled(pause: MusicPlayer.() -> Unit) {
+        if (settings.value.musicEnabled) pause(musicPlayer)
+    }
+    private inline fun resumeMusicIfEnabled(resume: MusicPlayer.() -> Unit) {
+        if (settings.value.musicEnabled) resume(musicPlayer)
+    }
+    private inline fun stopMusicIfEnabled(stop: MusicPlayer.() -> Unit) {
+        if (settings.value.musicEnabled) stop(musicPlayer)
     }
 }
