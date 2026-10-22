@@ -47,10 +47,10 @@ class MusicPlayer(private val context: Context) {
     }
 
     private fun trackFor(language: AppLanguage): Int = when (language) {
-        AppLanguage.GERMAN,
-        AppLanguage.ENGLISH,
-        AppLanguage.PIRATE,
-        AppLanguage.NADSAT,
-        AppLanguage.RUSSIAN -> R.raw.song_1
+        AppLanguage.GERMAN -> R.raw.guiding_theme
+        AppLanguage.ENGLISH -> R.raw.special_theme
+        AppLanguage.PIRATE -> R.raw.pirate_theme
+        AppLanguage.NADSAT -> R.raw.nadsat_theme
+        AppLanguage.RUSSIAN -> R.raw.quick_guiding_theme
     }
 }
