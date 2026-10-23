@@ -58,17 +58,18 @@ import kotlin.math.ceil
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
 fun NavigationScreen(
-    destination: Destination,
-    robotPose: () -> RobotPose?,
     currentSpeed: () -> Float,
-    pxPerMeter: Float?,
+    destination: Destination,
+    map: ImageBitmap?,
     navigationState: NavigationState,
-    onTogglePause: () -> Unit,
     onAbort: () -> Unit,
+    onTogglePause: () -> Unit,
     path: List<Offset>?,
-    map: ImageBitmap?
+    pxPerMeter: Float?,
+    robotPose: () -> RobotPose?,
 ) {
     val strings = LocalStrings.current
     val paused = navigationState is NavigationState.Paused
@@ -96,8 +97,11 @@ fun NavigationScreen(
 
     // estimated time of arrival
     val etaMin: Int? =
-        if (d != null && speed > 0f) ceil(d / speed / 60f).toInt().coerceAtLeast(1)
-        else null
+        if (d != null && speed > 0f) {
+            ceil(d / speed / 60f).toInt().coerceAtLeast(1)
+        } else {
+            null
+        }
 
     // progress - how much of the overall distance has already been covered
     val progress by remember(destination) {
@@ -105,8 +109,9 @@ fun NavigationScreen(
             val start = startPose
             val pose = robotPose()
             val target = destination.imagePx
-            if (start == null || pose == null || target == null) 0f
-            else {
+            if (start == null || pose == null || target == null) {
+                0f
+            } else {
                 val total = hypot(target.x - start.xPx, target.y - start.yPx)
                 val remaining = hypot(target.x - pose.xPx, target.y - pose.yPx)
                 if (total > 0f) (1f - remaining / total).coerceIn(0f, 1f) else 0f
@@ -115,23 +120,25 @@ fun NavigationScreen(
     }
 
     Row(
-        modifier = Modifier
-            .fillMaxSize()
-            .systemBarsPadding()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onTogglePause)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .systemBarsPadding()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onTogglePause,
+                ),
     ) {
-
-        /** Left side of the screen */
+        // Left side of the screen
         Column(
-            modifier = Modifier
-                .weight(1f)     // note: weight splits the row, for now, right side  gets 1/3, left 2/3
-                .fillMaxHeight()
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .weight(1f) // note: weight splits the row, for now, right side  gets 1/3, left 2/3
+                    .fillMaxHeight()
+                    .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             // Element 1
             Text(strings.goingTo, style = MaterialTheme.typography.labelMedium, fontSize = 28.sp)
@@ -141,43 +148,43 @@ fun NavigationScreen(
             Text(
                 destination.displayName,
                 style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
             Spacer(modifier = Modifier.height(16.dp))
 
             // Element 3
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     imageVector = Icons.Filled.Route,
                     contentDescription = null,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(32.dp),
                 )
                 Text(
                     text = etaMin?.let { "Ca. $it ${strings.minutes}" } ?: "– ${strings.minutes}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontSize = 24.sp,
-                    color = Color.DarkGray
+                    color = Color.DarkGray,
                 )
 
                 Text(
                     text = distanceM?.let { " -  ${it.roundToInt()} m" } ?: " -  – m",
                     style = MaterialTheme.typography.bodyMedium,
                     fontSize = 24.sp,
-                    color = Color.DarkGray
+                    color = Color.DarkGray,
                 )
-
             }
             Spacer(modifier = Modifier.height(16.dp))
 
             // Element 4 - Progress bar
             LinearProgressIndicator(
                 progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(10.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(10.dp),
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -185,44 +192,47 @@ fun NavigationScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Pause Navigation
                 AppButton(
-                    text = if (navigationState is NavigationState.Paused) {
-                        strings.resumeNavigation
-                    } else {
-                        strings.pauseNavigation
-                    },
-                    icon = if (navigationState is NavigationState.Paused) {
-                        Icons.Filled.PlayArrow
-                    } else {
-                        Icons.Filled.Pause
-                    },
+                    text =
+                        if (navigationState is NavigationState.Paused) {
+                            strings.resumeNavigation
+                        } else {
+                            strings.pauseNavigation
+                        },
+                    icon =
+                        if (navigationState is NavigationState.Paused) {
+                            Icons.Filled.PlayArrow
+                        } else {
+                            Icons.Filled.Pause
+                        },
                     onClick = onTogglePause,
-                    Modifier.height(144.dp)
+                    Modifier.height(144.dp),
                 )
 
-                if(paused){
+                if (paused) {
                     // Abort Navigation
                     AppButton(
                         strings.abortNavigation,
                         Icons.Filled.StopCircle,
-                        onClick =  onAbort,
-                        Modifier.height(144.dp)
+                        onClick = onAbort,
+                        Modifier.height(144.dp),
                     )
                 }
             }
         }
 
-        /** Right side - Map */
+        // Right side - Map
         Box(
-            modifier = Modifier
-                .weight(1.5f)
-                .fillMaxHeight()
+            modifier =
+                Modifier
+                    .weight(1.5f)
+                    .fillMaxHeight(),
         ) {
             InteractiveMap(
                 destinations = listOf(destination),
                 selectedId = destination.id,
                 robotPose = robotPose,
                 path = path,
-                imageBitmap = map
+                imageBitmap = map,
             )
         }
     }
@@ -231,6 +241,7 @@ fun NavigationScreen(
     }
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
 private fun ArrivalOverlay(name: String) {
     val strings = LocalStrings.current
@@ -238,7 +249,7 @@ private fun ArrivalOverlay(name: String) {
         Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.6f)),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Surface(shape = RoundedCornerShape(24.dp), tonalElevation = 6.dp) {
             Column(Modifier.padding(48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -250,28 +261,30 @@ private fun ArrivalOverlay(name: String) {
     }
 }
 
+@Suppress("ktlint:standard:function-naming")
 @Preview(name = "Tablet", device = Devices.TABLET)
 @Composable
 fun NavigationScreenPreview() {
-    val mockDest = Destination(
-        id = "mock stuff",
-        displayName = "Cool Name",
-        aliases = emptyList(),
-        imagePx = Offset(1167f, 1167f),
-        imageYawDeg = 1.6f
-    )
+    val mockDest =
+        Destination(
+            aliases = emptyList(),
+            displayName = "Cool Name",
+            id = "mock stuff",
+            imagePx = Offset(1167f, 1167f),
+            imageYawDeg = 1.6f,
+        )
     TemiNavigatorTheme {
         CompositionLocalProvider(LocalStrings provides germanStrings) {
             NavigationScreen(
-                destination = mockDest,
-                robotPose = { RobotPose(1030f, 530f, 0.5f) },
                 currentSpeed = { 0.5f },
-                pxPerMeter = 42f,
+                destination = mockDest,
+                map = null,
                 navigationState = NavigationState.Paused(mockDest),
-                onTogglePause = {},
                 onAbort = {},
-                path = listOf(Offset(1150f,1100f), Offset(1050f,1000f), Offset(1000f,1100f)),
-                map = null
+                onTogglePause = {},
+                path = listOf(Offset(1150f, 1100f), Offset(1050f, 1000f), Offset(1000f, 1100f)),
+                pxPerMeter = 42f,
+                robotPose = { RobotPose(1030f, 530f, 0.5f) },
             )
         }
     }

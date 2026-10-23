@@ -7,26 +7,26 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -84,7 +84,7 @@ fun TemiApp(
     onDeselect: () -> Unit,
     path: List<Offset>?,
     failed: Destination?,
-    dismissFailure: ()-> Unit,
+    dismissFailure: () -> Unit,
     settings: AppSettings,
     onSoundsEnabledChanged: (Boolean) -> Unit,
     onMusicEnabledChanged: (Boolean) -> Unit,
@@ -94,23 +94,23 @@ fun TemiApp(
     homeLocationId: String,
     homeRadius: Float,
     greetingsCooldownMs: Int,
-    onHomeLocationIdChanged:(String) -> Unit,
-    onHomeRadiusChanged:(Float) -> Unit,
-    onGreetingsEnabled:(Boolean) -> Unit,
-    onGreetingsCooldownChanged:(Int) -> Unit,
+    onHomeLocationIdChanged: (String) -> Unit,
+    onHomeRadiusChanged: (Float) -> Unit,
+    onGreetingsEnabled: (Boolean) -> Unit,
+    onGreetingsCooldownChanged: (Int) -> Unit,
     map: ImageBitmap?,
     onMapReset: () -> Unit,
     onNewMapPicked: (Uri) -> Unit,
     onArrivalFailureDelayChanged: (Int) -> Unit,
     onNavigationSpeedChanged: (NavSpeed) -> Unit,
-    arrivalFailureDelaySec: Int
-){
+    arrivalFailureDelaySec: Int,
+) {
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(speechNotice?.id) {
         val notice = speechNotice ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(
             message = notice.message,
-            duration = SnackbarDuration.Short
+            duration = SnackbarDuration.Short,
         )
         onSpeechNoticeShown(notice.id)
     }
@@ -127,93 +127,105 @@ fun TemiApp(
         }
     }
 */
-    // If destination failed, dialog shows screen-independent
-    val strings = LocalStrings.current
+        // If destination failed, dialog shows screen-independent
+        val strings = LocalStrings.current
 
-    failed?.let { dest ->
-        AlertDialog(
-            onDismissRequest = dismissFailure,
-            title = { Text(strings.unreachableTitle) },
-            text = { Text(strings.unreachableText(dest.displayName), fontSize = 36.sp, lineHeight = 36.sp) },
-            confirmButton = { Button(onClick = dismissFailure) { Text(strings.backToNavigation, fontSize = 36.sp) } }
-        )
-    }
+        failed?.let { dest ->
+            AlertDialog(
+                onDismissRequest = dismissFailure,
+                title = { Text(strings.unreachableTitle) },
+                text = { Text(strings.unreachableText(dest.displayName), fontSize = 36.sp, lineHeight = 36.sp) },
+                confirmButton = { Button(onClick = dismissFailure) { Text(strings.backToNavigation, fontSize = 36.sp) } },
+            )
+        }
 
-    when (screen) {
-        Screen.Home -> HomeScreen(
-            destinations = destinations,
-            robotPose = robotPose,
-            onDestinationConfirmed = onDestinationConfirmed,
-            onOpenSettings = onOpenSettings,
-            onStartSpeechRecognition = onStartSpeechRecognition,
-            voiceInputEnabled = settings.voiceInputEnabled,
-            selectedId = selected?.id,
-            onSelect = onSelect,
-            onDeselect = onDeselect,
-            path = path,
-            map = map
-        )
-        Screen.Settings -> SettingsScreen(
-            currentLanguage = language,
-            onLanguageChanged = onLanguageSelected,
-            onBack = onCloseSettings,
-            calibration = calibration,
-            onCalibrationSaved = onCalibrationSaved,
-            labels = labels,
-            onDisplayNameChanged = onDisplayNameChanged,
-            onAliasesChanged = onAliasesChanged,
-            onLabelsReset = onLabelsReset,
-            destinations = destinations,
-            returnHomeDelaySec = returnHomeDelaySec,
-            onReturnHomeDelayChanged = onReturnHomeDelayChanged,
-            adminPasswordStore = adminPasswordStore,
-            soundsEnabled = settings.soundsEnabled,
-            onSoundsEnabledChanged = onSoundsEnabledChanged,
-            musicEnabled = settings.musicEnabled,
-            onMusicEnabledChanged = onMusicEnabledChanged,
-            voiceOutputEnabled = settings.voiceOutputEnabled,
-            onVoiceOutputEnabledChanged = onVoiceOutputEnabledChanged,
-            voiceInputEnabled = settings.voiceInputEnabled,
-            onVoiceInputEnabledChanged = onVoiceInputEnabledChanged,
-            autoReturnEnabled = settings.autoReturnEnabled,
-            onAutoReturnEnabledChanged = onAutoReturnEnabledChanged,
-            onHomeLocationIdChanged = onHomeLocationIdChanged,
-            onHomeRadiusChanged = onHomeRadiusChanged,
-            onGreetingsEnabled = onGreetingsEnabled,
-            onGreetingsCooldownChanged = onGreetingsCooldownChanged,
-            homeLocationId = homeLocationId,
-            homeRadius = homeRadius,
-            greetingsEnabled = settings.greetingsEnabled,
-            greetingsCooldownMs = greetingsCooldownMs,
-            map = map,
-            onMapReset = onMapReset,
-            onNewMapPicked = onNewMapPicked,
-            onArrivalFailureCooldownChanged = onArrivalFailureDelayChanged,
-            navigationSpeed = settings.navigationSpeed,
-            arrivalFailureDelaySec = arrivalFailureDelaySec,
-            onNavigationSpeedChanged = onNavigationSpeedChanged
-        )
-        Screen.Waiting -> WaitingScreen(
-            onLeaveWaiting = onLeaveWaiting,
-            returnCountdown = returnCountdown
-        )
-        is Screen.Navigation -> NavigationScreen(
-            destination = screen.destination,
-            robotPose = robotPose,
-            currentSpeed = currentSpeed,
-            pxPerMeter = calibration.pxPerMeter,
-            navigationState = navigationState,
-            onTogglePause = onToggleNavigationPause,
-            onAbort = onAbort,
-            path = path,
-            map = map
-        )
-    }
+        when (screen) {
+            Screen.Home -> {
+                HomeScreen(
+                    destinations = destinations,
+                    robotPose = robotPose,
+                    onDestinationConfirmed = onDestinationConfirmed,
+                    onOpenSettings = onOpenSettings,
+                    onStartSpeechRecognition = onStartSpeechRecognition,
+                    voiceInputEnabled = settings.voiceInputEnabled,
+                    selectedId = selected?.id,
+                    onSelect = onSelect,
+                    onDeselect = onDeselect,
+                    path = path,
+                    map = map,
+                )
+            }
+
+            Screen.Settings -> {
+                SettingsScreen(
+                    currentLanguage = language,
+                    onLanguageChanged = onLanguageSelected,
+                    onBack = onCloseSettings,
+                    calibration = calibration,
+                    onCalibrationSaved = onCalibrationSaved,
+                    labels = labels,
+                    onDisplayNameChanged = onDisplayNameChanged,
+                    onAliasesChanged = onAliasesChanged,
+                    onLabelsReset = onLabelsReset,
+                    destinations = destinations,
+                    returnHomeDelaySec = returnHomeDelaySec,
+                    onReturnHomeDelayChanged = onReturnHomeDelayChanged,
+                    adminPasswordStore = adminPasswordStore,
+                    soundsEnabled = settings.soundsEnabled,
+                    onSoundsEnabledChanged = onSoundsEnabledChanged,
+                    musicEnabled = settings.musicEnabled,
+                    onMusicEnabledChanged = onMusicEnabledChanged,
+                    voiceOutputEnabled = settings.voiceOutputEnabled,
+                    onVoiceOutputEnabledChanged = onVoiceOutputEnabledChanged,
+                    voiceInputEnabled = settings.voiceInputEnabled,
+                    onVoiceInputEnabledChanged = onVoiceInputEnabledChanged,
+                    autoReturnEnabled = settings.autoReturnEnabled,
+                    onAutoReturnEnabledChanged = onAutoReturnEnabledChanged,
+                    onHomeLocationIdChanged = onHomeLocationIdChanged,
+                    onHomeRadiusChanged = onHomeRadiusChanged,
+                    onGreetingsEnabled = onGreetingsEnabled,
+                    onGreetingsCooldownChanged = onGreetingsCooldownChanged,
+                    homeLocationId = homeLocationId,
+                    homeRadius = homeRadius,
+                    greetingsEnabled = settings.greetingsEnabled,
+                    greetingsCooldownMs = greetingsCooldownMs,
+                    map = map,
+                    onMapReset = onMapReset,
+                    onNewMapPicked = onNewMapPicked,
+                    onArrivalFailureCooldownChanged = onArrivalFailureDelayChanged,
+                    navigationSpeed = settings.navigationSpeed,
+                    arrivalFailureDelaySec = arrivalFailureDelaySec,
+                    onNavigationSpeedChanged = onNavigationSpeedChanged,
+                )
+            }
+
+            Screen.Waiting -> {
+                WaitingScreen(
+                    onLeaveWaiting = onLeaveWaiting,
+                    returnCountdown = returnCountdown,
+                )
+            }
+
+            is Screen.Navigation -> {
+                NavigationScreen(
+                    destination = screen.destination,
+                    robotPose = robotPose,
+                    currentSpeed = currentSpeed,
+                    pxPerMeter = calibration.pxPerMeter,
+                    navigationState = navigationState,
+                    onTogglePause = onToggleNavigationPause,
+                    onAbort = onAbort,
+                    path = path,
+                    map = map,
+                )
+            }
+        }
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp),
         )
     }
 }
@@ -224,7 +236,7 @@ class MainActivity : ComponentActivity() {
             initializer {
                 NavigationViewModel(
                     this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as Application,
-                    TemiRobot
+                    TemiRobot,
                 )
             }
         }
@@ -313,10 +325,10 @@ class MainActivity : ComponentActivity() {
                         onMapReset = viewModel::resetMap,
                         onNewMapPicked = viewModel::pickMap,
                         onArrivalFailureDelayChanged = viewModel::setArrivalFailureDelay,
-                        onNavigationSpeedChanged = viewModel::setNavigationSpeed
+                        onNavigationSpeedChanged = viewModel::setNavigationSpeed,
                     )
                 }
             }
         }
-        }
     }
+}

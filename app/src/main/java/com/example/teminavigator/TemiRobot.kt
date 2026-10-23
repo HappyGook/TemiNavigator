@@ -4,8 +4,8 @@ import com.example.teminavigator.domain.NavSpeed
 import com.example.teminavigator.domain.RobotController
 import com.example.teminavigator.domain.RobotEvent
 import com.robotemi.sdk.Robot
-import com.robotemi.sdk.SttRequest
 import com.robotemi.sdk.SttLanguage
+import com.robotemi.sdk.SttRequest
 import com.robotemi.sdk.TtsRequest
 import com.robotemi.sdk.listeners.OnDetectionStateChangedListener
 import com.robotemi.sdk.listeners.OnGoToLocationStatusChangedListener
@@ -23,7 +23,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-object TemiRobot: RobotController,
+object TemiRobot :
+    RobotController,
     OnRobotReadyListener,
     OnGoToLocationStatusChangedListener,
     OnRequestPermissionResultListener,
@@ -32,16 +33,15 @@ object TemiRobot: RobotController,
     OnGoToNavPathChangedListener,
     Robot.AsrListener,
     Robot.WakeupWordListener {
-
     const val REQUEST_CODE_MAP = 1
 
-    private val robot: Robot get()=Robot.getInstance()
+    private val robot: Robot get() = Robot.getInstance()
 
     // private constantly changing version
     private var _ready = MutableStateFlow(false)
 
     // public on demand var
-    override var ready : StateFlow<Boolean> = _ready
+    override var ready: StateFlow<Boolean> = _ready
 
     private var _events = MutableSharedFlow<RobotEvent>(extraBufferCapacity = 10, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     override var events = _events
@@ -54,9 +54,8 @@ object TemiRobot: RobotController,
     override val availableLocations: List<String>
         get() = robot.locations
 
-
     // funcs to subscribe / unsubscribe the robot to events from sdk
-    override fun attach(){
+    override fun attach() {
         robot.addOnRobotReadyListener(this)
         robot.addOnGoToLocationStatusChangedListener(this)
         robot.addOnRequestPermissionResultListener(this)
@@ -67,7 +66,7 @@ object TemiRobot: RobotController,
         robot.addOnGoToNavPathChangedListener(this)
     }
 
-    override fun detach(){
+    override fun detach() {
         robot.removeOnRobotReadyListener(this)
         robot.removeOnGoToLocationStatusChangedListener(this)
         robot.removeOnRequestPermissionResultListener(this)
@@ -79,8 +78,13 @@ object TemiRobot: RobotController,
     }
 
     override fun goTo(locationId: String) = robot.goTo(locationId)
+
     override fun stop() = robot.stopMovement()
-    override fun speak(text: String, languageCode: String) {
+
+    override fun speak(
+        text: String,
+        languageCode: String,
+    ) {
         robot.speak(TtsRequest.create(text, false, ttsLanguage(languageCode)))
     }
 
@@ -97,23 +101,25 @@ object TemiRobot: RobotController,
 
     override fun setSpeechLanguage(languageCode: String) {
         speechLanguageCode = languageCode
-        speechLanguage = when (languageCode.substringBefore('-').lowercase()) {
-            "de" -> SttLanguage.DE_DE
-            "en" -> SttLanguage.EN_US
-            else -> SttLanguage.SYSTEM
-        }
+        speechLanguage =
+            when (languageCode.substringBefore('-').lowercase()) {
+                "de" -> SttLanguage.DE_DE
+                "en" -> SttLanguage.EN_US
+                else -> SttLanguage.SYSTEM
+            }
     }
 
     override fun startSpeechRecognition() {
         val request = SttRequest(languages = listOf(speechLanguage))
-        val shouldStart = synchronized(speechRecognitionLock) {
-            if (speechRecognitionActive) {
-                false
-            } else {
-                speechRecognitionActive = true
-                true
+        val shouldStart =
+            synchronized(speechRecognitionLock) {
+                if (speechRecognitionActive) {
+                    false
+                } else {
+                    speechRecognitionActive = true
+                    true
+                }
             }
-        }
         if (!shouldStart) {
             Log.i("Temi", "Speech recognition is already active")
             return
@@ -131,12 +137,15 @@ object TemiRobot: RobotController,
     }
 
     // Is called when speech recognition is done and spoken phrase is converted to string
-    override fun onAsrResult(asrResult: String, sttLanguage: SttLanguage) {
+    override fun onAsrResult(
+        asrResult: String,
+        sttLanguage: SttLanguage,
+    ) {
         Log.i("TemiVoice", "ASR result: '$asrResult' (language=$sttLanguage)")
         synchronized(speechRecognitionLock) {
             speechRecognitionActive = false
         }
-        robot.finishConversation()   // stops Temi's default NLP/answer
+        robot.finishConversation() // stops Temi's default NLP/answer
         if (asrResult.isNotBlank()) {
             _events.tryEmit(RobotEvent.SpeechRecognised(asrResult))
         }
@@ -145,24 +154,26 @@ object TemiRobot: RobotController,
     override fun onWakeupWord(
         wakeupWord: String,
         direction: Int,
-        origin: WakeupOrigin
+        origin: WakeupOrigin,
     ) {
         Log.i("TemiVoice", "Wakeup word detected: '$wakeupWord' (origin=$origin)")
-        val shouldEmit = synchronized(speechRecognitionLock) {
-            !speechRecognitionActive
-        }
+        val shouldEmit =
+            synchronized(speechRecognitionLock) {
+                !speechRecognitionActive
+            }
         if (!shouldEmit) return
         _events.tryEmit(RobotEvent.WakeupWordDetected)
     }
 
-    private fun ttsLanguage(languageCode: String): TtsRequest.Language = when (
-        languageCode.substringBefore('-').lowercase()
-    ) {
-        "de" -> TtsRequest.Language.DE_DE
-        "en" -> TtsRequest.Language.EN_US
-        "ru" -> TtsRequest.Language.RU_RU
-        else -> TtsRequest.Language.SYSTEM
-    }
+    private fun ttsLanguage(languageCode: String): TtsRequest.Language =
+        when (
+            languageCode.substringBefore('-').lowercase()
+        ) {
+            "de" -> TtsRequest.Language.DE_DE
+            "en" -> TtsRequest.Language.EN_US
+            "ru" -> TtsRequest.Language.RU_RU
+            else -> TtsRequest.Language.SYSTEM
+        }
 
     override fun locationPoses(): Map<String, Triple<Double, Double, Double>> {
         Log.i("Temi", "Location Poses called!")
@@ -173,52 +184,57 @@ object TemiRobot: RobotController,
             return emptyMap()
         }
 
-        val poses = map.locations.mapNotNull { layer ->
-            val pose = layer.layerPoses?.firstOrNull() ?: return@mapNotNull null
-            layer.layerId to Triple(
-                pose.x.toDouble(),
-                pose.y.toDouble(),
-                pose.theta.toDouble()
-            )
-        }.toMap()
+        val poses =
+            map.locations
+                .mapNotNull { layer ->
+                    val pose = layer.layerPoses?.firstOrNull() ?: return@mapNotNull null
+                    layer.layerId to
+                        Triple(
+                            pose.x.toDouble(),
+                            pose.y.toDouble(),
+                            pose.theta.toDouble(),
+                        )
+                }.toMap()
 
         poses.forEach { (name, pose) ->
             Log.i(
                 "Temi",
-                "$name: x=${pose.first}, y=${pose.second}, theta=${pose.third}"
+                "$name: x=${pose.first}, y=${pose.second}, theta=${pose.third}",
             )
         }
         return poses
     }
 
-    override fun getSpeed(): NavSpeed = when (robot.goToSpeed) {
-        SpeedLevel.SLOW -> NavSpeed.SLOW
-        SpeedLevel.HIGH -> NavSpeed.HIGH
-        else -> NavSpeed.MEDIUM          // MEDIUM and anything the SDK adds later
-    }
+    override fun getSpeed(): NavSpeed =
+        when (robot.goToSpeed) {
+            SpeedLevel.SLOW -> NavSpeed.SLOW
+            SpeedLevel.HIGH -> NavSpeed.HIGH
+            else -> NavSpeed.MEDIUM // MEDIUM and anything the SDK adds later
+        }
 
     override fun setSpeed(speed: NavSpeed) {
-        robot.goToSpeed = when (speed) {
-            NavSpeed.SLOW -> SpeedLevel.SLOW
-            NavSpeed.MEDIUM -> SpeedLevel.MEDIUM
-            NavSpeed.HIGH -> SpeedLevel.HIGH
-        }
+        robot.goToSpeed =
+            when (speed) {
+                NavSpeed.SLOW -> SpeedLevel.SLOW
+                NavSpeed.MEDIUM -> SpeedLevel.MEDIUM
+                NavSpeed.HIGH -> SpeedLevel.HIGH
+            }
     }
 
     override fun onGoToLocationStatusChanged(
         location: String,
         status: String,
         descriptionId: Int,
-        description: String
+        description: String,
     ) {
-        when (status){
-            "start" -> _events.tryEmit(RobotEvent.GoToStarted(locationId=location))
-            "abort" -> _events.tryEmit(RobotEvent.GoToCancelled(locationId=location, reason = description))
-            "complete" -> _events.tryEmit(RobotEvent.GoToFinished(locationId=location))
+        when (status) {
+            "start" -> _events.tryEmit(RobotEvent.GoToStarted(locationId = location))
+            "abort" -> _events.tryEmit(RobotEvent.GoToCancelled(locationId = location, reason = description))
+            "complete" -> _events.tryEmit(RobotEvent.GoToFinished(locationId = location))
         }
-        val (x,y,yaw,_) = robot.getPosition()
-        Log.i("Temi","Location Status changed: $status")
-        _events.tryEmit(RobotEvent.PositionChanged(x,y,yaw))
+        val (x, y, yaw, _) = robot.getPosition()
+        Log.i("Temi", "Location Status changed: $status")
+        _events.tryEmit(RobotEvent.PositionChanged(x, y, yaw))
     }
 
     override fun onRobotReady(isReady: Boolean) {
@@ -231,29 +247,29 @@ object TemiRobot: RobotController,
         }
         // Permissions were already granted
         _ready.value = true
-        _events.tryEmit(RobotEvent.Ready(isReady))
-        Log.i("Temi","Robot ready state: $isReady")
-        val (x,y,yaw,tilt) = robot.getPosition()
-        Log.i("Temi","X: $x, Y:$y, yaw: $yaw, tilt:$tilt")
+        _events.tryEmit(RobotEvent.Ready(true))
+        Log.i("Temi", "Robot is ready")
+        val (x, y, yaw, tilt) = robot.getPosition()
+        Log.i("Temi", "X: $x, Y:$y, yaw: $yaw, tilt:$tilt")
         // emit positionChanged to get starting coordinates of the robot
-        _events.tryEmit(RobotEvent.PositionChanged(x,y,yaw))
-        robot.setDetectionModeOn(true,1.5f)
+        _events.tryEmit(RobotEvent.PositionChanged(x, y, yaw))
+        robot.setDetectionModeOn(true, 1.5f)
         robot.hideTopBar()
     }
 
     override fun onCurrentPositionChanged(position: Position) {
-        Log.i("Temi","onCurrentPosChanged: X: ${position.x}, Y:${position.y}")
+        Log.i("Temi", "onCurrentPosChanged: X: ${position.x}, Y:${position.y}")
         _events.tryEmit(RobotEvent.PositionChanged(x = position.x, y = position.y, yaw = position.yaw))
     }
 
     private val requiredPermissions = listOf(Permission.MAP, Permission.SETTINGS)
-    private fun missingPermissions() =
-        requiredPermissions.filter { robot.checkSelfPermission(it) != Permission.GRANTED }
+
+    private fun missingPermissions() = requiredPermissions.filter { robot.checkSelfPermission(it) != Permission.GRANTED }
 
     override fun onRequestPermissionResult(
         permission: Permission,
         grantResult: Int,
-        requestCode: Int
+        requestCode: Int,
     ) {
         if (requestCode != REQUEST_CODE_MAP) return
         Log.i("Permissions", "$permission result: $grantResult")
@@ -264,16 +280,17 @@ object TemiRobot: RobotController,
 
     override fun onDetectionStateChanged(state: Int) {
         Log.i("Temi_Detection", "Detection state changed to $state")
-        val mapped = when (state) {
-            OnDetectionStateChangedListener.DETECTED -> RobotEvent.DetectionState.Detected
-            OnDetectionStateChangedListener.LOST -> RobotEvent.DetectionState.Lost
-            else -> RobotEvent.DetectionState.Idle
-        }
+        val mapped =
+            when (state) {
+                OnDetectionStateChangedListener.DETECTED -> RobotEvent.DetectionState.Detected
+                OnDetectionStateChangedListener.LOST -> RobotEvent.DetectionState.Lost
+                else -> RobotEvent.DetectionState.Idle
+            }
         _events.tryEmit(RobotEvent.DetectionStatusChanged(mapped))
     }
 
     override fun onGoToNavPathChanged(path: List<LayerPose>) {
-        Log.i("Temi_NavPath","Neuer path berechnet: $path")
-        _events.tryEmit(RobotEvent.PathChanged(path.map { RobotEvent.MapPoint(it.x,it.y) }))
+        Log.i("Temi_NavPath", "Neuer path berechnet: $path")
+        _events.tryEmit(RobotEvent.PathChanged(path.map { RobotEvent.MapPoint(it.x, it.y) }))
     }
 }
