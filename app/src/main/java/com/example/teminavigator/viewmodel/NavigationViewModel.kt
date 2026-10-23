@@ -482,7 +482,7 @@ class NavigationViewModel(
 
     fun startGoingTo(id: String){
         if (activeGoTo) pendingAborts++      // new goTo aborts the running one
-        activeGoTo = true                      // TODO: verify in logs
+        activeGoTo = true
         robot.goTo(id)
     }
 
@@ -514,8 +514,8 @@ class NavigationViewModel(
                 if (pendingAborts > 0) { pendingAborts--; return }   // expected, caused by user/system
                 activeGoTo = false
                 when {
-                    previewing -> {                                  // check preview first
-                        _selected.value?.let { showFailure(it) }
+                    previewing -> {                                  // cancel happens in preview -> user tapped cancel button
+                        _selected.value?.let { _selected.value = null }  // remove selected -> return to list
                         stopPreview()
                     }
                     currentDestination != null && _navState.value !is NavigationState.Paused -> { // not preview & not expected -> failure

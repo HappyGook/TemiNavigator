@@ -65,8 +65,11 @@ val pirateStrings = AppStrings(
     adminPasswordsDoNotMatch = "Passwords do not match.",
     adminPasswordChanged = "Administrator password changed.",
     greetings = listOf(
-        "Hallo! Ich kann dir den Weg zu Räumen im zweiten Stock zeigen. Tippe einfach auf den Bildschirm oder sag mir, wohin du möchtest.",
-        "Hi! Suchst du einen Raum? Sag mir einfach, wohin du willst, dann bringe ich dich hin."
+        "Ahoy, matey! I can guide ye to rooms on the second floor. Tap the screen or tell me where ye wish to go!",
+        "Ahoy! Searchin' for a room? Tell me yer destination, and I'll lead the way!",
+        "Welcome aboard, matey! Need to find a room on the second floor? I'll steer ye in the right direction!",
+        "Ahoy! Tell me which room ye be lookin' for, or pick yer destination right on the screen!",
+        "Arrr, where be ye headed? I know the rooms on the second floor and can guide ye there!"
     ),
     homeLocation = "Waitin' berth",
     homeRadius = "Radius o' the berth",
@@ -83,4 +86,9 @@ val pirateStrings = AppStrings(
     mapResetMessage = "Be ye sure ye want the default chart back?",
     mapConfirm = "Aye, reset it",
     unreachableInList = "Arrr, no places be found!",
+    navigationSpeed = "Sailin' Speed",
+    speedSlow = "Turtle Pace",
+    speedMedium = "Steady as She Goes",
+    speedHigh = "Full Speed Ahead",
+    arrivalFailureDelayText = "Arrival/Failure Delay",
 )

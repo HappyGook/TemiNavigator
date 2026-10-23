@@ -65,8 +65,11 @@ val nadsatStrings = AppStrings(
     adminPasswordsDoNotMatch = "Passwords do not match.",
     adminPasswordChanged = "Administrator password changed.",
     greetings = listOf(
-        "Hallo! Ich kann dir den Weg zu Räumen im zweiten Stock zeigen. Tippe einfach auf den Bildschirm oder sag mir, wohin du möchtest.",
-        "Hi! Suchst du einen Raum? Sag mir einfach, wohin du willst, dann bringe ich dich hin."
+        "Hey, droog! Need to find a room on the second floor? Just tap the screen or tell me where you're going.",
+        "Hiya, my little brother! Looking for a room? Tell me where to go, and I'll show you the way.",
+        "Welcome, O my brother! Need a room on the second floor? I'll help you find your way, no horrorshow trouble.",
+        "Hey, droog! You can tell me which room you're after or pick it on the screen. Easy peasy.",
+        "So, where to, my little brother? I know the rooms on the second floor. Let's get you there, real horrorshow!"
     ),
     homeLocation = "Waiting mesto",
     homeRadius = "Radius round the mesto",
@@ -83,4 +86,9 @@ val nadsatStrings = AppStrings(
     mapResetMessage = "You sure you want the default kart back, droog?",
     mapConfirm = "Reset it",
     unreachableInList = "No mesto found, droog.",
+    navigationSpeed = "Skorost of Navigation",
+    speedSlow = "Medlenno",
+    speedMedium = "Normalno",
+    speedHigh = "Bystro",
+    arrivalFailureDelayText = "Arrival/Failure Delay",
 )

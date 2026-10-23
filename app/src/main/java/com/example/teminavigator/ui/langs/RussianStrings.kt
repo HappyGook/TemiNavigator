@@ -65,8 +65,11 @@ val russianStrings = AppStrings(
     adminPasswordsDoNotMatch = "Пароли не совпадают ахахахах",
     adminPasswordChanged = "Пароль успешно сменен!",
     greetings = listOf(
-        "Hallo! Ich kann dir den Weg zu Räumen im zweiten Stock zeigen. Tippe einfach auf den Bildschirm oder sag mir, wohin du möchtest.",
-        "Hi! Suchst du einen Raum? Sag mir einfach, wohin du willst, dann bringe ich dich hin."
+        "Привет! Я могу показать дорогу к кабинетам на втором этаже. Просто нажми на экран или скажи, куда хочешь попасть.",
+        "Привет! Ищешь кабинет? Скажи, куда тебе нужно, и я покажу дорогу.",
+        "Добро пожаловать! Нужно найти кабинет на втором этаже? Я помогу тебе добраться до нужного места.",
+        "Привет! Можешь сказать, какой кабинет ищешь, или выбрать его прямо на экране.",
+        "Ну что, куда направляемся? Я знаю, где находятся кабинеты на втором этаже, и с радостью помогу!"
     ),
     homeLocation = "Место ожидания",
     homeRadius = "Радиус допуска у места ожидания",
@@ -83,4 +86,9 @@ val russianStrings = AppStrings(
     mapResetMessage = "Вы действительно хотите вернуть карту по умолчанию?",
     mapConfirm = "Сбросить",
     unreachableInList = "Места не найдены",
+    navigationSpeed = "Скорость навигации",
+    speedSlow = "Медленно",
+    speedMedium = "Средне",
+    speedHigh = "Быстро",
+    arrivalFailureDelayText = "Arrival/Failure Delay",
 )
