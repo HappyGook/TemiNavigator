@@ -51,6 +51,7 @@ import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
 import com.example.teminavigator.viewmodel.SpeechNotice
 
+@Suppress("ktlint:standard:function-naming")
 @Composable
 fun TemiApp(
     screen: Screen,
@@ -116,17 +117,6 @@ fun TemiApp(
     }
 
     Box(Modifier.fillMaxSize()) {
-        /*
-    when (screen) {
-        Screen.Home -> HomeScreen(
-    LaunchedEffect(voiceDestination) {
-        voiceDestination?.let { destination ->
-            selectedDestination = destination
-            currentScreen = Screen.NavigationScreen(destination)
-            onVoiceDestinationHandled()
-        }
-    }
-*/
         // If destination failed, dialog shows screen-independent
         val strings = LocalStrings.current
 
@@ -158,44 +148,44 @@ fun TemiApp(
 
             Screen.Settings -> {
                 SettingsScreen(
-                    currentLanguage = language,
-                    onLanguageChanged = onLanguageSelected,
-                    onBack = onCloseSettings,
-                    calibration = calibration,
-                    onCalibrationSaved = onCalibrationSaved,
-                    labels = labels,
-                    onDisplayNameChanged = onDisplayNameChanged,
-                    onAliasesChanged = onAliasesChanged,
-                    onLabelsReset = onLabelsReset,
-                    destinations = destinations,
-                    returnHomeDelaySec = returnHomeDelaySec,
-                    onReturnHomeDelayChanged = onReturnHomeDelayChanged,
                     adminPasswordStore = adminPasswordStore,
-                    soundsEnabled = settings.soundsEnabled,
-                    onSoundsEnabledChanged = onSoundsEnabledChanged,
-                    musicEnabled = settings.musicEnabled,
-                    onMusicEnabledChanged = onMusicEnabledChanged,
-                    voiceOutputEnabled = settings.voiceOutputEnabled,
-                    onVoiceOutputEnabledChanged = onVoiceOutputEnabledChanged,
-                    voiceInputEnabled = settings.voiceInputEnabled,
-                    onVoiceInputEnabledChanged = onVoiceInputEnabledChanged,
+                    arrivalFailureDelaySec = arrivalFailureDelaySec,
                     autoReturnEnabled = settings.autoReturnEnabled,
-                    onAutoReturnEnabledChanged = onAutoReturnEnabledChanged,
-                    onHomeLocationIdChanged = onHomeLocationIdChanged,
-                    onHomeRadiusChanged = onHomeRadiusChanged,
-                    onGreetingsEnabled = onGreetingsEnabled,
-                    onGreetingsCooldownChanged = onGreetingsCooldownChanged,
+                    calibration = calibration,
+                    currentLanguage = language,
+                    destinations = destinations,
+                    greetingsCooldownMs = greetingsCooldownMs,
+                    greetingsEnabled = settings.greetingsEnabled,
                     homeLocationId = homeLocationId,
                     homeRadius = homeRadius,
-                    greetingsEnabled = settings.greetingsEnabled,
-                    greetingsCooldownMs = greetingsCooldownMs,
+                    labels = labels,
                     map = map,
-                    onMapReset = onMapReset,
-                    onNewMapPicked = onNewMapPicked,
-                    onArrivalFailureCooldownChanged = onArrivalFailureDelayChanged,
+                    musicEnabled = settings.musicEnabled,
                     navigationSpeed = settings.navigationSpeed,
-                    arrivalFailureDelaySec = arrivalFailureDelaySec,
+                    onAliasesChanged = onAliasesChanged,
+                    onArrivalFailureCooldownChanged = onArrivalFailureDelayChanged,
+                    onAutoReturnEnabledChanged = onAutoReturnEnabledChanged,
+                    onBack = onCloseSettings,
+                    onCalibrationSaved = onCalibrationSaved,
+                    onDisplayNameChanged = onDisplayNameChanged,
+                    onGreetingsCooldownChanged = onGreetingsCooldownChanged,
+                    onGreetingsEnabled = onGreetingsEnabled,
+                    onHomeLocationIdChanged = onHomeLocationIdChanged,
+                    onHomeRadiusChanged = onHomeRadiusChanged,
+                    onLabelsReset = onLabelsReset,
+                    onLanguageChanged = onLanguageSelected,
+                    onMapReset = onMapReset,
+                    onMusicEnabledChanged = onMusicEnabledChanged,
                     onNavigationSpeedChanged = onNavigationSpeedChanged,
+                    onNewMapPicked = onNewMapPicked,
+                    onReturnHomeDelayChanged = onReturnHomeDelayChanged,
+                    onSoundsEnabledChanged = onSoundsEnabledChanged,
+                    onVoiceInputEnabledChanged = onVoiceInputEnabledChanged,
+                    onVoiceOutputEnabledChanged = onVoiceOutputEnabledChanged,
+                    returnHomeDelaySec = returnHomeDelaySec,
+                    soundsEnabled = settings.soundsEnabled,
+                    voiceInputEnabled = settings.voiceInputEnabled,
+                    voiceOutputEnabled = settings.voiceOutputEnabled,
                 )
             }
 
@@ -208,15 +198,15 @@ fun TemiApp(
 
             is Screen.Navigation -> {
                 NavigationScreen(
-                    destination = screen.destination,
-                    robotPose = robotPose,
                     currentSpeed = currentSpeed,
-                    pxPerMeter = calibration.pxPerMeter,
-                    navigationState = navigationState,
-                    onTogglePause = onToggleNavigationPause,
-                    onAbort = onAbort,
-                    path = path,
+                    destination = screen.destination,
                     map = map,
+                    navigationState = navigationState,
+                    onAbort = onAbort,
+                    onTogglePause = onToggleNavigationPause,
+                    path = path,
+                    pxPerMeter = calibration.pxPerMeter,
+                    robotPose = robotPose,
                 )
             }
         }
@@ -248,84 +238,76 @@ class MainActivity : ComponentActivity() {
         val adminPasswordStore = AdminPasswordStore(applicationContext)
         setContent {
             // take latest value of the language flow
-            val language by viewModel.language.collectAsState()
-            val destinations by viewModel.destinations.collectAsState()
-            val pose = viewModel.pose.collectAsState()
             val calibration by viewModel.calibration.collectAsState()
-            val navigationState by viewModel.navState.collectAsState()
-            val labels by viewModel.labels.collectAsState()
-            val speedMps by viewModel.speedMps.collectAsStateWithLifecycle()
-            val screen by viewModel.screen.collectAsStateWithLifecycle()
-            val settings by viewModel.settings.collectAsStateWithLifecycle()
-            val returnCountdown by viewModel.returnCountdown.collectAsStateWithLifecycle()
-            val speechNotice by viewModel.speechNotice.collectAsStateWithLifecycle()
-            val selected by viewModel.selected.collectAsStateWithLifecycle()
-            val path by viewModel.path.collectAsStateWithLifecycle()
+            val destinations by viewModel.destinations.collectAsState()
             val failed by viewModel.failedDestination.collectAsState()
+            val labels by viewModel.labels.collectAsState()
+            val language by viewModel.language.collectAsState()
             val map by viewModel.mapImage.collectAsState()
-            /*
-            Log.i("Main Map Infos","Calibration state in main activity:\n" +
-                    "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
-                    "")
-            Log.i("Main Map Infos","Calibration state in main activity:\n" +
-                    "originX= ${calibration.originPx.x}, originY= ${calibration.originPx.y}\n" +
-                    "")
-             */
+            val navigationState by viewModel.navState.collectAsState()
+            val path by viewModel.path.collectAsStateWithLifecycle()
+            val pose = viewModel.pose.collectAsState()
+            val returnCountdown by viewModel.returnCountdown.collectAsStateWithLifecycle()
+            val screen by viewModel.screen.collectAsStateWithLifecycle()
+            val selected by viewModel.selected.collectAsStateWithLifecycle()
+            val settings by viewModel.settings.collectAsStateWithLifecycle()
+            val speechNotice by viewModel.speechNotice.collectAsStateWithLifecycle()
+            val speedMps by viewModel.speedMps.collectAsStateWithLifecycle()
 
             CompositionLocalProvider(LocalStrings provides language.strings) {
                 TemiNavigatorTheme {
                     TemiApp(
-                        screen = screen,
-                        language = language,
-                        onLanguageSelected = viewModel::setLanguage,
-                        destinations = destinations,
-                        robotPose = { pose.value },
-                        calibration = calibration,
-                        onCalibrationSaved = viewModel::setCalibration,
-                        navigationState = navigationState,
-                        onToggleNavigationPause = viewModel::toggleNavigationPause,
-                        onStartSpeechRecognition = viewModel::startSpeechRecognition,
                         adminPasswordStore = adminPasswordStore,
-                        labels = labels,
-                        onDisplayNameChanged = viewModel::setDisplayName,
-                        onAliasesChanged = viewModel::setAliases,
-                        onLabelsReset = viewModel::resetLabels,
-                        onAbort = viewModel::cancelGuidance,
+                        arrivalFailureDelaySec = settings.arrivalFailureDelaySec,
+                        calibration = calibration,
                         currentSpeed = { speedMps },
-                        onDestinationConfirmed = viewModel::confirmDestination,
-                        onOpenSettings = viewModel::openSettings,
-                        onCloseSettings = viewModel::closeSettings,
-                        onLeaveWaiting = viewModel::leaveWaiting,
-                        returnHomeDelaySec = settings.returnHomeDelaySec,
-                        onReturnHomeDelayChanged = viewModel::setReturnHomeDelay,
-                        returnCountdown = returnCountdown,
-                        speechNotice = speechNotice,
-                        onSpeechNoticeShown = viewModel::clearSpeechNotice,
-                        settings = settings,
-                        onSoundsEnabledChanged = viewModel::setSoundsEnabled,
-                        onMusicEnabledChanged = viewModel::setMusicEnabled,
-                        onVoiceOutputEnabledChanged = viewModel::setVoiceOutputEnabled,
-                        onVoiceInputEnabledChanged = viewModel::setVoiceInputEnabled,
-                        onAutoReturnEnabledChanged = viewModel::setAutoReturnEnabled,
-                        selected = selected,
-                        onSelect = viewModel::selectDestination,
-                        onDeselect = viewModel::deselectDestination,
-                        path = path,
-                        failed = failed,
+                        destinations = destinations,
                         dismissFailure = viewModel::dismissFailureDialog,
-                        onHomeLocationIdChanged = viewModel::setHomeLocationId,
-                        onHomeRadiusChanged = viewModel::setHomeRadius,
-                        onGreetingsEnabled = viewModel::setGreetingsEnabled,
-                        onGreetingsCooldownChanged = viewModel::setGreetingsCooldown,
+                        failed = failed,
+                        greetingsCooldownMs = settings.greetingsCoolDown,
                         homeLocationId = settings.homeLocationId,
                         homeRadius = settings.homeRadius,
-                        greetingsCooldownMs = settings.greetingsCoolDown,
-                        arrivalFailureDelaySec = settings.arrivalFailureDelaySec,
+                        labels = labels,
+                        language = language,
                         map = map,
-                        onMapReset = viewModel::resetMap,
-                        onNewMapPicked = viewModel::pickMap,
+                        navigationState = navigationState,
+                        onAbort = viewModel::cancelGuidance,
+                        onAliasesChanged = viewModel::setAliases,
                         onArrivalFailureDelayChanged = viewModel::setArrivalFailureDelay,
+                        onAutoReturnEnabledChanged = viewModel::setAutoReturnEnabled,
+                        onCalibrationSaved = viewModel::setCalibration,
+                        onCloseSettings = viewModel::closeSettings,
+                        onDeselect = viewModel::deselectDestination,
+                        onDestinationConfirmed = viewModel::confirmDestination,
+                        onDisplayNameChanged = viewModel::setDisplayName,
+                        onGreetingsCooldownChanged = viewModel::setGreetingsCooldown,
+                        onGreetingsEnabled = viewModel::setGreetingsEnabled,
+                        onHomeLocationIdChanged = viewModel::setHomeLocationId,
+                        onHomeRadiusChanged = viewModel::setHomeRadius,
+                        onLabelsReset = viewModel::resetLabels,
+                        onLanguageSelected = viewModel::setLanguage,
+                        onLeaveWaiting = viewModel::leaveWaiting,
+                        onMapReset = viewModel::resetMap,
+                        onMusicEnabledChanged = viewModel::setMusicEnabled,
                         onNavigationSpeedChanged = viewModel::setNavigationSpeed,
+                        onNewMapPicked = viewModel::pickMap,
+                        onOpenSettings = viewModel::openSettings,
+                        onReturnHomeDelayChanged = viewModel::setReturnHomeDelay,
+                        onSelect = viewModel::selectDestination,
+                        onSoundsEnabledChanged = viewModel::setSoundsEnabled,
+                        onSpeechNoticeShown = viewModel::clearSpeechNotice,
+                        onStartSpeechRecognition = viewModel::startSpeechRecognition,
+                        onToggleNavigationPause = viewModel::toggleNavigationPause,
+                        onVoiceInputEnabledChanged = viewModel::setVoiceInputEnabled,
+                        onVoiceOutputEnabledChanged = viewModel::setVoiceOutputEnabled,
+                        path = path,
+                        returnCountdown = returnCountdown,
+                        returnHomeDelaySec = settings.returnHomeDelaySec,
+                        robotPose = { pose.value },
+                        screen = screen,
+                        selected = selected,
+                        settings = settings,
+                        speechNotice = speechNotice,
                     )
                 }
             }
