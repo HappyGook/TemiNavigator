@@ -76,48 +76,54 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onStartSpeechRecognition: () -> Unit,
     voiceInputEnabled: Boolean,
-    map: ImageBitmap?
+    map: ImageBitmap?,
 ) {
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val selected = destinations.find { it.id == selectedId }
     val strings = LocalStrings.current
 
     // List of destinations - filtered by the current search query
-    val filteredDestinations = destinations.filter { destination ->
-        searchQuery.isBlank() ||
-            destination.displayName.contains(searchQuery, ignoreCase = true) ||
-            destination.id.contains(searchQuery, ignoreCase = true) ||
-            destination.aliases.any { it.contains(searchQuery, ignoreCase = true) }
-    }
+    val filteredDestinations =
+        destinations.filter { destination ->
+            searchQuery.isBlank() ||
+                destination.displayName.contains(searchQuery, ignoreCase = true) ||
+                destination.id.contains(searchQuery, ignoreCase = true) ||
+                destination.aliases.any { it.contains(searchQuery, ignoreCase = true) }
+        }
 
-    Scaffold{ innerPadding ->
+    Scaffold { innerPadding ->
         Row(
-            modifier = Modifier
-                .padding(innerPadding)
-                .padding(12.dp)
-                .fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier =
+                Modifier
+                    .padding(innerPadding)
+                    .padding(12.dp)
+                    .fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = colorScheme.surfaceContainer,
-                modifier = Modifier
-                    .fillMaxWidth(0.3f)
-                    .fillMaxHeight()
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.3f)
+                        .fillMaxHeight(),
             ) {
                 if (selected != null) {
                     DestinationDetail(
                         destination = selected,
                         onBack = { onDeselect() },
-                        onConfirm = { onDestinationConfirmed(selected) }
+                        onConfirm = { onDestinationConfirmed(selected) },
                     )
                 } else {
-                    Column {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             OutlinedTextField(
                                 value = searchQuery,
@@ -125,37 +131,38 @@ fun HomeScreen(
                                 modifier = Modifier.weight(1f),
                                 singleLine = true,
                                 textStyle = TextStyle(fontSize = 28.sp),
-                                placeholder = { Text(strings.searchDestinations, fontSize = 28.sp) }
+                                placeholder = { Text(strings.searchDestinations, fontSize = 28.sp) },
                             )
                             // Microphone button -> starts voice input
                             IconButton(
                                 enabled = voiceInputEnabled,
                                 onClick = {
                                     onStartSpeechRecognition()
-                                }
+                                },
                             ) {
                                 Icon(
                                     Icons.Filled.Mic,
                                     contentDescription = strings.voiceInput,
-                                    Modifier.size(72.dp)
+                                    Modifier.size(72.dp),
                                 )
                             }
                         }
+                        // Filtered list of destinations (filtered by search query)
+                        LocationsList(
+                            filteredDestinations,
+                            selectedId = selectedId,
+                            onSelect = { onSelect(it) },
+                        )
                     }
-                    // Filtered list of destinations (filtered by search query)
-                    LocationsList(
-                        filteredDestinations,
-                        selectedId = selectedId,
-                        onSelect = { onSelect(it) }
-                    )
                 }
             }
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = colorScheme.tertiary,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
             ) {
                 InteractiveMap(
                     destinations = destinations,
@@ -164,14 +171,15 @@ fun HomeScreen(
                     path = path,
                     robotPose = robotPose,
                     modifier = Modifier.padding(8.dp),
-                    imageBitmap = map
-                ){
+                    imageBitmap = map,
+                ) {
                     FloatingActionButton(
                         onClick = onOpenSettings,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(16.dp)
-                            .size(96.dp)
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(16.dp)
+                                .size(96.dp),
                     ) { Icon(Icons.Default.Settings, contentDescription = "Settings", Modifier.size(72.dp)) }
                 }
             }
@@ -183,8 +191,8 @@ fun HomeScreen(
 fun LocationsList(
     locationList: List<Destination>,
     selectedId: String?,
-    onSelect: (Destination) -> Unit
-){
+    onSelect: (Destination) -> Unit,
+) {
     val listState = rememberLazyListState()
 
     // Scroll to the selected destination whenever the selection or list changes
@@ -198,28 +206,29 @@ fun LocationsList(
     if (locationList.isEmpty()) {
         // Placeholder shown when the list has no entries
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = LocalStrings.current.unreachableInList,
                 fontSize = 36.sp,
                 lineHeight = 36.sp,
-                color = Color.DarkGray
+                color = Color.DarkGray,
             )
         }
     } else {
         LazyColumn(
             state = listState,
-            modifier = Modifier.padding(vertical = 5.dp)
+            modifier = Modifier.padding(vertical = 5.dp),
         ) {
             items(locationList, key = { it.id }) { location ->
                 PossibleLocation(
                     location = location,
                     isSelected = location.id == selectedId,
-                    onClick = onSelect
+                    onClick = onSelect,
                 )
             }
         }
@@ -230,21 +239,22 @@ fun LocationsList(
 fun DestinationDetail(
     destination: Destination,
     onBack: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
 ) {
     val strings = LocalStrings.current
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Back to the list
         TextButton(onClick = onBack, modifier = Modifier.height(72.dp)) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = null,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             )
             Spacer(Modifier.width(8.dp))
             Text(strings.selectLocation, fontSize = 36.sp)
@@ -255,14 +265,14 @@ fun DestinationDetail(
             fontSize = 48.sp,
             lineHeight = 48.sp,
             fontWeight = FontWeight.Bold,
-            color = colorScheme.onSurface
+            color = colorScheme.onSurface,
         )
 
         if (destination.aliases.isNotEmpty()) {
             Text(
                 text = destination.aliases.joinToString(", "),
                 fontSize = 24.sp,
-                color = colorScheme.onSurfaceVariant
+                color = colorScheme.onSurfaceVariant,
             )
         }
 
@@ -270,9 +280,10 @@ fun DestinationDetail(
 
         Button(
             onClick = onConfirm,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(88.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(88.dp),
         ) { Text(strings.confirmYes, fontSize = 32.sp) }
     }
 }
@@ -280,10 +291,10 @@ fun DestinationDetail(
 @SuppressLint("RememberInComposition")
 @Composable
 fun PossibleLocation(
-    location : Destination,
+    location: Destination,
     isSelected: Boolean,
-    onClick: (Destination) -> Unit = {}
-){
+    onClick: (Destination) -> Unit = {},
+) {
     val interactionSource = remember { MutableInteractionSource() }
     Row(
         Modifier
@@ -293,68 +304,67 @@ fun PossibleLocation(
             .border(
                 width = 1.dp,
                 color = colorScheme.tertiary,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .background(
-                if (isSelected) colorScheme.primaryContainer
-                else colorScheme.surface
-            )
-            .hoverable(interactionSource = interactionSource)
+                shape = RoundedCornerShape(12.dp),
+            ).background(
+                if (isSelected) {
+                    colorScheme.primaryContainer
+                } else {
+                    colorScheme.surface
+                },
+            ).hoverable(interactionSource = interactionSource)
             .clickable(
                 interactionSource = interactionSource,
                 indication = ripple(),
-                onClick = { onClick(location) }
-            )
-            .padding(16.dp)
-    ){
-        Column{
+                onClick = { onClick(location) },
+            ).padding(16.dp),
+    ) {
+        Column {
             Text(
-                text=location.displayName,
+                text = location.displayName,
                 modifier = Modifier.fillMaxWidth(),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = colorScheme.onSurface
+                color = colorScheme.onSurface,
             )
             LazyRow {
-                items(location.aliases){
-                        alias ->
+                items(location.aliases) { alias ->
                     Text(
                         text = "$alias ",
                         color = colorScheme.onSurfaceVariant,
-                        fontSize = 24.sp
-                        )}
+                        fontSize = 24.sp,
+                    )
+                }
             }
         }
     }
 }
 
-
-
 @Preview(name = "Tablet", device = Devices.TABLET)
 @Composable
-fun HSPreview(){
-    val mockDest = Destination(
-        id = "mock stuff",
-        displayName = "Cool Name",
-        aliases = emptyList(),
-        imagePx = Offset(1167f, 1167f),
-        imageYawDeg = 1.6f
-    )
+fun HSPreview() {
+    val mockDest =
+        Destination(
+            id = "mock stuff",
+            displayName = "Cool Name",
+            aliases = emptyList(),
+            imagePx = Offset(1167f, 1167f),
+            imageYawDeg = 1.6f,
+        )
     TemiNavigatorTheme {
         CompositionLocalProvider(LocalStrings provides germanStrings) {
-        HomeScreen(
-            listOf(mockDest),
-            robotPose = { RobotPose(481f, 1181f, 0f) },
-            onDestinationConfirmed = {},
-            onOpenSettings = { },
-            onStartSpeechRecognition = { },
-            voiceInputEnabled = true,
-            selectedId = "mock stuff",
-            onSelect = {},
-            onDeselect = {},
-            path = listOf(Offset(1150f,1100f), Offset(1050f,1000f), Offset(1000f,1100f)),
-            map = null
-        )
+            HomeScreen(
+                listOf(mockDest),
+                robotPose = { RobotPose(481f, 1181f, 0f) },
+                onDestinationConfirmed = {},
+                onOpenSettings = { },
+                onStartSpeechRecognition = { },
+                voiceInputEnabled = true,
+                selectedId = "mock stuff",
+                onSelect = {},
+                onDeselect = {},
+                path = listOf(Offset(1150f, 1100f), Offset(1050f, 1000f), Offset(1000f, 1100f)),
+                map = null,
+            )
         }
     }
 }

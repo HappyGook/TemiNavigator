@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -230,7 +231,7 @@ class NavigationViewModel(
         viewModelScope.launch {
             val old = settings.first().mapImagePath
             val new = mapLoader.import(uri, old)
-            if (new != null) settingsRepo.setMapImagePath(new) // TODO: else show error msg
+            if (new != null) settingsRepo.setMapImagePath(new)
         }
 
     fun resetMap() =
@@ -365,17 +366,23 @@ class NavigationViewModel(
         if (previewing || _navState.value !is NavigationState.Idle) return
         returnJob =
             viewModelScope.launch {
+                val home =
+                    combine(destinations, pose) { dests, p ->
+                        val h = dests.find { it.id == settings.value.homeLocationId }
+                        if (h?.imagePx != null && p != null) h else null
+                    }.filterNotNull().first()
                 if (isAtHome()) return@launch
+
                 var left = settings.value.returnHomeDelaySec
                 while (left > 0) {
                     _returnCountdown.value = left
                     delay(1_000.milliseconds)
+                    if (isAtHome()) { // pose may have updated meanwhile
+                        _returnCountdown.value = null
+                        return@launch
+                    }
                     left--
                 }
-
-                val home =
-                    destinations.value.find { it.id == settings.value.homeLocationId }
-                        ?: return@launch // if home location not available - stay on waiting screen
 
                 _returnCountdown.value = null
                 currentDestination = home
@@ -427,13 +434,9 @@ class NavigationViewModel(
         robot.detach()
         soundPlayer.release()
         musicPlayer.stop()
-        super.onCleared()
     }
 
-    private fun showFailure(
-        dest: Destination,
-        thenWaiting: Boolean = false,
-    ) {
+    private fun showFailure(dest: Destination) {
         _failedDestination.value = dest
         speak(strings.unreachableText(dest.displayName))
         failureJob?.cancel()
@@ -441,7 +444,7 @@ class NavigationViewModel(
             viewModelScope.launch {
                 delay((settings.value.arrivalFailureDelaySec * 1000).milliseconds)
                 _failedDestination.value = null
-                if (thenWaiting && _screen.value is Screen.Navigation && _navState.value is NavigationState.Idle) {
+                if (_screen.value is Screen.Navigation && _navState.value is NavigationState.Idle) {
                     _screen.value = Screen.Waiting
                 }
             }
@@ -469,13 +472,9 @@ class NavigationViewModel(
             }
 
             else -> {
-                Unit
+                return
             }
         }
-    }
-
-    private fun pauseNavigation() {
-        stopRobot()
     }
 
     fun confirmDestination(destination: Destination) {
@@ -534,7 +533,7 @@ class NavigationViewModel(
             _screen.value = Screen.Waiting
             return
         }
-        showFailure(dest, thenWaiting = true)
+        showFailure(dest)
     }
 
     fun dismissFailure() {
@@ -602,6 +601,7 @@ class NavigationViewModel(
 
             is RobotEvent.PositionChanged -> {
                 Log.i("ViewModel", "Viewmodel received a positionChanged event: X=${event.x}, Y=${event.y} ")
+                if (event.x == 0f && event.y == 0f) return
                 rawPose.value = RawPose(event.x, event.y, event.yaw)
             }
 
