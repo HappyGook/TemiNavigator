@@ -75,6 +75,66 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/**
+ * This is the settings screen which is used to display and modify settings for the application.
+ *
+ * This screen is protected by a password. Only the selection of language and the password
+ * prompt are visible unless the correct password is entered.
+ *
+ * When unlocked, all settings are shown:
+ * - Language               (Directly in SettingsScreen)
+ * - General settings       ([SettingsColumn])
+ * - Map calibration        ([CalibrationSection])
+ * - Map management         ([MapSection])
+ * - Admin password         ([ChangeAdminPasswordSection])
+ * - Destination labels     ([DestinationLabelSection])
+ *
+ * The screen is stateless apart from local UI state (password input, "checking"
+ * and "saving" flags, form fields); all persisted settings are passed in and
+ * reported back through `on*Changed` callbacks
+ *
+ * @param currentLanguage                   The currently selected app language
+ * @param onLanguageChanged                 Called with the newly selected language
+ * @param onBack                            Called when user taps the back button to leave settings
+ * @param calibration                       Current map calibration (origin, px/m scale, anchor yaw)
+ * @param onCalibrationSaved                Called with the new calibration when the user saves it
+ * @param adminPasswordStore                Password store used to verify and change the password
+ * @param destinations                      All known navigation destinations
+ * @param labels                            Saved names/aliases per destination id, used to prefill
+ *                                          the label editors
+ * @param onDisplayNameChanged              Called with (destinationId, newDisplayName)
+ *                                          when a display name is saved
+ * @param onAliasesChanged                  Called with (destinationId, newAliases)
+ *                                          when aliases are saved
+ * @param onLabelsReset                     Called with a destination id to reset its labels
+ * @param returnHomeDelaySec                Seconds to wait before auto-returning home
+ * @param onReturnHomeDelayChanged          Called with the new auto-return delay in seconds
+ * @param soundsEnabled                     Whether UI sounds are enabled
+ * @param onSoundsEnabledChanged            Called with the new sounds setting
+ * @param musicEnabled                      Whether background music is enabled
+ * @param onMusicEnabledChanged             Called with the new music setting
+ * @param voiceOutputEnabled                Whether spoken voice output is enabled
+ * @param onVoiceOutputEnabledChanged       Called with the new voice-output setting
+ * @param voiceInputEnabled                 Whether voice input (microphone) is enabled
+ * @param onVoiceInputEnabledChanged        Called with the new voice-input setting
+ * @param autoReturnEnabled                 Whether the robot automatically returns to its home location
+ * @param onAutoReturnEnabledChanged        Called with the new auto-return setting
+ * @param homeLocationId                    ID of the destination used as the home/waiting position
+ * @param homeRadius                        Radius in meters around home that counts as "at home"
+ * @param greetingsEnabled                  Whether the robot greets people it encounters
+ * @param greetingsCooldownMs               Minimum pause between two greetings, in milliseconds
+ * @param arrivalFailureDelaySec            Delay in seconds before a failed arrival is triggered
+ * @param onHomeLocationIdChanged           Called with the new home location id
+ * @param onHomeRadiusChanged               Called with the new home radius in meters
+ * @param onGreetingsEnabled                Called with the new greetings setting
+ * @param onGreetingsCooldownChanged        Called with the new greetings cooldown in milliseconds
+ * @param onArrivalFailureCooldownChanged   Called with the new arrival-failure delay in seconds
+ * @param navigationSpeed                   The currently selected navigation speed preset
+ * @param onNavigationSpeedChanged          Called with the newly selected speed preset
+ * @param map                               The current map image, or `null` while loading
+ * @param onMapReset                        Called when the user confirms resetting the map
+ * @param onNewMapPicked                    Called with the content URI of a newly picked map image
+ */
 @Composable
 fun SettingsScreen(
     currentLanguage: AppLanguage,
@@ -118,6 +178,8 @@ fun SettingsScreen(
 ) {
     val strings = LocalStrings.current
     val scope = rememberCoroutineScope()
+
+    // Local UI state for the password prompt
     var isUnlocked by remember { mutableStateOf(false) }
     var password by remember { mutableStateOf("") }
     var passwordError by remember { mutableStateOf(false) }
@@ -158,6 +220,8 @@ fun SettingsScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
         ) {
+
+            // Title and back button (back to the home screen)
             Text(strings.settingsTitle, fontSize = 36.sp, fontWeight = FontWeight.Bold)
             FloatingActionButton(
                 onClick = onBack,
@@ -165,6 +229,8 @@ fun SettingsScreen(
             ) {
                 Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Go Back", Modifier.size(40.dp))
             }
+
+            // Language selector
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -178,7 +244,10 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            // Display Depending on unlocked or not
             if (isUnlocked) {
+                // ---- Unlocked: full settings area ----
                 SettingsColumn(
                     returnHomeDelaySec = returnHomeDelaySec,
                     onReturnHomeDelayChanged = onReturnHomeDelayChanged,
@@ -226,6 +295,7 @@ fun SettingsScreen(
                     onReset = onLabelsReset,
                 )
             } else {
+                // ---- Locked: password prompt ----
                 Column(
                     modifier =
                         Modifier
@@ -235,6 +305,8 @@ fun SettingsScreen(
                 ) {
                     Text(strings.adminPasswordTitle, style = MaterialTheme.typography.titleLarge, fontSize = 32.sp)
                     Text(strings.adminPasswordPrompt, fontSize = 24.sp)
+
+                    // Password field
                     OutlinedTextField(
                         value = password,
                         onValueChange = {
@@ -257,6 +329,8 @@ fun SettingsScreen(
                     if (passwordError) {
                         Text(strings.incorrectAdminPassword, color = MaterialTheme.colorScheme.error, fontSize = 24.sp)
                     }
+
+                    // Unlock button - shows a spinner while the password is verified
                     Button(
                         enabled = password.isNotEmpty() && !isCheckingPassword,
                         onClick = { unlockSettings() },
@@ -277,7 +351,16 @@ fun SettingsScreen(
     }
 }
 
-// Set a new password
+/**
+ * UI block for setting a new admin password
+ *
+ * The new password must be at least 8 characters long and entered twice
+ * (confirmation field). Live validation shows inline error hints for a too
+ * short password or mismatching entries. Saving runs on a background thread
+ * and, on success, clears both fields and shows a confirmation message.
+ *
+ * @param adminPasswordStore Store the new password is persisted to.
+ */
 @Composable
 private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
     val strings = LocalStrings.current
@@ -325,6 +408,8 @@ private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
         )
+
+        // Status: success message, or the first applicable validation error
         if (statusMessage != null) {
             Text(statusMessage!!, color = MaterialTheme.colorScheme.primary)
         } else if (newPassword.isNotEmpty() && !isLongEnough) {
@@ -339,6 +424,7 @@ private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
                     isSaving = true
                     val passwordToSave = newPassword
                     try {
+                        // Persist on a background thread so the UI does not freeze
                         withContext(Dispatchers.IO) {
                             adminPasswordStore.changePassword(passwordToSave)
                         }
@@ -366,6 +452,13 @@ private fun ChangeAdminPasswordSection(adminPasswordStore: AdminPasswordStore) {
 
 /**
  * Function for the whole column of settings that have a switch to turn on/off
+ *
+ * Groups all toggle- and stepper-based settings in one vertical column:
+ * - Enable/disable sounds, music, voice output, voice input
+ * - auto-return to home (with its related delay, home location, and tolerance radius)
+ * - Enable disable greetings (with cooldown on how long to wait for next greeting)
+ * - arrival-failure delay (how long until navigation is canceled when stuck)
+ * - navigation speed selector (slow/medium/fast)
  */
 @Composable
 fun SettingsColumn(
@@ -413,6 +506,7 @@ fun SettingsColumn(
             onCheckedChange = onSoundsEnabledChanged,
         )
 
+        // Music setting
         SettingRow(
             icon = Icons.Default.MusicNote,
             title = strings.music,
@@ -492,6 +586,7 @@ fun SettingsColumn(
             onPlus = { onGreetingsCooldownChanged(greetingsCooldownMs + 1_000) },
         )
 
+        // Delay before an arrival failure is triggered
         SettingStepperRow(
             label = strings.arrivalFailureDelayText,
             valueText = "$arrivalFailureDelaySec s",
@@ -518,6 +613,15 @@ fun SettingsColumn(
 
 /**
  * Function for creating a setting row
+ *
+ * A single on/off setting: icon on the left, title and description in the middle,
+ * and a switch on the right
+ *
+ * @param icon              Icon shown at the start of the row
+ * @param title             Name of the setting
+ * @param description       Short explanation of setting shown under the title
+ * @param checked           Current value of the setting (on / off)
+ * @param onCheckedChange   Called with the new value when the switch is toggled
  */
 @Composable
 fun SettingRow(
@@ -566,7 +670,15 @@ fun SettingRow(
 }
 
 /**
- * NavSpeed configuration with 3 buttons
+ * NavSpeed configuration with 3 buttons, sets the speed of the Temi Robot
+ *
+ * Shows three labels that can be selected, highlights the selected label
+ * Possible presets: slow, medium, high
+ *
+ * @param label         Name of the setting
+ * @param selected      Currently selected speed preset
+ * @param labelFor      Returns the localized display name for a speed preset
+ * @param onSelected    Called with the newly selected preset
  */
 @Composable
 private fun SpeedRow(
@@ -596,6 +708,17 @@ private fun SpeedRow(
 
 /**
  * Label on the left, "−  value  +" on the right. Used for all numeric settings.
+ *
+ * A generic stepper row: the current value is displayed as pre-formatted text
+ * between a minus and a plus button. The caller supplies the current value
+ * text and the increment/decrement callbacks, so this row is value-agnostic.
+ *
+ * @param label         Name of the setting
+ * @param valueText     Pre-formatted current value (e.g. "30 s", "1.5 m")
+ * @param enabled       Whether the stepper buttons are enabled (only enabled when the
+ *                      parent setting is on)
+ * @param onMinus       Called when the minus button is pressed
+ * @param onPlus        Called when the plus button is pressed
  */
 @Composable
 private fun SettingStepperRow(
@@ -627,6 +750,12 @@ private fun SettingStepperRow(
 
 /**
  * Label on the left, dropdown with all Temi locations on the right.
+ * A text field for choosing the home location.
+ *
+ * @param label         Name of the setting
+ * @param selectedId    ID of the currently selected home location
+ * @param enabled       Whether the field is editable (only when auto-return is on)
+ * @param onSelected    Called with the new home location id when it changes
  */
 @Composable
 private fun HomeLocationRow(
@@ -639,6 +768,7 @@ private fun HomeLocationRow(
     val focusManager = LocalFocusManager.current
     var text by rememberSaveable(selectedId) { mutableStateOf(selectedId) }
 
+    // Save the entry only if it is non-blank and actually changed
     fun save() {
         if (text.isNotBlank() && text.trim() != selectedId) onSelected(text)
     }
@@ -670,6 +800,17 @@ private fun HomeLocationRow(
 
 /**
  * Function for Creating a MapCalibration block with inputs and confirmation
+ *
+ * Editable form for the map calibration values:
+ *      - origin (x, y)
+ *      - scale (pixels per meter)
+ *      - anchor yaw (degrees)
+ *
+ * Empty fields fall back to the current [calibration] value (shown as
+ * placeholder); invalid text marks the field as error and disables saving.
+ *
+ * @param calibration   Current calibration, used as fallback and placeholder
+ * @param onSave        Called with the validated new [MapCalibration]
  */
 @Composable
 fun CalibrationSection(
@@ -696,6 +837,7 @@ fun CalibrationSection(
     val newScale = parse(pxPerMeter, calibration.pxPerMeter)?.takeIf { it > 0f }
     val newYaw = parse(anchorYaw, calibration.anchorYaw)
 
+    // Saving is only possible when every field is valid.
     val allValid = newX != null && newY != null && newScale != null && newYaw != null
 
     Column(
@@ -739,6 +881,7 @@ fun CalibrationSection(
             )
         }
 
+        // Scale in pixels per meter
         OutlinedTextField(
             value = pxPerMeter,
             onValueChange = { pxPerMeter = it },
@@ -755,6 +898,7 @@ fun CalibrationSection(
             modifier = Modifier.fillMaxWidth(),
         )
 
+        // Anchor yaw in degrees
         OutlinedTextField(
             value = anchorYaw,
             onValueChange = { anchorYaw = it },
@@ -798,6 +942,18 @@ fun CalibrationSection(
     }
 }
 
+/**
+ * Function for displaying the map section
+ *
+ * Shows a preview with pixel dimensions of the currently loaded map (if available).
+ * The user can pick a new map via the system file picker. The Image is then forwarded via
+ * [onNewMapPicked].
+ * It is also possible to reset the map, which requires a confirmation via [onMapReset].
+ *
+ * @param map               The current map image
+ * @param onMapReset        Called when the user confirms the reset
+ * @param onNewMapPicked    Called with the content URI of the picked image
+ */
 @Composable
 fun MapSection(
     map: ImageBitmap?,
@@ -852,6 +1008,8 @@ fun MapSection(
                 Spacer(Modifier.width(8.dp))
                 Text(strings.mapChooseButton, fontSize = 24.sp)
             }
+
+            // Reset the map (opens a confirmation dialog)
             OutlinedButton(
                 onClick = { showResetDialog = true },
                 modifier = Modifier.height(64.dp),
@@ -861,6 +1019,7 @@ fun MapSection(
         }
     }
 
+    // Confirmation dialog for the map reset
     if (showResetDialog) {
         AlertDialog(
             onDismissRequest = { showResetDialog = false },
@@ -883,6 +1042,21 @@ fun MapSection(
     }
 }
 
+/**
+ * Function for UI block for editing the labels (display name and aliases) of all
+ * destinations.
+ *
+ * Renders one [DestinationLabelRow] per destination, prefilled from the saved
+ * [labels] map. Saving a row forwards the new display name and aliases via
+ * the corresponding callbacks; resetting restores the destination's default
+ * labels.
+ *
+ * @param destinations          List of destinations to edit the label
+ * @param labels                Saved labels per destination id, used to prefill the fields
+ * @param onDisplayNameSave     Called with (destinationId, newDisplayName)
+ * @param onAliasesSave         Called with (destinationId, newAliases)
+ * @param onReset               Called with a destination id to reset its given labels
+ */
 @Composable
 fun DestinationLabelSection(
     destinations: List<Destination>,
@@ -913,6 +1087,19 @@ fun DestinationLabelSection(
     }
 }
 
+/**
+ * Edit form for a single destination's labels.
+ *
+ * Shows the raw destination id (read-only) and editable fields for the
+ * display name and the aliases.
+ * The fields are initialized again whenever the saved labels change (e.g. after save or reset).
+ *
+ * @param id                Raw id of the destination, shown as heading
+ * @param saved             Currently saved labels for this destination, or `null` if none
+ * @param onDisplayNameSave Called with the new display name when "Save" is pressed
+ * @param onAliasesSave     Called with the parsed alias list when "Save" is pressed
+ * @param onReset           Called when "Reset" is pressed to restore default labels
+ */
 @Composable
 private fun DestinationLabelRow(
     id: String,
@@ -940,6 +1127,7 @@ private fun DestinationLabelRow(
             modifier = Modifier.fillMaxWidth(),
         )
         Text(strings.destinationAliases, fontSize = 24.sp)
+        // Aliases are entered comma-separated; e.g. "Rob-Lab, Robotic"
         OutlinedTextField(
             value = aliases,
             onValueChange = { aliases = it },
@@ -956,6 +1144,8 @@ private fun DestinationLabelRow(
                 content = { Text(strings.destinationButtonSave, fontSize = 24.sp) },
                 modifier = Modifier.height(72.dp),
             )
+
+            // Reset: restore this destination's default labels
             OutlinedButton(
                 onClick = onReset,
                 content = { Text(strings.destinationButtonReset, fontSize = 24.sp) },

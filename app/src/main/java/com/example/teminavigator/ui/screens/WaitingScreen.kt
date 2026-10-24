@@ -18,6 +18,22 @@ import androidx.compose.ui.unit.sp
 import com.example.teminavigator.ui.langs.LocalStrings
 import com.example.teminavigator.ui.langs.germanStrings
 
+/**
+ * This is an idle screen which is shown after the robot successfully finished a guidance and waits
+ * for either user input or to return to their home.
+ *
+ * This screen displays a greeting for the user. It has a single button to leave the waiting state
+ * and go into the HomeScreen to select a destination.
+ *
+ * While idle, the [returnCountdown] is shown to display the time until the robot navigates back
+ * to their home base (if set in [SettingsScreen]).
+ *
+ *
+ * @param onLeaveWaiting    Called when user taps "select location" button,
+ *                          navigates to the destination selection [HomeScreen]
+ * @param returnCountdown   Seconds until the robot automatically returns to its home location
+ *                          or null if no countdown is currently running
+ */
 @Composable
 fun WaitingScreen(
     onLeaveWaiting: () -> Unit,
@@ -32,7 +48,7 @@ fun WaitingScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // Element 1
+        // Element 1 - waiting icon
         Icon(
             imageVector = Icons.Filled.HourglassTop,
             contentDescription = null,
@@ -40,7 +56,7 @@ fun WaitingScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Element 2
+        // Element 2: greeting headline
         Text(
             strings.greeting,
             style = MaterialTheme.typography.headlineLarge,
@@ -49,7 +65,7 @@ fun WaitingScreen(
         )
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Element 3
+        // Element 3: prompt asking the user for their destination
         Text(
             strings.locationQuery,
             style = MaterialTheme.typography.bodyLarge,
@@ -59,12 +75,9 @@ fun WaitingScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         // Element 4
-        /**
-         * Navigating buttons
-         */
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
 
-            // Button to go to the current destination screen
+            // Button to go to the HomeScreen
             AppButton(
                 strings.selectLocation,
                 Icons.Filled.LocationOn,
@@ -91,7 +104,7 @@ fun WaitingScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Element 5
+        // Element 5: voice input hint (mic icon + notice text)
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             Icon(
                 imageVector = Icons.Filled.Mic,
@@ -111,6 +124,15 @@ fun WaitingScreen(
     }
 }
 
+/**
+ * Function for a reusable large button with an icon and a label
+ *
+ * @param text      Button label
+ * @param icon      Icon shown before the label
+ * @param onClick   Called when the button is pressed
+ * @param modifier  Layout modifier (e.g. size) applied to the button
+ * @param colors    Button color scheme; defaults to the standard filled button colors
+ */
 @Composable
 fun AppButton(
     text: String,
@@ -128,7 +150,9 @@ fun AppButton(
     }
 }
 
-
+/**
+ * Preview of [WaitingScreen] for Android Studio's preview pane.
+ */
 @Preview(showBackground = true)
 @Composable
 fun WaitingScreenPreview() {

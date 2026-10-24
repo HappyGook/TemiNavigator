@@ -58,6 +58,30 @@ import kotlin.math.ceil
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
+/**
+ * This is the screen which is shown when the robot is guiding to a destination.
+ *
+ * The screen is divided into two panels:
+ *    - Left Panel: Contains the current navigation status -> destination name, arrival time,
+ *      remaining distance, a progress bar, buttons for pause/resume/abort
+ *    - Right Panel: Contains an interactive map, showing navigation target,
+ *      path and robot position
+ *
+ * The entire screen reacts to taps to toggle pause, so the robot pauses on a tab anywhere.
+ * This makes it easier to pause the robot when it is moving.
+ * While the guidance is paused, the User can abort the current navigation.
+ *
+ *
+ * @param currentSpeed      Current speed of the robot
+ * @param destination       The destination the robot is navigating to
+ * @param map               The map image to display, or `null` if no map is loaded
+ * @param navigationState   The current navigation state (Guiding, Paused, Arrived)
+ * @param onAbort           Called when the user aborts navigation (only offered while paused)
+ * @param onTogglePause     Called when the user toggles between pausing and resuming navigation
+ * @param path              A list of coordinates on the map which represents the path
+ * @param pxPerMeter        Map scale (pixels per meter) used to convert pixel distances to meters
+ * @param robotPose         The robot's current pose (position + orientation)
+ */
 @Suppress("ktlint:standard:function-naming")
 @Composable
 fun NavigationScreen(
@@ -73,6 +97,8 @@ fun NavigationScreen(
 ) {
     val strings = LocalStrings.current
     val paused = navigationState is NavigationState.Paused
+
+    // Start pose of the robot, used as reference point for the progress calculation
     var startPose by remember(destination) { mutableStateOf<RobotPose?>(null) }
     val arrived = navigationState as? NavigationState.Arrived
 
@@ -104,6 +130,7 @@ fun NavigationScreen(
         }
 
     // progress - how much of the overall distance has already been covered
+    // computed relative to captured start position
     val progress by remember(destination) {
         derivedStateOf {
             val start = startPose
@@ -130,7 +157,8 @@ fun NavigationScreen(
                     onClick = onTogglePause,
                 ),
     ) {
-        // Left side of the screen
+
+        // ---- Left side of the screen: navigation status ----
         Column(
             modifier =
                 Modifier
@@ -140,7 +168,7 @@ fun NavigationScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // Element 1
+            // Element 1 - "Going to ..." label
             Text(strings.goingTo, style = MaterialTheme.typography.labelMedium, fontSize = 28.sp)
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -152,7 +180,7 @@ fun NavigationScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Element 3
+            // Element 3: ETA and remaining distance.
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -208,6 +236,7 @@ fun NavigationScreen(
                     Modifier.height(144.dp),
                 )
 
+                // Abort is only offered while navigation is paused.
                 if (paused) {
                     // Abort Navigation
                     AppButton(
@@ -220,13 +249,14 @@ fun NavigationScreen(
             }
         }
 
-        // Right side - Map
+        // ---- Right side - Map ----
         Box(
             modifier =
                 Modifier
                     .weight(1.5f)
                     .fillMaxHeight(),
         ) {
+            // Map reduced to the navigation target, the planned path, and the robot position
             InteractiveMap(
                 destinations = listOf(destination),
                 selectedId = destination.id,
@@ -236,11 +266,21 @@ fun NavigationScreen(
             )
         }
     }
+
+    // Full-screen arrival confirmation once the target is reached.
     if (arrived != null && arrived.target == destination) {
         ArrivalOverlay(name = destination.displayName)
     }
 }
 
+/**
+ * Popping overlay ot confirm that the robot has arrived at the chosen destination.
+ *
+ * Darkens the background and shows a centered card with a check icon,
+ * an "arrived" message and the guided destination name.
+ *
+ * @param name Display name of the reached destination, shown in the message.
+ */
 @Suppress("ktlint:standard:function-naming")
 @Composable
 private fun ArrivalOverlay(name: String) {
@@ -261,6 +301,9 @@ private fun ArrivalOverlay(name: String) {
     }
 }
 
+/**
+ * Preview of [NavigationScreen] for Android Studio's preview pane.
+ */
 @Suppress("ktlint:standard:function-naming")
 @Preview(name = "Tablet", device = Devices.TABLET)
 @Composable

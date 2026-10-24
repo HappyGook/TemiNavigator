@@ -64,6 +64,29 @@ import com.example.teminavigator.ui.langs.germanStrings
 import com.example.teminavigator.ui.map.InteractiveMap
 import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 
+/**
+ * This is the main screen of the app, where the users can select and confirm their destination.
+ *
+ * The screen is divided into two panels:
+ *   - Left Panel: Contains the searchable list of destinations to choose from
+ *   - Right Panel: Contains an interactive map ([InteractiveMap]), which shows all destinations,
+ *     the currently planned [path] if a destination is chosen and the live robot position.
+ *     There is also setting button in the top-right corner to get into the [SettingsScreen]
+ *
+ * @param destinations              List of all known destinations shown on the map
+ * @param selectedId                ID of the currently selected destination
+ * @param onSelect                  This is called when the user pick a destination from map or list
+ * @param onDeselect                Called when user navigates back from detail view
+ * @param path                      List of coordinates for the planned route
+ * @param robotPose                 The current position and orientation of the robot on the map
+ * @param onDestinationConfirmed    Called when the user confirms navigation in the detail view
+ *                                  Triggers the actual navigation of the Temi robot.
+ * @param onOpenSettings            Called when the settings button in the map panel is tapped
+ * @param onStartSpeechRecognition  Called when the microphone button is tapped to start
+ *                                  speech recognition on the Temi-Robot
+ * @param voiceInputEnabled         Whether voice input is currently available
+ * @param map                       The map image, or `null` if no map is loaded
+ */
 @Composable
 fun HomeScreen(
     destinations: List<Destination>,
@@ -78,11 +101,13 @@ fun HomeScreen(
     voiceInputEnabled: Boolean,
     map: ImageBitmap?,
 ) {
+    // Current search query entered by the user
     var searchQuery by rememberSaveable { mutableStateOf("") }
     val selected = destinations.find { it.id == selectedId }
     val strings = LocalStrings.current
 
     // List of destinations - filtered by the current search query
+    // Destination matches if it's display name, id or any aliases contain the search text
     val filteredDestinations =
         destinations.filter { destination ->
             searchQuery.isBlank() ||
@@ -100,6 +125,8 @@ fun HomeScreen(
                     .fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+
+            // ---- Left panel: destinations list ----
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = colorScheme.surfaceContainer,
@@ -156,6 +183,8 @@ fun HomeScreen(
                     }
                 }
             }
+
+            // ---- Right panel: interactive map ----
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = colorScheme.tertiary,
@@ -164,6 +193,7 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .fillMaxHeight(),
             ) {
+                // Interactive map showing destinations, planned path, live robot pose.
                 InteractiveMap(
                     destinations = destinations,
                     selectedId = selectedId,
@@ -187,6 +217,18 @@ fun HomeScreen(
     }
 }
 
+/**
+ * Scrollable list of destinations.
+ *
+ * Automatically scrolls to the currently selected destination whenever the
+ * selection or the list content changes, so that the selection stays visible
+ * (e.g. when a destination is picked via voice input or by tapping the map).
+ *
+ * @param locationList      The destinations to display (already filtered by the caller)
+ * @param selectedId        ID of the currently selected destination, used for highlighting
+ *                          and auto-scrolling; `null` if nothing is selected
+ * @param onSelect          Called when the user taps a list entry
+ */
 @Composable
 fun LocationsList(
     locationList: List<Destination>,
@@ -235,6 +277,17 @@ fun LocationsList(
     }
 }
 
+/**
+ * Detailed View which is shown when a selection is selected
+ *
+ * Replaces the destination list when a destination is selected and shows destination name,
+ * aliases and a confirmation button to start the navigation.
+ * Also has a return button to get back to the destination list view.
+ *
+ * @param destination   The selected destination to display
+ * @param onBack        Called when user taps return button, gets back to the destination list
+ * @param onConfirm     Called when confirm button is selected, starts navigation to destination
+ */
 @Composable
 fun DestinationDetail(
     destination: Destination,
@@ -260,6 +313,7 @@ fun DestinationDetail(
             Text(strings.selectLocation, fontSize = 36.sp)
         }
 
+        // Destination name the user is about to confirm.
         Text(
             text = strings.confirmTitle(destination.displayName),
             fontSize = 48.sp,
@@ -267,7 +321,7 @@ fun DestinationDetail(
             fontWeight = FontWeight.Bold,
             color = colorScheme.onSurface,
         )
-
+        // Alternative names
         if (destination.aliases.isNotEmpty()) {
             Text(
                 text = destination.aliases.joinToString(", "),
@@ -278,6 +332,7 @@ fun DestinationDetail(
 
         Spacer(Modifier.weight(1f))
 
+        // Confirm button -> starts navigation to this destination
         Button(
             onClick = onConfirm,
             modifier =
@@ -288,6 +343,16 @@ fun DestinationDetail(
     }
 }
 
+/**
+ * An entry in the destinations list [LocationsList]
+ *
+ * Displays name and aliases of the destination.
+ * A selected entry is highlighted by using another color than the unselected entries.
+ *
+ * @param location      Location of the destination represented by this row
+ * @param isSelected    Boolean to determine if entry is selected
+ * @param onClick       Called when the row with the destination is tapped
+ */
 @SuppressLint("RememberInComposition")
 @Composable
 fun PossibleLocation(
@@ -339,6 +404,9 @@ fun PossibleLocation(
     }
 }
 
+/**
+ * Preview of [HomeScreen] for Android Studio's preview pane.
+ */
 @Preview(name = "Tablet", device = Devices.TABLET)
 @Composable
 fun HSPreview() {
