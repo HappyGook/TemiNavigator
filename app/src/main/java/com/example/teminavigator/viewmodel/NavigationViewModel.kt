@@ -47,11 +47,27 @@ import kotlinx.coroutines.withContext
 import kotlin.math.hypot
 import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * A transient message for the UI following a speech-recognition result.
+ *
+ * [id] distinguishes successive notices with the same [message], so the UI can clear only
+ * the notice it displayed.
+ */
 data class SpeechNotice(
     val id: Long,
     val message: String,
 )
 
+/**
+ * Coordinates the app's navigation UI with the robot and its persisted settings.
+ *
+ * Exposes observable screen, navigation, map, destination, and robot-pose state, and translates
+ * UI actions and [RobotEvent]s into robot commands. Robot coordinates are converted to map-image
+ * coordinates using the current [calibration]. Destination preview commands are temporary and
+ * are kept separate from active guidance.
+ *
+ * The robot is attached during initialization and detached when this ViewModel is cleared.
+ */
 class NavigationViewModel(
     app: Application,
     private val robot: RobotController,
@@ -66,41 +82,54 @@ class NavigationViewModel(
         MutableStateFlow(
             AppLanguage.fromCode(prefs.getString("language", null)),
         )
+
+    /** The language used for robot speech and other localized navigation messages. */
     val language: StateFlow<AppLanguage> = _language.asStateFlow()
 
+    /** Current guidance state, including whether the robot is guiding, paused, or has arrived. */
     private val _navState = MutableStateFlow<NavigationState>(NavigationState.Idle)
     val navState: StateFlow<NavigationState> = _navState.asStateFlow()
 
+    /** Whether the robot is ready to provide navigation destinations. */
     private val _readyState = MutableStateFlow(false)
     val readyState: StateFlow<Boolean> = robot.ready
 
+    /** Latest unhandled speech-recognition notice, or `null` when there is none. */
     private val _speechNotice = MutableStateFlow<SpeechNotice?>(null)
     val speechNotice: StateFlow<SpeechNotice?> = _speechNotice.asStateFlow()
     private var speechNoticeId = 0L
 
+    /** Current destination of the robot */
     private var currentDestination: Destination? = null
 
-    private val calibrationRepo = CalibrationRepository(app)
 
+
+    /** Labels used to map correct name aliases to internal destinations names   */
     private val labelRepo = DestinationLabelRepository(app)
-
     val labels: StateFlow<Map<String, DestinationLabels>> =
         labelRepo.labels.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
+    /** Calibration used to translate robot-world coordinates (internal Temi map) into map-image pixels. */
+    private val calibrationRepo = CalibrationRepository(app)
     val calibration: StateFlow<MapCalibration> =
         calibrationRepo.calibration.stateIn(
             viewModelScope,
             SharingStarted.Eagerly,
             MapCalibration(Offset(418F, 1191F), 24F, -1.6F), // only used until the first load finishes
         )
+    // Saves a new robot-to-map calibration.
+    fun setCalibration(c: MapCalibration) {
+        viewModelScope.launch { calibrationRepo.save(c) }
+    }
 
+    /** Latest robot pose expressed in map-image pixels, or `null` until a pose is received. */
     private data class RawPose(
         val x: Float,
         val y: Float,
         val yaw: Float,
     )
-
     private val rawPose = MutableStateFlow<RawPose?>(null)
+
     val pose: StateFlow<RobotPose?> =
         combine(rawPose, calibration) { raw, cal ->
             raw?.let {
@@ -109,7 +138,8 @@ class NavigationViewModel(
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    // path transformation
+
+    /** Current robot path expressed in map-image pixels. */
     private val rawPath = MutableStateFlow<List<RobotEvent.MapPoint>>(emptyList())
 
     val path: StateFlow<List<Offset>> =
@@ -117,10 +147,8 @@ class NavigationViewModel(
             raw.map { cal.robotToImagePx(it.x, it.y) }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    fun setCalibration(c: MapCalibration) {
-        viewModelScope.launch { calibrationRepo.save(c) }
-    }
 
+    /** Available robot locations, decorated with saved labels and mapped to image coordinates. */
     val destinations: StateFlow<List<Destination>> =
         combine(readyState, calibration, labelRepo.labels) { ready, cal, labels ->
             Log.i("Dest", "recompute: ready=$ready, origin=${cal.originPx}, scale=${cal.pxPerMeter}")
@@ -146,12 +174,14 @@ class NavigationViewModel(
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    // selected Destination logic for the preview of the path
+    /** selected Destination logic for the preview of the path. */
     private val _selected = MutableStateFlow<Destination?>(null)
     val selected: StateFlow<Destination?> = _selected.asStateFlow()
 
     // failedDestination in case temi fails to reach the destination
     private val _failedDestination = MutableStateFlow<Destination?>(null)
+
+    // Destination from the most recent failed trip, while its failure message is shown.
     val failedDestination: StateFlow<Destination?> = _failedDestination.asStateFlow()
     private var failureJob: Job? = null
 
@@ -160,6 +190,10 @@ class NavigationViewModel(
     private var activeGoTo = false
     private var pendingAborts = 0
 
+    /**
+     * Selects a destination and starts a short robot path preview when navigation is idle.
+     * Passing `null` clears the selection.
+     */
     fun selectDestination(dest: Destination?) {
         stopPreview()
         dismissFailure()
@@ -168,6 +202,7 @@ class NavigationViewModel(
         if (dest != null) startPreview(dest)
     }
 
+    /** Clears the selected destination, preview path, and any active preview motion. */
     fun deselectDestination() {
         stopPreview()
         stopRobot()
@@ -175,6 +210,10 @@ class NavigationViewModel(
         _selected.value = null
     }
 
+    /** Start preview to display the path the destination, waiting for 5 sec to load the path
+     *  (because the path needs to be loaded after calling the goTo function from Temi which may
+     *  require some time)
+     * */
     private fun startPreview(dest: Destination) {
         if (_navState.value !is NavigationState.Idle) return // never preview during real guidance
         previewing = true
@@ -186,6 +225,7 @@ class NavigationViewModel(
             }
     }
 
+    /** Stop preview and stop robot */
     private fun stopPreview() {
         if (!previewing) return
         previewing = false
@@ -193,6 +233,7 @@ class NavigationViewModel(
         stopRobot()
     }
 
+    /** Changes the app and robot speech language and persists the choice. */
     fun setLanguage(language: AppLanguage) {
         _language.value = language
         robot.setSpeechLanguage(language.code)
@@ -202,24 +243,29 @@ class NavigationViewModel(
     private val strings: AppStrings
         get() = _language.value.strings
 
-    // Settings
+    /** Persisted application Settings. */
     private val settingsRepo = SettingsRepository(app)
+
     val settings: StateFlow<AppSettings> =
         settingsRepo.settings.stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
     private val mapLoader = MapLoader(app)
 
+    /** Navigation speed selected in settings */
     val speed: StateFlow<NavSpeed> =
         settings
             .map { it.navigationSpeed }
             .distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.Eagerly, NavSpeed.MEDIUM)
 
+    /** Calibration values used to estimate metres per second for each navigation speed. */
     val speedCalibration: StateFlow<SpeedCalibration> = MutableStateFlow(SpeedCalibration())
 
+    /** Estimated speed in metres per second for the currently selected navigation speed. */
     val speedMps: StateFlow<Float> =
         combine(speed, speedCalibration) { s, c -> c.mps(s) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, 0.5f)
 
+    /** Configured map image, or `null` when the default asset should be used or loading is pending. */
     val mapImage: StateFlow<ImageBitmap?> =
         settingsRepo.settings
             .map { it.mapImagePath }
@@ -227,6 +273,7 @@ class NavigationViewModel(
             .map { mapLoader.load(it) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    /** Imports the chosen image as the map, replacing the previously imported local map. */
     fun pickMap(uri: Uri) =
         viewModelScope.launch {
             val old = settings.first().mapImagePath
@@ -234,6 +281,7 @@ class NavigationViewModel(
             if (new != null) settingsRepo.setMapImagePath(new)
         }
 
+    /** Restores the default map and removes the previously imported local map file. */
     fun resetMap() =
         viewModelScope.launch {
             val old = settings.value.mapImagePath
@@ -241,11 +289,14 @@ class NavigationViewModel(
             mapLoader.deleteLocal(old)
         }
 
+    /** Seconds remaining before automatic return home, or `null` when no countdown is active. */
     private val _returnCountdown = MutableStateFlow<Int?>(null)
     val returnCountdown: StateFlow<Int?> = _returnCountdown.asStateFlow()
     private var returnJob: Job? = null
 
-    // Label setting functions
+
+    /** Label setting functions */
+    // Updates the saved display name for a robot destination.
     fun setDisplayName(
         id: String,
         name: String,
@@ -253,6 +304,7 @@ class NavigationViewModel(
         viewModelScope.launch { labelRepo.setDisplayName(id, name) }
     }
 
+    // Updates the saved aliases for a robot destination. */
     fun setAliases(
         id: String,
         aliases: List<String>,
@@ -260,93 +312,116 @@ class NavigationViewModel(
         viewModelScope.launch { labelRepo.setAliases(id, aliases) }
     }
 
-    fun setNavigationSpeed(speed: NavSpeed) {
-        viewModelScope.launch { settingsRepo.setNavigationSpeed(speed) }
-    }
-
-    fun clearSpeechNotice(id: Long) {
-        if (_speechNotice.value?.id == id) _speechNotice.value = null
-    }
-
+    // Removes a destination's saved display name and aliases. */
     fun resetLabels(id: String) {
         viewModelScope.launch { labelRepo.reset(id) }
     }
 
+    /** Persists the selected navigation speed. */
+    fun setNavigationSpeed(speed: NavSpeed) {
+        viewModelScope.launch { settingsRepo.setNavigationSpeed(speed) }
+    }
+
+    /** Clears the currently displayed speech notice only if [id] is still its ID. */
+    fun clearSpeechNotice(id: Long) {
+        if (_speechNotice.value?.id == id) _speechNotice.value = null
+    }
+
+
+    /** Speech / Voice recognition */
+    // Starts the speechRecognition, called when Temi hears the wakup word or the mic in HomeScreen
+    // is clicked
     fun startSpeechRecognition() {
         Log.i("ViewModel", "recognition")
         _screen.value = Screen.Home // switch to Homescreen
         if (settings.value.voiceInputEnabled) startSpeechConversation()
     }
 
+    // Calls startSpeechRecognition from the Temi Robot API
     private fun startSpeechConversation() {
         Log.i("ViewModel", "conversation")
         if (!settings.value.voiceInputEnabled) return
         robot.startSpeechRecognition()
     }
 
-    // screen logic
+    /** Screen logic currently presented by the app. */
+    // Screen currently presented by the app
     private val _screen = MutableStateFlow<Screen>(Screen.Waiting)
     val screen: StateFlow<Screen> = _screen.asStateFlow()
 
     private var arrivalJob: Job? = null
 
+    /** Opens the settings screen. */
     fun openSettings() {
         _screen.value = Screen.Settings
     }
 
+    /** Closes settings and returns to the home screen. */
     fun closeSettings() {
         _screen.value = Screen.Home
     }
 
+    /** Leaves the waiting screen, stops robot speech, and dismisses any failure message. */
     fun leaveWaiting() {
         robot.stopSpeaking()
         dismissFailure()
         _screen.value = Screen.Home
     }
 
+    /** Sets the delay before the app automatically returns the robot to its home location. */
     fun setReturnHomeDelay(sec: Int) {
         viewModelScope.launch { settingsRepo.setReturnHomeDelay(sec) }
     }
 
+    /** Sets how long an arrival or failure message remains before the app returns to waiting. */
     fun setArrivalFailureDelay(sec: Int) {
         viewModelScope.launch { settingsRepo.setArrivalFailureDelay(sec) }
     }
 
+    /** Enables or disables navigation sound effects. */
     fun setSoundsEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsRepo.setSoundsEnabled(enabled) }
     }
 
+    /** Enables or disables navigation music, stopping playback immediately when disabled. */
     fun setMusicEnabled(enabled: Boolean) {
         if (!enabled) musicPlayer.stop()
         viewModelScope.launch { settingsRepo.setMusicEnabled(enabled) }
     }
 
+    /** Enables or disables spoken output, stopping current robot speech when disabled. */
     fun setVoiceOutputEnabled(enabled: Boolean) {
         if (!enabled) robot.stopSpeaking()
         viewModelScope.launch { settingsRepo.setVoiceOutputEnabled(enabled) }
     }
 
+    /** Enables or disables speech input, stopping recognition when disabled. */
     fun setVoiceInputEnabled(enabled: Boolean) {
         if (!enabled) robot.stopSpeechRecognition()
         viewModelScope.launch { settingsRepo.setVoiceInputEnabled(enabled) }
     }
 
+    /** Enables or disables automatic return to the configured home location. */
     fun setAutoReturnEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsRepo.setAutoReturnEnabled(enabled) }
     }
 
+    /** Sets the robot location ID used as the automatic return destination. */
     fun setHomeLocationId(newId: String) {
         viewModelScope.launch { settingsRepo.setHomeLocationName(newId) }
     }
 
+    /** Sets the configured home radius in map-image pixels. */
     fun setHomeRadius(pixels: Float) {
         viewModelScope.launch { settingsRepo.setHomeRadius(pixels) }
     }
 
+    /** Enables or disables greetings while the app is on the waiting screen. */
     fun setGreetingsEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsRepo.setGreetingsEnabled(enabled) }
     }
 
+    /** Sets the minimum interval between waiting-screen greetings, in milliseconds. */
     fun setGreetingsCooldown(ms: Int) {
         viewModelScope.launch { settingsRepo.setGreetingsCooldown(ms) }
     }
@@ -450,12 +525,14 @@ class NavigationViewModel(
             }
     }
 
+    /** Starts guidance to [destination] and announces the selected destination. */
     fun startGuidance(destination: Destination) {
         currentDestination = destination
         startGoingTo(destination.id)
         speak(strings.spokenStarting(destination.displayName))
     }
 
+    /** Toggles active guidance between guiding and paused; has no effect in other states. */
     fun toggleNavigationPause() {
         val dest = currentDestination ?: return
         when (_navState.value) {
@@ -477,6 +554,7 @@ class NavigationViewModel(
         }
     }
 
+    /** Confirms a destination, starts guidance, and opens its navigation screen. */
     fun confirmDestination(destination: Destination) {
         stopPreview()
         dismissFailure()
@@ -493,6 +571,7 @@ class NavigationViewModel(
         _navState.value = NavigationState.Idle
     }
 
+    /** Cancels active or preview navigation and returns the app to the waiting screen. */
     fun cancelGuidance() {
         val isActiveNavigation =
             !previewing && currentDestination != null &&
@@ -507,10 +586,12 @@ class NavigationViewModel(
         speak(strings.spokenAbort)
     }
 
+    /** Speaks [text] through the robot when voice output is enabled. */
     fun speak(text: String) {
         if (settings.value.voiceOutputEnabled) robot.speak(text, _language.value.code)
     }
 
+    /** Stops current robot movement and tracks the expected cancellation event. */
     fun stopRobot() {
         if (!activeGoTo) return // nothing moving -> no abort will come
         activeGoTo = false
@@ -518,6 +599,7 @@ class NavigationViewModel(
         robot.stop()
     }
 
+    /** Sends a go-to command for a robot destination ID. */
     fun startGoingTo(id: String) {
         if (activeGoTo) pendingAborts++ // new goTo aborts the running one
         activeGoTo = true
@@ -536,16 +618,24 @@ class NavigationViewModel(
         showFailure(dest)
     }
 
+    /** Dismisses the current destination failure message. */
     fun dismissFailure() {
         failureJob?.cancel()
         _failedDestination.value = null
     }
 
+    /** Dismisses a failure message and returns from navigation to the home screen. */
     fun dismissFailureDialog() {
         dismissFailure()
         if (_screen.value is Screen.Navigation) _screen.value = Screen.Home
     }
 
+    /**
+     * Applies a robot event to the ViewModel state and coordinates related navigation effects.
+     *
+     * Handles movement and arrival results, position and path updates, readiness, speech
+     * recognition, wake-word detection, and greeting triggers.
+     */
     private fun handleEvent(event: RobotEvent) {
         when (event) {
             is RobotEvent.GoToCancelled -> {
@@ -654,22 +744,22 @@ class NavigationViewModel(
         }
     }
 
+    /**
+     * Functions for better readability - all of them check, if enabled in settings, if yes, play
+     * associated sound or music.
+     */
     private inline fun playSoundIfEnabled(play: SoundPlayer.() -> Unit) {
         if (settings.value.soundsEnabled) play(soundPlayer)
     }
-
     private inline fun playMusicIfEnabled(play: MusicPlayer.() -> Unit) {
         if (settings.value.musicEnabled) play(musicPlayer)
     }
-
     private inline fun pauseMusicIfEnabled(pause: MusicPlayer.() -> Unit) {
         if (settings.value.musicEnabled) pause(musicPlayer)
     }
-
     private inline fun resumeMusicIfEnabled(resume: MusicPlayer.() -> Unit) {
         if (settings.value.musicEnabled) resume(musicPlayer)
     }
-
     private inline fun stopMusicIfEnabled(stop: MusicPlayer.() -> Unit) {
         if (settings.value.musicEnabled) stop(musicPlayer)
     }
