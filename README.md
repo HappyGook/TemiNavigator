@@ -9,7 +9,8 @@
     - [Basic settings](#basic-settings)
     - [Language](#language)
 3. [Project structure](#project-structure)
-4. [AI usage log](#ai-usage-log)
+4. [Architecture](#architecture)
+5. [AI usage log](#ai-usage-log)
 
 
 ## Overview
@@ -53,74 +54,88 @@ These can be adjusted in the settings menu without requiring an admin password.
 ```
 app/
 └── src/main/java/com/example/teminavigator/
-    ├── MainActivity.kt
-    ├── TemiRobot.kt
+    ├── MainActivity.kt                  # Entry point: connects ViewModel to UI
+    ├── TemiRobot.kt                     # Temi SDK integration (implements RobotController)
     │
-    ├── data/
-    │   ├── AdminPasswordStore.kt
-    │   ├── CalibrationRepository.kt
-    │   ├── DestinationLabelRepository.kt
-    │   ├── DestinationLabels.kt
-    │   └── SettingsRepository.kt
+    ├── data/                            # Local persistence (Jetpack DataStore)
+    │   ├── AdminPasswordStore.kt        #   Password protecting the settings
+    │   ├── CalibrationRepository.kt     #   Map calibration (origin, scale, rotation)
+    │   ├── DestinationLabelRepository.kt#   Custom display names and aliases per destination
+    │   ├── DestinationLabels.kt         #   Serializable format of those labels
+    │   └── SettingsRepository.kt        #   All app settings with defaults
     │
-    ├── domain/
-    │   ├── Destination.kt
-    │   ├── DestinationMatching.kt
-    │   ├── MapCalibration.kt
-    │   ├── MapLoader.kt
-    │   ├── NavSpeed.kt
-    │   ├── NavigationState.kt
-    │   ├── RobotController.kt
-    │   ├── RobotEvent.kt
-    │   └── Screen.kt
+    ├── domain/                          # App models and logic, independent of the UI and SDK
+    │   ├── Destination.kt               #   A place the robot can guide to
+    │   ├── DestinationMatching.kt       #   Fuzzy matching of spoken text to destinations
+    │   ├── MapCalibration.kt            #   Robot coordinates -> map pixels
+    │   ├── MapLoader.kt                 #   Loads/imports the map image, with fallback
+    │   ├── NavSpeed.kt                  #   Speed levels and their real velocity (ETA)
+    │   ├── NavigationState.kt           #   Idle / Guiding / Paused / Arrived
+    │   ├── RobotController.kt           #   Interface the app uses to command the robot
+    │   ├── RobotEvent.kt                #   Everything the robot reports back
+    │   └── Screen.kt                    #   All screens the UI can show
     │
-    ├── ui/
-    │   ├── langs/
+    ├── ui/                              # Jetpack Compose UI, no business logic
+    │   ├── langs/                       #   Translations and language selection
     │   │   ├── AppLanguage.kt
-    │   │   ├── AppStrings.kt
+    │   │   ├── AppStrings.kt            #     All texts of one language (one class)
     │   │   ├── EnglishStrings.kt
     │   │   ├── GermanStrings.kt
-    │   │   ├── LocalStrings.kt
+    │   │   ├── LocalStrings.kt          #     Provides the active strings to the UI
     │   │   ├── NadsatStrings.kt
     │   │   ├── PirateStrings.kt
     │   │   └── RussianStrings.kt
     │   │
-    │   ├── map/
-    │   │   ├── InteractiveMap.kt
-    │   │   └── MapHelper.kt
+    │   ├── map/                         #   Floor map
+    │   │   ├── InteractiveMap.kt        #     Zoomable map with pins, robot and route
+    │   │   └── MapHelper.kt             #     Coordinate conversion and drawing helpers
     │   │
-    │   ├── screens/
-    │   │   ├── HomeScreen.kt
-    │   │   ├── NavigationScreen.kt
-    │   │   ├── SettingsScreen.kt
-    │   │   └── WaitingScreen.kt
+    │   ├── screens/                     #   One composable per Screen
+    │   │   ├── HomeScreen.kt            #     Destination selection (touch and voice)
+    │   │   ├── NavigationScreen.kt      #     Guidance with route, ETA, pause and abort
+    │   │   ├── SettingsScreen.kt        #     Password-protected configuration
+    │   │   └── WaitingScreen.kt         #     Idle screen at the waiting position
     │   │
     │   ├── sound/
-    │   │   └── SoundPlayer.kt
+    │   │   └── SoundPlayer.kt           #   Sound effects and music
     │   │
-    │   └── theme/
+    │   └── theme/                       #   Colors, theme and typography
     │       ├── Color.kt
     │       ├── Theme.kt
     │       └── Type.kt
     │
     └── viewmodel/
-        └── NavigationViewModel.kt
+        └── NavigationViewModel.kt       # App state and logic, links robot, data and UI
 ```
+
+## Architecture
+
+The app follows MVVM with a unidirectional data flow, built with Jetpack Compose.
+
+- View (`ui/`): Composables display state and report user actions.
+  `TemiApp` is the stateless root composable. It receives everything as
+  parameters, passes every action out as a callback and contains no logic.
+- ViewModel (`viewmodel/`): `NavigationViewModel` is the single source of
+  truth. It exposes the UI state as StateFlows (current `Screen`,
+  `NavigationState`, destinations, robot pose, settings, etc.) and handles all
+  user actions and robot events.
+- Model (`domain/` and `data/`): `domain/` holds the app's models and logic. 
+  `data/` persists settings, calibration and destination labels locally with DataStore. The
+  ViewModel merges them into the UI state.
 
 ## AI usage log
 
 This table shows and explains the use of AI in our project, broken down by completed tasks.
 
-| Person | Task                                                                   | AI-Tool / Model   | AI contribution                 | Location                                                                                            |
-| ------ | ---------------------------------------------------------------------- | ----------------- | ------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Arne   | Match input from voice recognition with one destination in Temi's list | Claude Sonnet 5.5 | Complete writing of the methods | [DestinationMatching.kt](app/src/main/java/com/example/teminavigator/domain/DestinationMatching.kt) |
-|        |                                                                        |                   |                                 |                                                                                                     |
-|        |                                                                        |                   |                                 |                                                                                                     |
-|        |                                                                        |                   |                                 |                                                                                                     |
-|        |                                                                        |                   |                                 |                                                                                                     |
-|        |                                                                        |                   |                                 |                                                                                                     |
-|        |                                                                        |                   |                                 |                                                                                                     |
-|        |                                                                        |                   |                                 |                                                                                                     |
-|        |                                                                        |                   |                                 |                                                                                                     |
-|        |                                                                        |                   |                                 |                                                                                                     |
-|        |                                                                        |                   |                                 |                                                                                                     |
+| Person | Task                                                                   | AI-Tool / Model   | AI contribution                                    | Location                                                                                                                                                    |
+|--------|------------------------------------------------------------------------|-------------------|----------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Arne   | Match input from voice recognition with one destination in Temi's list | Claude Sonnet 5.5 | Complete writing of the methods                    | [DestinationMatching.kt](app/src/main/java/com/example/teminavigator/domain/DestinationMatching.kt)                                                         |
+| Oleg   | Create absent phrases, improve translation                             | Claude Sonnet 5.5 | Partial to full creation of language packs         | [All xStrings.kt files](app/src/main/java/com/example/teminavigator/ui/langs)                                                                               |
+| Oleg   | Document the package `domain`                                          | Claude Sonnet 5.5 | Improvement / creation of KDoc-style documentation | [All files in package domain](app/src/main/java/com/example/teminavigator/domain)                                                                           |
+| Oleg   | Document the package `data`                                            | Claude Sonnet 5.5 | Improvement / creation of KDoc-style documentation | [All files in package data](app/src/main/java/com/example/teminavigator/data)                                                                               |
+| Oleg   | Document the package `ui.map`                                          | Claude Sonnet 5.5 | Improvement / creation of KDoc-style documentation | [All files in package ui.map](app/src/main/java/com/example/teminavigator/ui/map)                                                                           |
+| Oleg   | Document the package `ui.langs`                                        | Claude Sonnet 5.5 | Improvement / creation of KDoc-style documentation | [All files in package ui.langs](app/src/main/java/com/example/teminavigator/ui/langs)                                                                       |
+| Oleg   | Document `MainActivity.kt` `and TemiRobot.kt`                          | Claude Sonnet 5.5 | Improvement / creation of KDoc-style documentation | [MainActivity.kt](app/src/main/java/com/example/teminavigator/MainActivity.kt) and [TemiRobot.kt](app/src/main/java/com/example/teminavigator/TemiRobot.kt) |
+|        |                                                                        |                   |                                                    |                                                                                                                                                             |
+|        |                                                                        |                   |                                                    |                                                                                                                                                             |
+|        |                                                                        |                   |                                                    |                                                                                                                                                             |
