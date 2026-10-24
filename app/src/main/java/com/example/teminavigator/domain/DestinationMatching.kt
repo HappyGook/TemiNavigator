@@ -3,10 +3,34 @@ package com.example.teminavigator.domain
 import java.text.Normalizer
 
 /**
- * match method for the List<Destination> matching based on aliases and display names
- * for speech recognition
-  */
-
+ * Finds the destination that best matches a free-text query, typically
+ * recognized speech.
+ *
+ * Names considered per destination are its [Destination.id],
+ * [Destination.displayName] and [Destination.aliases]. Both query and names are
+ * normalized first (see [normalizeForMatch]). Matching then goes through
+ * several stages, from strict to tolerant, and returns the result of the first
+ * stage that finds something:
+ * 1. **Exact match:** the whole query equals one of the names.
+ * 2. **Contained name:** the query contains a name as whole word(s), e.g.
+ *    "take me to room 204 please". If several names are contained, the longest
+ *    wins.
+ * 3. **Partly exact, partly fuzzy:** for multi-word names, at least one word
+ *    must match a query word exactly, and every remaining word must nearly
+ *    match another query word (one typo or one swapped neighboring letter
+ *    pair). Preferred: more exact words, then longer names.
+ * 4. **Edit distance:** the name, spaces removed, is compared to windows of
+ *    consecutive query words using [editDistance]. The allowed distance depends
+ *    on the name length: 0 below 4 characters, 1 below 9, otherwise 2. Names
+ *    containing numbers only match if the number appears exactly in the query,
+ *    so "room 204" is not confused with "room 205". Preferred: lowest error
+ *    ratio, then longer names.
+ *
+ * @receiver The destinations to search in.
+ * @param text The raw query, e.g. the recognized speech.
+ * @return The best matching destination, or null if the query is empty or
+ * nothing matches (an unknown destination).
+ */
 fun List<Destination>.match(text: String): Destination? {
     val query = text.normalizeForMatch()
     if (query.isEmpty()) return null
@@ -107,13 +131,33 @@ fun List<Destination>.match(text: String): Destination? {
     )?.first
 }
 
+
 /**
- * Folds German umlaut spellings, strips accents and punctuation, and normalizes whitespace.
+ * Result of the edit-distance stage for one destination.
+ *
+ * @property errorRatio Edit distance divided by the name length. Lower is better.
+ * @property nameLength Length of the matched name without spaces. Used as a tie-breaker.
  */
 private data class FuzzyMatch(val errorRatio: Float, val nameLength: Int)
 
+/**
+ * Result of the partly-exact-partly-fuzzy stage for one destination.
+ *
+ * @property exactWordCount Number of name words that matched a query word exactly.
+ * @property nameLength Total character count of the name's words. Used as a tie-breaker.
+ */
 private data class SupportedFuzzyMatch(val exactWordCount: Int, val nameLength: Int)
 
+/**
+ * Normalizes text so spoken and written variants compare equal.
+ *
+ * Lowercases, folds German umlaut spellings ("ä" and "ae" both become "a", and
+ * likewise for ö/oe and ü/ue; "ß" becomes "ss"), strips accents, replaces
+ * punctuation with spaces and collapses repeated whitespace. Apply it to both
+ * the query and the names, so both sides are folded the same way.
+ *
+ * @return The normalized string, possibly empty.
+ */
 private fun String.normalizeForMatch(): String {
     val folded = lowercase()
         .replace("ä", "a")
@@ -131,6 +175,13 @@ private fun String.normalizeForMatch(): String {
         .trim()
 }
 
+/**
+ * Computes the Levenshtein distance between two strings: the minimum number
+ * of single-character insertions, deletions and substitutions needed to turn
+ * one into the other.
+ *
+ * @return The edit distance. 0 means the strings are identical.
+ */
 private fun editDistance(first: String, second: String): Int {
     var previous = IntArray(second.length + 1) { it }
     for (i in first.indices) {
@@ -149,9 +200,24 @@ private fun editDistance(first: String, second: String): Int {
     return previous[second.length]
 }
 
+/**
+ * Checks whether [phrase] appears in this string as complete word(s), so
+ * "room" is found in "go to room 5" but not in "bathroom".
+ *
+ * Both strings are expected to be normalized.
+ */
 private fun String.containsWholePhrase(phrase: String): Boolean =
     " $this ".contains(" $phrase ")
 
+/**
+ * Checks whether this query word is a close misspelling of [target].
+ *
+ * Only applies to alphabetic targets of at least 4 letters, since short words
+ * would produce too many false matches. This word must be within one
+ * character of the target's length. It is accepted if a section of it differs
+ * from [target] by at most one edit, or by one swapped neighboring pair of
+ * letters.
+ */
 private fun String.hasNearSubstring(target: String): Boolean {
     if (target.length < 4 || !target.all(Char::isLetter)) return false
     if (length < target.length - 1 || length > target.length + 1) return false
@@ -165,6 +231,11 @@ private fun String.hasNearSubstring(target: String): Boolean {
     }
 }
 
+/**
+ * Checks whether this string equals [other] except for exactly one swapped
+ * a pair of neighboring characters, e.g. "recpetion" and "reception".
+ * Counts as one error, where plain edit distance would count two.
+ */
 private fun String.hasSingleAdjacentTransposition(other: String): Boolean {
     if (length != other.length) return false
     val differingIndices = indices.filter { this[it] != other[it] }
@@ -174,4 +245,5 @@ private fun String.hasSingleAdjacentTransposition(other: String): Boolean {
         this[differingIndices[1]] == other[differingIndices[0]]
 }
 
+/** All names this destination can be called by: aliases, display name and id. */
 private fun Destination.allNames(): List<String> = aliases + displayName + id

@@ -1,6 +1,17 @@
 package com.example.teminavigator.ui.langs
 
-// a data class describing all types of strings in the app
+/**
+ * All user-visible texts of the app for one language.
+ *
+ * Each property is one text (or, for texts with variable parts, a function
+ * that builds it). There is one instance per language, e.g. `germanStrings`
+ * and `englishStrings`, which are assigned to the entries of [AppLanguage].
+ * The same texts are used for the screens and for what the robot speaks.
+ *
+ * Because every language must construct the full class, the compiler enforces
+ * that no translation is missing. To add a text, add a property here and fill
+ * it in for every language.
+ */
 data class AppStrings(
     // Home Screen
     val acceptButton: String,
