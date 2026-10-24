@@ -9,6 +9,7 @@
     - [Basic settings](#basic-settings)
     - [Language](#language)
 3. [Project structure](#project-structure)
+4. [AI usage log](#ai-usage-log)
 
 
 ## Overview
@@ -106,3 +107,20 @@ app/
         └── NavigationViewModel.kt
 ```
 
+## AI usage log
+
+This table shows and explains the use of AI in our project, broken down by completed tasks.
+
+| Person | Task                                                                   | AI-Tool / Model   | AI contribution                 | Location                                                                                            |
+| ------ | ---------------------------------------------------------------------- | ----------------- | ------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Arne   | Match input from voice recognition with one destination in Temi's list | Claude Sonnet 5.5 | Complete writing of the methods | [DestinationMatching.kt](app/src/main/java/com/example/teminavigator/domain/DestinationMatching.kt) |
+|        |                                                                        |                   |                                 |                                                                                                     |
+|        |                                                                        |                   |                                 |                                                                                                     |
+|        |                                                                        |                   |                                 |                                                                                                     |
+|        |                                                                        |                   |                                 |                                                                                                     |
+|        |                                                                        |                   |                                 |                                                                                                     |
+|        |                                                                        |                   |                                 |                                                                                                     |
+|        |                                                                        |                   |                                 |                                                                                                     |
+|        |                                                                        |                   |                                 |                                                                                                     |
+|        |                                                                        |                   |                                 |                                                                                                     |
+|        |                                                                        |                   |                                 |                                                                                                     |
