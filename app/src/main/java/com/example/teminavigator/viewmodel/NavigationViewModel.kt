@@ -426,6 +426,7 @@ class NavigationViewModel(
         viewModelScope.launch { settingsRepo.setGreetingsCooldown(ms) }
     }
 
+    /** Returns whether the latest robot pose is within the configured radius of the home location. */
     private fun isAtHome(): Boolean {
         val pose = pose.value ?: return false
         val home = destinations.value.find { it.id == settings.value.homeLocationId } ?: return false
@@ -435,6 +436,12 @@ class NavigationViewModel(
         return isAtHome
     }
 
+    /**
+     * Starts the waiting-screen countdown for automatic return home.
+     *
+     * The countdown is skipped during previews or active navigation and is cancelled if the robot
+     * reaches the home radius before it expires.
+     */
     private fun startReturnTimer() {
         returnJob?.cancel()
         _returnCountdown.value = null
@@ -466,15 +473,17 @@ class NavigationViewModel(
             }
     }
 
+    /** Cancels the automatic return countdown and clears its displayed value. */
     private fun cancelReturnTimer() {
         returnJob?.cancel()
         _returnCountdown.value = null
     }
 
-    // greetings in WaitingScreen logic
+    // Greetings in the waiting-screen logic.
     private var lastGreetingAt = 0L
     private var greetingIndex = 0
 
+    /** Speaks the next greeting when waiting, idle, and past the configured cooldown. */
     private fun greetIfAppropriate() {
         if (_screen.value !is Screen.Waiting) return
         if (_navState.value !is NavigationState.Idle) return
@@ -485,7 +494,10 @@ class NavigationViewModel(
         speak(strings.greetings[greetingIndex++ % strings.greetings.size])
     }
 
-    // robot integration
+    /**
+     * Connects the ViewModel to robot events and keeps robot speed and return-home behavior
+     * synchronized with app state.
+     */
     init {
         robot.setSpeechLanguage(_language.value.code)
         robot.attach()
@@ -505,12 +517,14 @@ class NavigationViewModel(
         }
     }
 
+    /** Releases robot and audio resources when this ViewModel is cleared. */
     override fun onCleared() {
         robot.detach()
         soundPlayer.release()
         musicPlayer.stop()
     }
 
+    /** Announces a failed destination and returns to the waiting screen after the configured delay. */
     private fun showFailure(dest: Destination) {
         _failedDestination.value = dest
         speak(strings.unreachableText(dest.displayName))
@@ -635,6 +649,8 @@ class NavigationViewModel(
      *
      * Handles movement and arrival results, position and path updates, readiness, speech
      * recognition, wake-word detection, and greeting triggers.
+     *
+     * @param event Robot event to be handled, i.e. canceling Navigation
      */
     private fun handleEvent(event: RobotEvent) {
         when (event) {
