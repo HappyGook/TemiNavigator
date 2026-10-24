@@ -51,6 +51,38 @@ import com.example.teminavigator.ui.theme.TemiNavigatorTheme
 import com.example.teminavigator.viewmodel.NavigationViewModel
 import com.example.teminavigator.viewmodel.SpeechNotice
 
+/**
+ * Root composable of the app: shows the screen matching the current [Screen]
+ * and a few elements that are visible on every screen.
+ *
+ * It is stateless. All state comes in as parameters and every user action goes
+ * out as a callback, so it holds no logic of its own. [MainActivity] connects
+ * it to the [NavigationViewModel]. The parameters fall into these groups:
+ * - **Screen and language:** [screen] decides which screen is shown,
+ *   [language] and [onLanguageSelected] control the selected [AppLanguage].
+ * - **Map and robot:** [destinations], [robotPose], [path], [map] and
+ *   [calibration] describe what is drawn on the map. [robotPose] is a lambda
+ *   so the map can redraw without recomposing the whole app
+ *   (see [com.example.teminavigator.ui.map.InteractiveMap]).
+ * - **Navigation:** [selected] is the destination picked on Home,
+ *   [navigationState] the progress of the guidance, [failed] a destination
+ *   that could not be reached.
+ * - **Settings:** [settings] holds all current values. The `on...Changed`
+ *   callbacks write single settings back through the ViewModel. They are only
+ *   used by the settings screen.
+ * - **Speech:** [speechNotice] is a message to show once, for example when a
+ *   spoken destination was not understood. [onStartSpeechRecognition] starts
+ *   listening.
+ *
+ * Elements shown on top of every screen:
+ * - A dialog when [failed] is set, telling the user the destination is
+ *   unreachable until [dismissFailure] is called.
+ * - A snackbar for [speechNotice]. It is shown once per notice id and then
+ *   reported back with [onSpeechNoticeShown], so it is not shown again after
+ *   a recomposition.
+ *
+ * @param adminPasswordStore Storage of the password that protects the settings.
+ */
 @Suppress("ktlint:standard:function-naming")
 @Composable
 fun TemiApp(
@@ -106,6 +138,7 @@ fun TemiApp(
     onNavigationSpeedChanged: (NavSpeed) -> Unit,
     arrivalFailureDelaySec: Int,
 ) {
+    // Shows each speech notice once: the effect restarts only when a notice with a new id arrives.
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(speechNotice?.id) {
         val notice = speechNotice ?: return@LaunchedEffect
@@ -117,7 +150,8 @@ fun TemiApp(
     }
 
     Box(Modifier.fillMaxSize()) {
-        // If destination failed, dialog shows screen-independent
+        // The failure dialog is drawn before the screens and independent of them,
+        // so it appears on whichever screen is active.
         val strings = LocalStrings.current
 
         failed?.let { dest ->
@@ -129,6 +163,9 @@ fun TemiApp(
             )
         }
 
+        /* Screen switching: exactly one screen is shown, chosen by the ViewModel's state.
+        The `when` is exhaustive, so a new Screen must be handled here.
+         */
         when (screen) {
             Screen.Home -> {
                 HomeScreen(
@@ -220,7 +257,20 @@ fun TemiApp(
     }
 }
 
+/**
+ * The app's only activity and entry point.
+ *
+ * It contains no logic. It creates the [NavigationViewModel] (with the
+ * [TemiRobot] singleton as its [com.example.teminavigator.domain.RobotController]), turns the ViewModel's
+ * flows into Compose state, provides the strings of the selected language and
+ * the theme, and passes everything to [TemiApp].
+ */
 class MainActivity : ComponentActivity() {
+    /**
+     * The ViewModel, created lazily through a factory because it needs the
+     * [Application] and the robot as constructor arguments. It survives
+     * configuration changes such as rotation.
+     */
     private val viewModel: NavigationViewModel by viewModels {
         viewModelFactory {
             initializer {
@@ -232,12 +282,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Sets up edge-to-edge display and the Compose UI.
+     *
+     * Collects the ViewModel's flows as Compose state, so the UI updates whenever
+     * the ViewModel emits. Flows that matter for the screen's lifecycle use
+     * `collectAsStateWithLifecycle`, which stops collecting while the app is in
+     * the background.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Created here, not in the ViewModel, since it is only needed by the settings UI.
         val adminPasswordStore = AdminPasswordStore(applicationContext)
         setContent {
-            // take latest value of the language flow
+            // Each ViewModel flow is turned into State here, so TemiApp always receives the latest value.
             val calibration by viewModel.calibration.collectAsState()
             val destinations by viewModel.destinations.collectAsState()
             val failed by viewModel.failedDestination.collectAsState()
@@ -246,6 +305,9 @@ class MainActivity : ComponentActivity() {
             val map by viewModel.mapImage.collectAsState()
             val navigationState by viewModel.navState.collectAsState()
             val path by viewModel.path.collectAsStateWithLifecycle()
+
+            // Kept as State, not unpacked with `by`: it is read only inside the `robotPose` lambda,
+            // so pose updates redraw the map without recomposing the rest of the UI.
             val pose = viewModel.pose.collectAsState()
             val returnCountdown by viewModel.returnCountdown.collectAsStateWithLifecycle()
             val screen by viewModel.screen.collectAsStateWithLifecycle()
@@ -254,6 +316,7 @@ class MainActivity : ComponentActivity() {
             val speechNotice by viewModel.speechNotice.collectAsStateWithLifecycle()
             val speedMps by viewModel.speedMps.collectAsStateWithLifecycle()
 
+            // Makes the texts of the selected language available to the whole UI via LocalStrings.
             CompositionLocalProvider(LocalStrings provides language.strings) {
                 TemiNavigatorTheme {
                     TemiApp(
